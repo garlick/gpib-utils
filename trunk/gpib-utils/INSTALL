@@ -1,0 +1,50 @@
+gpib-utils works with linux-gpib (http://linux-gpib.sourceforge.net/).
+It may also work with the National Instruments libraries 
+(http://www.ni.com/linux/gpib.htm) but I have not tried that.
+
+For now, installation is quite primitive.  Presuming linux-gpib is installed 
+in the usual place your system puts include files and libraries, type:
+   cd gpib-utils
+   make
+To install in /usr/local/{bin,man}, type:
+   make install
+Your mileage may vary of course, which is why they invented automake.
+We're just not there yet.  There is also a spec file which should
+enable you to build an RPM with that installs into /usr/bin with
+   rpmbuild -ta gpib-utils-version.tar.bz2
+
+You will need gpib.conf entries for your instruments.  You can use the one 
+in the gpib-utils/examples directory as a template if you like.
+
+After you have set up gpib.conf, loaded the linux-gpib driver for your 
+interface board, and run gpib_config, you can verify that everything 
+is set up properly by running ibtest and making sure the instrument responds 
+to a simple command such as:
+
+HP1630/31: "BP" should cause the analyzer to beep.
+R5005: "Z" should cause the DMM to re-initialize.
+HP3455: "F6" should cause the DMM to run a self-test.
+HP3457: "TONE" should cause the DMM to beep.
+
+The configuration I am using is linux-gpib-3.2.03 on Fedora Core 3,
+with kernel-2.6.9-1.667 and a National Instruments PCI-GPIB card.  
+On Fedora, there are a couple of things you can do for linux-gpib to 
+make your life simpler:
+
+1) udev will create /dev/gpib0 so that only root can access it.  To avoid
+having to run the gpib-utils as root or chmod the device file every time
+you reload the module, you can configure udev to create the device with 
+world access by creating a file called 
+   /etc/udev/permissions.d/gpib/60-gpib.permissions
+containing one line: 
+   gpib*:root:root:0666
+
+2) You may also want to add a line such as the following to /etc/modprobe.conf 
+so that "modeprobe gpib" and "modprobe -r gpib" load/unload the module
+for your gpib adapter and run gpib_config after the device appears:
+   install gpib /sbin/modprobe tnt4882 && while ! /usr/bin/test -r /dev/gpib0; do /bin/sleep 1; done && /usr/sbin/gpib_config
+   remove gpib /sbin/modprobe -r tnt4882
+
+Jim Garlick
+garlick@speakeasy.net
+Oct. 7, 2005
