@@ -4,6 +4,7 @@ MANDIR=/usr/local/man/man1
 all:
 	make -C src all
 	make -C examples all
+	make -C htdocs all
 
 install:
 	mkdir -p $(BINDIR) $(MANDIR)

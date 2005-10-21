@@ -2,6 +2,8 @@
 
   * src/hp8656.[ch]: New.
 
+  * htdocs: New (the sf web pages).
+
 2005-10-14 Jim Garlick <garlick@speakeasy.net>
 
   * : tag gpib-utils-1-0
