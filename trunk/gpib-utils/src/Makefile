@@ -1,7 +1,7 @@
 CFLAGS=-Wall -g
-LDADD=-lgpib
+LDADD=-lgpib -lm
 
-PROGS=hp1630 hptopbm hptodino r5005 hp3455 hp3457
+PROGS=hp1630 hptopbm hptodino r5005 hp3455 hp3457 hp8656
 
 all: $(PROGS)
 
@@ -19,6 +19,12 @@ hp3455: hp3455.o
 
 hp3457: hp3457.o freq.o
 	$(CC) -o $@ hp3457.o freq.o $(LDADD)
+
+hp8656: hp8656.o freq.o ampl.o
+	$(CC) -o $@ hp8656.o freq.o ampl.o $(LDADD)
+
+ampl: ampl.o
+	$(CC) -o $@ ampl.o -lm
 
 install:
 	@test $(BINDIR)

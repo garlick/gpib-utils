@@ -1,3 +1,7 @@
+2005-10-21 Jim Garlick <garlick@speakeasy.net>
+
+  * src/hp8656.[ch]: New.
+
 2005-10-14 Jim Garlick <garlick@speakeasy.net>
 
   * : tag gpib-utils-1-0

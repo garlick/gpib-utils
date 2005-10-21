@@ -20,6 +20,8 @@
 #include <stdlib.h>
 #include <strings.h>
 
+/* Return amplitude in Hz or <0 on error.
+ */
 double 
 freqstr(char *str)
 {
