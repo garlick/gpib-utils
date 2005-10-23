@@ -20,50 +20,59 @@
 #include <stdlib.h>
 #include <strings.h>
 
-/* Return amplitude in Hz or <0 on error.
+/* Set *freq to frequency in Hz.
+ * Return 0 on success, -1 on failure.
  */
-double 
-freqstr(char *str)
+int
+freqstr(char *str, double *freq)
 {
     char *end;
     double f = strtod(str, &end);
+    int result = 0;
 
-    if (!*end)
-        f = -1; /* error */
+    if (!*end)  /* no units is an error */
+        result = -1;
     else if (!strcasecmp(end, "hz"))
         ;
     else if (!strcasecmp(end, "khz"))
-        f *= 1000;
+        f *= 1E3;
     else if (!strcasecmp(end, "mhz"))
-        f *= 1000000;
+        f *= 1E6;
     else if (!strcasecmp(end, "ghz"))
-        f *= 1000000000;
+        f *= 1E9;
     else if (!strcasecmp(end, "sec") || !strcasecmp(end, "s"))
         f = 1.0/f;
     else if (!strcasecmp(end, "msec") || !strcasecmp(end, "ms"))
-        f = 1000.0/f;
+        f = 1E3/f;
     else if (!strcasecmp(end, "usec") || !strcasecmp(end, "us"))
-        f = 1000000.0/f;
+        f = 1E6/f;
     else if (!strcasecmp(end, "nsec") || !strcasecmp(end, "ns"))
-        f = 1000000000.0/f;
+        f = 1E9/f;
     else if (!strcasecmp(end, "psec") || !strcasecmp(end, "ps"))
-        f = 1000000000000.0/f;
+        f = 1E12/f;
     else  
-        f = -1; /* error */
-    return f;
+        result = -1;
+
+    if (result == 0 && freq != NULL)
+        *freq = f;
+
+    return result;
 }
 
-#if 0
-void
+#ifdef TESTMAIN
+int
 main(int argc, char *argv[])
 {
     int i;
     double f;
 
     for (i = 1; i < argc; i++) {
-        f = freqstr(argv[i]);
-        printf("%s = %e hz\n", argv[i], f);
+        if (freqstr(argv[i], &f) < 0)
+            printf("error\n");
+        else
+            printf("%s = %e hz\n", argv[i], f);
     }
+    exit(0);
 }
 #endif
 

@@ -21,13 +21,26 @@
 #include <stdlib.h>
 #include <strings.h>
 #include <math.h>
+#include <errno.h>
 
+static int
+_vtodb(double *a, double offset)
+{
+    int result = 0;
+    double l = log10(*a);
 
-/* Set *ampl to amplitutde in dBm and return 0 on success, -1 on failure.
- * Note: 0 dBm is voltage corresponding to 1mW into some load impedance.
- * at 50 ohms, 0 dBm is 0.22V rms.  Ref: "The Art of Electronics", 2ed by
- * Horowitz and Hill.  See pg 64. of HP-8656A operator manual for conversions 
- * used below.
+    if (l == EDOM || l == ERANGE || isinf(l) || isnan(l))
+        result = -1;
+    else
+        *a = l*20.0 + offset;
+
+    return result;
+}
+
+/* Set *ampl to amplitutde in dBm.
+ * Return 0 on success, -1 on failure.
+ *
+ * See pg 64. of HP-8656A operator manual for conversions used below.
  */
 int
 amplstr(char *str, double *ampl)
@@ -55,17 +68,17 @@ amplstr(char *str, double *ampl)
     else if (!strcasecmp(end, "dbemfuv"))
         a -= 113.0;
     else if (!strcasecmp(end, "v"))
-        a = log10(a)*20.0 + 13.0;
+        result = _vtodb(&a, 13.0);
     else if (!strcasecmp(end, "mv"))
-        a = log10(a)*20.0 - 47.0;
+        result = _vtodb(&a, -47.0);
     else if (!strcasecmp(end, "uv"))
-        a = log10(a)*20.0 - 107.0;
+        result = _vtodb(&a, -107.0);
     else if (!strcasecmp(end, "emfv"))
-        a = log10(a)*20.0 + 7.0;
+        result = _vtodb(&a, 7.0);
     else if (!strcasecmp(end, "emfmv"))
-        a = log10(a)*20.0 - 53.0;
+        result = _vtodb(&a, -53.0);
     else if (!strcasecmp(end, "emfmuv"))
-        a = log10(a)*20.0 - 113.0;
+        result = _vtodb(&a, -113.0);
     else  
         result = -1;
     if (result == 0 && ampl != NULL)
@@ -73,7 +86,7 @@ amplstr(char *str, double *ampl)
     return result;
 }
 
-#if 0
+#ifdef TESTMAIN
 int
 main(int argc, char *argv[])
 {
