@@ -35,7 +35,7 @@
 #define INSTRUMENT "hp8656" /* the /etc/gpib.conf entry */
 #define BOARD       0       /* minor board number in /etc/gpib.conf */
 
-extern double freqstr(char *str);
+extern int freqstr(char *str, double *f);
 extern int amplstr(char *str, double *a);
 
 static char *prog = "";
@@ -105,6 +105,10 @@ static void _ibwrtf(int d, char *fmt, ...)
         va_start(ap, fmt);
         n = vasprintf(&s, fmt, ap);
         va_end(ap);
+        if (n == -1) {
+            fprintf(stderr, "%s: out of memory\n", prog);
+            exit(1);
+        }
         _ibwrtstr(d, s);
         free(s);
 }
@@ -136,9 +140,8 @@ main(int argc, char *argv[])
             instrument = optarg;
             break;
         case 'f': /* --frequency */
-            f = freqstr(optarg);
-            if (f < 0) {
-                fprintf(stderr, "%s: can't parse freq: %s\n", prog, optarg);
+            if (freqstr(optarg, &f) < 0) {
+                fprintf(stderr, "%s: error parsing frequency arg\n", prog);
                 exit(1);
             }
             if (f < 100E3 || f > 990E6) {
@@ -150,20 +153,15 @@ main(int argc, char *argv[])
             break;
         case 'a': /* --amplitude */
             if (amplstr(optarg, &a) < 0) {
-                fprintf(stderr, "%s: can't parse ampl: %s\n", prog, optarg);
+                fprintf(stderr, "%s: error parsing amplitude arg\n", prog);
                 exit(1);
             }
             if (a > 17.0) {
-                fprintf(stderr, 
-                        "%s: amplitude of %le dBm exceeds range of instrument", 
-                       prog, a);
+                fprintf(stderr, "%s: amplitude exceeds range\n", prog);
                 exit(1);
             }
-            if (a < -127.0 || a > 13.0) {
-                fprintf(stderr, 
-                        "%s: warning: amplitude of %le dBm outside of cal\n", 
-                        prog, a);
-            }
+            if (a < -127.0 || a > 13.0)
+                fprintf(stderr, "%s: warning: amplitude beyond cal\n", prog);
             sprintf(cmdstr + strlen(cmdstr), "%s%.2lf%s", 
                     HP8656_AMPL, a, HP8656_UNIT_DBM);
             break;

@@ -8,5 +8,12 @@ sample.ps: sample.dat
 %.ps : %.gp
 	gnuplot $<
 
+# if 'pbm color' is uncommented instead of ps!
+%.ppm : %.gp
+	gnuplot $<
+
+%.gif : %.ppm
+	ppmtogif < $< >$@
+
 clean:
-	rm -f sample.ps
+	rm -f sample.ps sample.ppm sample.gif

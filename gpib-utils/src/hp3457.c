@@ -32,7 +32,7 @@
 
 #include "hp3457.h"
 
-double freqstr(char *str);
+int freqstr(char *str, double *freq);
 
 #define INSTRUMENT "hp3457" /* the /etc/gpib.conf entry */
 #define BOARD       0       /* minor board number in /etc/gpib.conf */
@@ -264,6 +264,10 @@ static void _ibwrtf(int d, char *fmt, ...)
         va_start(ap, fmt);
         n = vasprintf(&s, fmt, ap);
         va_end(ap);
+        if (n == -1) {
+            fprintf(stderr, "%s: out of memory\n", prog);
+            exit(1);
+        }
         _ibwrtstr(d, s, 1);
         free(s);
 }
@@ -341,6 +345,7 @@ main(int argc, char *argv[])
     double range = -1; /* auto */
     int samples = 1;
     double period = 0;
+    double freq;
 
     /*
      * Handle options.
@@ -352,12 +357,11 @@ main(int argc, char *argv[])
             verbose = 1;
             break;
         case 'T': /* --period */
-            period = 1.0/freqstr(optarg);
-            if (period < 0) {
-                fprintf(stderr, "%s: units required for period (s or ms)\n", 
-                        prog);
+            if (freqstr(optarg, &freq) < 0) {
+                fprintf(stderr, "%s: error parsing period argument\n", prog);
                 exit(1);
             }
+            period = 1.0/freq;
             break;
         case 's': /* --samples */
             samples = (int)strtoul(optarg, NULL, 10);

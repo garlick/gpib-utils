@@ -2,8 +2,9 @@ CFLAGS=-Wall -g
 LDADD=-lgpib -lm
 
 PROGS=hp1630 hptopbm hptodino r5005 hp3455 hp3457 hp8656
+TESTPROGS=testfreq testampl
 
-all: $(PROGS)
+all: $(PROGS) $(TESTPROGS)
 
 hptodino: hptodino.o freq.o
 	$(CC) -o $@ hptodino.o freq.o
@@ -23,8 +24,11 @@ hp3457: hp3457.o freq.o
 hp8656: hp8656.o freq.o ampl.o
 	$(CC) -o $@ hp8656.o freq.o ampl.o $(LDADD)
 
-ampl: ampl.o
-	$(CC) -o $@ ampl.o -lm
+testampl: ampl.c
+	$(CC) -o $@ -DTESTMAIN $< -lm
+
+testfreq: freq.c
+	$(CC) -o $@ -DTESTMAIN $< -lm
 
 install:
 	@test $(BINDIR)
@@ -34,3 +38,4 @@ install:
 
 clean:
 	rm -f *.o $(PROGS)
+	rm -f $(TESTPROGS)

@@ -175,6 +175,10 @@ static void _ibwrtf(int d, char *fmt, ...)
         va_start(ap, fmt);
         n = vasprintf(&s, fmt, ap);
         va_end(ap);
+        if (n == -1) {
+            fprintf(stderr, "%s: out of memory\n", prog);
+            exit(1);
+        }
         _ibwrtstr(d, s);
         free(s);
 }
