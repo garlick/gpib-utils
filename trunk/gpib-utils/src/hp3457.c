@@ -40,19 +40,21 @@ int freqstr(char *str, double *freq);
 static char *prog = "";
 static int verbose = 0;
 
-#define OPTIONS "n:f:r:t:m:aH:s:T:d:v"
+#define OPTIONS "n:f:r:t:m:H:s:T:d:vclaS"
 static struct option longopts[] = {
     {"name",            required_argument, 0, 'n'},
+    {"clear",           no_argument,       0, 'c'},
+    {"local",           no_argument,       0, 'l'},
+    {"verbose",         no_argument, 0, 'v'},
     {"function",        required_argument, 0, 'f'},
     {"range",           required_argument, 0, 'r'},
     {"trigger",         required_argument, 0, 't'},
-    {"math",            required_argument, 0, 'm'},
     {"autocal",         no_argument,       0, 'a'},
+    {"selftest",        no_argument,       0, 'S'},
     {"highres",         required_argument, 0, 'H'},
     {"samples",         required_argument, 0, 's'},
     {"period",          required_argument, 0, 'T'},
     {"digits",          required_argument, 0, 'd'},
-    {"verbose",         no_argument, 0, 'v'},
     {0, 0, 0, 0},
 };
 
@@ -64,18 +66,19 @@ usage(void)
 {
     fprintf(stderr, 
 "Usage: %s [--options]\n"
-"  -n,--name name                                 dmm name [%s]\n"
-"  -f,--function dcv|acv|acdcv|dci|aci|acdci|ohm2|ohm4|freq|period|autocal|test\n"
-"                                                 select function [dcv]\n"
-"  -r,--range <maxval>|auto                       select range [auto]\n"
-"  -t,--trigger auto|ext|sgl|hold|syn             select trigger mode [syn]\n"
-"  -d,--digits 3|4|5|6                            number of digits [5]\n"
-"  -m,--math scale|err|off                        select math mode [off]\n"
-"  -y,--storey value                              store value into y reg\n"
-"  -y,--storez value                              store value into z reg\n"
-"  -s,--samples                                   number of samples [1]\n"
-"  -T,--period                                    sample period in s[0]\n"
-"  -v,--verbose                                   show protocol on stderr\n"
+"  -n,--name name                     dmm name [%s]\n"
+"  -c,--clear                         clear instrument, set remote defaults\n"
+"  -l,--local                         enable front panel, set local defaults\n"
+"  -v,--verbose                       show protocol on stderr\n"
+"  -a,--autocal                       autocalibrate\n"
+"  -S,--selftest                      run selftest\n"
+"  -f,--function dcv|acv|acdcv|dci|aci|acdci|ohm2|ohm4|freq|period\n"
+"                                     select function [dcv]\n"
+"  -r,--range <maxval>|auto           select range [auto]\n"
+"  -t,--trigger auto|ext|sgl|hold|syn select trigger mode [syn]\n"
+"  -d,--digits 3|4|5|6                number of digits [5]\n"
+"  -s,--samples                       number of samples [0]\n"
+"  -T,--period                        sample period in s[0]\n"
            , prog, INSTRUMENT);
     exit(1);
 }
@@ -102,7 +105,7 @@ static unsigned long _checkauxerr(int d)
     char tmpbuf[64];
     unsigned long err;
 
-    _ibwrtstr(d, HP3457_AUXERR, 0);
+    _ibwrtstr(d, HP3457_AUXERR_QUERY, 0);
     _ibrdstr(d, tmpbuf, sizeof(tmpbuf), 0);
 
     err = strtoul(tmpbuf, NULL, 10);
@@ -148,7 +151,7 @@ static unsigned long _checkerr(int d)
     char tmpbuf[64];
     unsigned long err;
 
-    _ibwrtstr(d, HP3457_ERR, 0);
+    _ibwrtstr(d, HP3457_ERR_QUERY, 0);
     _ibrdstr(d, tmpbuf, sizeof(tmpbuf), 0);
 
     err = strtoul(tmpbuf, NULL, 10);
@@ -301,26 +304,15 @@ static void _ibloc(int d)
     _checksrq(d, NULL);
 }
 
-#if 0
-static void _ibtrg(int d)
-{
-    ibtrg(d);
-    if (ibsta & ERR) {
-        fprintf(stderr, "%s: ibtrg error %d\n", prog, iberr);
-        exit(1);
-    }
-    _checksrq(d, NULL);
-}
-#endif
-
 static void _checkid(int d)
 {
     char tmpbuf[64];
 
-    _ibwrtf(d, HP3457_ID);
+    _ibwrtf(d, HP3457_ID_QUERY);
     _ibrdstr(d, tmpbuf, sizeof(tmpbuf), 1);
-    if (strncmp(tmpbuf, "HP3457A", 7) != 0) {
-        fprintf(stderr, "%s: device id %s should be HP3457A\n", prog, tmpbuf);
+    if (strncmp(tmpbuf, HP3457_ID_RESPONSE, strlen(HP3457_ID_RESPONSE)) != 0) {
+        fprintf(stderr, "%s: device id %s != %s\n", prog, tmpbuf,
+                HP3457_ID_RESPONSE);
         exit(1);
     }
 }
@@ -329,7 +321,7 @@ static void _checkrange(int d)
 {
     char tmpbuf[64];
 
-    _ibwrtf(d, "RANGE?");
+    _ibwrtf(d, "%s", HP3457_RANGE_QUERY);
     _ibrdstr(d, tmpbuf, sizeof(tmpbuf), 1);
     fprintf(stderr, "%s: range is %.1lf\n", prog, strtod(tmpbuf, NULL));
 }
@@ -339,13 +331,19 @@ main(int argc, char *argv[])
 {
     char *instrument = INSTRUMENT;
     int d, c;
-    char *function =    HP3457_DCV;
-    char *trigger =     HP3457_TRIGGER_SYN;
-    char *digits =      HP3457_NDIG5;
+    char *funstr = NULL;
+    char *rangestr = NULL;
+    char *trigstr = NULL;
+    char *digstr = NULL;
     double range = -1; /* auto */
-    int samples = 1;
+    int samples = 0;
     double period = 0;
     double freq;
+    int clear = 0;
+    int local = 0;
+    int autocal = 0;
+    int selftest = 0;
+    int showtime = 0;
 
     /*
      * Handle options.
@@ -353,6 +351,21 @@ main(int argc, char *argv[])
     prog = basename(argv[0]);
     while ((c = getopt_long(argc, argv, OPTIONS, longopts, NULL)) != EOF) {
         switch (c) {
+        case 'n': /* --name */
+            instrument = optarg;
+            break;
+        case 'c': /* --clear */
+            clear = 1;
+            break;
+        case 'l': /* --local */
+            local = 1;
+            break;
+        case 'a': /* --autocal */
+            autocal = 1;
+            break;
+        case 'S': /* --selftest */
+            selftest = 1;
+            break;
         case 'v': /* --verbose */
             verbose = 1;
             break;
@@ -365,64 +378,63 @@ main(int argc, char *argv[])
             break;
         case 's': /* --samples */
             samples = (int)strtoul(optarg, NULL, 10);
-            break;
-        case 'n': /* --name */
-            instrument = optarg;
+            if (samples > 1)
+                showtime = 1;
             break;
         case 't': /* --trigger */
             if (strcasecmp(optarg, "auto") == 0)
-                trigger = HP3457_TRIGGER_AUTO;
+                trigstr = HP3457_TRIG_AUTO;
             else if (strcasecmp(optarg, "ext") == 0)
-                trigger = HP3457_TRIGGER_EXT;
+                trigstr = HP3457_TRIG_EXT;
             else if (strcasecmp(optarg, "sgl") == 0)
-                trigger = HP3457_TRIGGER_SGL;
+                trigstr = HP3457_TRIG_SGL;
             else if (strcasecmp(optarg, "hold") == 0)
-                trigger = HP3457_TRIGGER_HOLD;
+                trigstr = HP3457_TRIG_HOLD;
             else if (strcasecmp(optarg, "syn") == 0)
-                trigger = HP3457_TRIGGER_SYN;
+                trigstr = HP3457_TRIG_SYN;
             else
                 usage();
             break;
         case 'r': /* --range */
-            range = strtod(optarg, NULL);
+            rangestr = HP3457_RANGE;
+            if (!strcasecmp(optarg, "auto"))
+                range = -1; /* signifies auto */
+            else
+                range = strtod(optarg, NULL);
             break;
         case 'd': /* --digits */
             if (*optarg == '3')
-                digits = HP3457_NDIG3;
+                digstr = HP3457_NDIG3;
             else if (*optarg == '4')
-                digits = HP3457_NDIG4;
+                digstr = HP3457_NDIG4;
             else if (*optarg == '5')
-                digits = HP3457_NDIG5;
+                digstr = HP3457_NDIG5;
             else if (*optarg == '6')
-                digits = HP3457_NDIG6;
+                digstr = HP3457_NDIG6;
             else
                 usage();
             break;
         case 'f': /* --function */
             if (strcasecmp(optarg, "dcv") == 0)
-                function = HP3457_DCV;
+                funstr = HP3457_DCV;
             else if (strcasecmp(optarg, "acv") == 0)
-                function = HP3457_ACV;
+                funstr = HP3457_ACV;
             else if (strcasecmp(optarg, "acdcv") == 0)
-                function = HP3457_ACDCV;
+                funstr = HP3457_ACDCV;
             else if (strcasecmp(optarg, "dci") == 0)
-                function = HP3457_DCI;
+                funstr = HP3457_DCI;
             else if (strcasecmp(optarg, "aci") == 0)
-                function = HP3457_ACI;
+                funstr = HP3457_ACI;
             else if (strcasecmp(optarg, "acdci") == 0)
-                function = HP3457_ACDCI;
+                funstr = HP3457_ACDCI;
             else if (strcasecmp(optarg, "freq") == 0)
-                function = HP3457_FREQ;
+                funstr = HP3457_FREQ;
             else if (strcasecmp(optarg, "period") == 0)
-                function = HP3457_PERIOD;
+                funstr = HP3457_PERIOD;
             else if (strcasecmp(optarg, "ohm2") == 0)
-                function = HP3457_2WIRE_OHMS;
+                funstr = HP3457_2WIRE_OHMS;
             else if (strcasecmp(optarg, "ohm4") == 0)
-                function = HP3457_4WIRE_OHMS;
-            else if (strcasecmp(optarg, "autocal") == 0)
-                function = HP3457_ACAL_BOTH;
-            else if (strcasecmp(optarg, "test") == 0)
-                function = HP3457_TEST;
+                funstr = HP3457_4WIRE_OHMS;
             else
                 usage();
             break;
@@ -432,6 +444,10 @@ main(int argc, char *argv[])
         }
     }
 
+    if (!clear && !local && !autocal && !selftest 
+            && !funstr && !rangestr && !trigstr && !digstr && samples == 0)
+        usage();
+
     /* find device in /etc/gpib.conf */
     d = ibfind(instrument);
     if (d < 0) {
@@ -439,60 +455,73 @@ main(int argc, char *argv[])
         exit(1);
     }
 
-    /* Clear dmm state and check that model is HP3457A.
+    /* Clear dmm state, verify that model is HP3457A, and
+     * select remote defaults.
      */
-    _ibclr(d);
-    _checkid(d);
+    if (clear) {
+        _ibclr(d);
+        _checkid(d);
+        _ibwrtf(d, HP3457_PRESET);
+    }
 
-    /* If function is autocal, do it and exit (no measurements).
+    /* Perform autocalibration.
      */
-    if (!strcmp(function, HP3457_ACAL_BOTH)) {
+    if (autocal) {
         _ibwrtf(d, HP3457_ACAL_BOTH);
         fprintf(stderr, "%s: waiting 35 sec for AC+ohms autocal\n", prog);
         fprintf(stderr, "%s: inputs should be disconnected\n", prog);
         sleep(35); 
         _checksrq(d, NULL); /* report any errors */
         fprintf(stderr, "%s: autocal complete\n", prog);
-        exit(0);
     }
 
-    /* If function is test, do it and exit (no measurements).
+    /* Perform selftest.
      */
-    if (!strcmp(function, HP3457_TEST)) {
+    if (selftest) {
         _ibwrtf(d, HP3457_TEST);
         fprintf(stderr, "%s: waiting 7 sec for self-test\n", prog);
         sleep(7); 
         _checksrq(d, NULL); /* report any errors */
         fprintf(stderr, "%s: self-test complete\n", prog);
-        exit(0);
     }
 
-    /* Configure dmm and take measurements.
+    /* Select function.
      */
-    _ibwrtf(d, HP3457_PRESET); /* sets NDIG 5, TRIG SYN, DCV AUTO, etc */
-    _ibwrtf(d, "%s %.1lf;%s;%s", function, range, trigger, digits);
-    _checkrange(d); /* show selected range */
+    if (funstr) {
+        _ibwrtf(d, funstr);
+    }
+
+    /* Select range.
+     */
+    if (rangestr) {
+        _ibwrtf(d, "%s %.1lf", rangestr, range);
+        _checkrange(d);
+    }
+
+    /* Select trigger mode.
+     */
+    if (trigstr) {
+        _ibwrtf(d, trigstr);
+    }
+
+    /* Select display digits.
+     */
+    if (digstr) {
+        _ibwrtf(d, digstr);
+    }
 
     if (samples > 0) {
         char buf[1024];
         double t0, t1, t2;
+
+        if (digstr || trigstr || rangestr || funstr)
+            sleep(1);
 
         t0 = 0;
         while (samples-- > 0) {
             t1 = _gettime();
             if (t0 == 0)
                 t0 = t1;
-#if 0
-            ibtrg(d);
-            /* Block until SRQ and serial poll indicates data available.
-             */
-            ready = 0;
-            while (!ready) {
-                WaitSRQ(BOARD, &s);
-                if (s == 1) /* 1 = srq, 0 = timeout */
-                _checksrq(d, &ready);
-            }
-#endif
             _ibrdstr(d, buf, sizeof(buf), 1);
             t2 = _gettime();
 
@@ -500,15 +529,21 @@ main(int argc, char *argv[])
              *   t(s)  sample 
              * sample already has a crlf terminator
              */
-            printf("%-3.3lf\t%s", (t1-t0), buf); 
+            if (showtime)
+                printf("%-3.3lf\t%s", (t1-t0), buf); 
+            else
+                printf("%s", buf); 
 
             if (samples > 0 && period > 0)
                 _sleep_sec(period - (t2-t1));
         }
     }
 
-    /* give back the front panel */
-    _ibloc(d); 
+    /* give back the front panel and set defaults for local operation */
+    if (local) {
+        _ibwrtf(d, HP3457_RESET);
+        _ibloc(d); 
+    }
 
     exit(0);
 }

@@ -28,6 +28,7 @@
 #include <getopt.h>
 #include <assert.h>
 #include <sys/time.h>
+#include <math.h>
 #include <gpib/ib.h>
 
 #include "hp8656.h"
@@ -37,16 +38,21 @@
 
 extern int freqstr(char *str, double *f);
 extern int amplstr(char *str, double *a);
+extern double dbmtov(double a);
 
 static char *prog = "";
 static int verbose = 0;
 
-#define OPTIONS "n:f:a:v"
+#define OPTIONS "n:f:a:vclF:A:"
 static struct option longopts[] = {
     {"name",            required_argument, 0, 'n'},
-    {"frequency",       required_argument, 0, 'f'},
-    {"amplitude",       required_argument, 0, 'a'},
+    {"clear",           no_argument,       0, 'c'},
+    {"local",           no_argument,       0, 'l'},
     {"verbose",         no_argument,       0, 'v'},
+    {"incrfreq",        required_argument, 0, 'F'},
+    {"frequency",       required_argument, 0, 'f'},
+    {"incrampl",        required_argument, 0, 'A'},
+    {"amplitude",       required_argument, 0, 'a'},
     {0, 0, 0, 0},
 };
 
@@ -55,10 +61,14 @@ usage(void)
 {
     fprintf(stderr, 
 "Usage: %s [--options]\n"
-"  -n,--name name                            instrument name [%s]\n"
-"  -f,--frequency                            set carrier freq [100Mhz]\n"
-"  -a,--amplitude                            set carrier amplitude [-127dBm]\n"
-"  -v,--verbose                              show protocol on stderr\n"
+"  -n,--name name                instrument name [%s]\n"
+"  -c,--clear                    initialize instrument to default values\n"
+"  -l,--local                    return instrument to local operation on exit\n"
+"  -v,--verbose                  show protocol on stderr\n"
+"  -f,--frequency [value|up|dn]  set carrier freq [100Mhz]\n"
+"  -a,--amplitude [value|up|dn]  set carrier amplitude [-127dBm]\n"
+"  -F,--incrfreq value           set carrier freq increment [10.0MHz]\n"
+"  -A,--incrampl value           set carrier amplitude increment [10.0dB]\n"
            , prog, INSTRUMENT);
     exit(1);
 }
@@ -129,6 +139,8 @@ main(int argc, char *argv[])
     char cmdstr[1024] = "";
     double f, a;
     int c, d;
+    int clear = 0;
+    int local = 0;
 
     /*
      * Handle options.
@@ -139,31 +151,103 @@ main(int argc, char *argv[])
         case 'n': /* --name */
             instrument = optarg;
             break;
-        case 'f': /* --frequency */
+        case 'c': /* --clear */
+            clear = 1;
+            break;
+        case 'l': /* --local */
+            local = 1;
+            break;
+        case 'F': /* --incrfreq */
             if (freqstr(optarg, &f) < 0) {
-                fprintf(stderr, "%s: error parsing frequency arg\n", prog);
+                fprintf(stderr, "%s: error parsing incrfreq arg\n", prog);
                 exit(1);
             }
-            if (f < 100E3 || f > 990E6) {
-                fprintf(stderr, "%s: freq out of range (100kHz-990MHz)\n",prog);
+            if (f > 989.99E6 || f < 0.1E3) {
+                fprintf(stderr, 
+                        "%s: incrfreq out of range (0.1kHz-989.99MHz)\n", prog);
                 exit(1);
             }
-            sprintf(cmdstr + strlen(cmdstr), "%s%.0lf%s", 
-                    HP8656_FREQ, f, HP8656_UNIT_HZ);
+            if (fmod(f, 100) != 0 && fmod(f, 250) != 0) {
+                fprintf(stderr, 
+                        "%s: incrfreq must be a multiple of 100Hz or 250Hz\n",
+                        prog);
+                exit(1);
+            }
+            sprintf(cmdstr + strlen(cmdstr), "%s%s%.0lf%s", 
+                HP8656_FREQ, HP8656_INCR_SET, f, HP8656_UNIT_HZ);
+            break;
+        case 'f': /* --frequency */
+            if (!strcasecmp(optarg, "up")) {
+                sprintf(cmdstr + strlen(cmdstr), "%s%s", 
+                        HP8656_FREQ, HP8656_STEP_UP);
+            } else if (!strcasecmp(optarg, "dn") ||!strcasecmp(optarg, "down")){
+                sprintf(cmdstr + strlen(cmdstr), "%s%s", 
+                        HP8656_FREQ, HP8656_STEP_DN); 
+            } else {
+                if (freqstr(optarg, &f) < 0) {
+                    fprintf(stderr, "%s: error parsing frequency arg\n", prog);
+                    exit(1);
+                }
+                if (f < 100E3 || f > 990E6) {
+                    fprintf(stderr, "%s: freq out of range (100kHz-990MHz)\n",prog);
+                    exit(1);
+                }
+                sprintf(cmdstr + strlen(cmdstr), "%s%.0lf%s", 
+                        HP8656_FREQ, f, HP8656_UNIT_HZ);
+            }
+            break;
+        case 'A': /* --incrampl */
+            /* XXX instrument accepts '%' units here too */
+            if (amplstr(optarg, &a) < 0)  {
+                char *end;
+                double a = strtod(optarg, &end);
+
+                if (strcasecmp(end, "db") != 0) {
+                    fprintf(stderr, "%s: error parsing incrampl arg\n", prog);
+                    exit(1);
+                }
+                if (a < 0.1 || a > 144.0) {
+                    fprintf(stderr, 
+                            "%s: incrampl out of range (0.1dB-144.0db)\n", 
+                            prog);
+                    exit(1);
+                }
+                sprintf(cmdstr + strlen(cmdstr), "%s%s%.2lf%s", 
+                    HP8656_AMPL, HP8656_INCR_SET, a, HP8656_UNIT_DB);
+            } else {
+                /* XXX instrument ignored minus sign when dbm units used here */
+                a = dbmtov(a);  /* convert dbm to volts */
+                if (a < 0.01E-6 || a > 1.57) {
+                    fprintf(stderr, 
+                            "%s: incrampl out of range (0.01uV-1.57V)\n", prog);
+                    exit(1);
+                }
+                sprintf(cmdstr + strlen(cmdstr), "%s%s%.2lf%s", 
+                    HP8656_AMPL, HP8656_INCR_SET, a*1E6, HP8656_UNIT_UV);
+            }
             break;
         case 'a': /* --amplitude */
-            if (amplstr(optarg, &a) < 0) {
-                fprintf(stderr, "%s: error parsing amplitude arg\n", prog);
-                exit(1);
+            if (!strcasecmp(optarg, "up")) {
+                sprintf(cmdstr + strlen(cmdstr), "%s%s", 
+                        HP8656_AMPL, HP8656_STEP_UP);
+            } else if (!strcasecmp(optarg, "dn") ||!strcasecmp(optarg, "down")){
+                sprintf(cmdstr + strlen(cmdstr), "%s%s", 
+                        HP8656_AMPL, HP8656_STEP_DN); 
+            } else {
+                if (amplstr(optarg, &a) < 0) {
+                    fprintf(stderr, "%s: error parsing amplitude arg\n", prog);
+                    exit(1);
+                }
+                if (a > 17.0) {
+                    fprintf(stderr, "%s: amplitude exceeds range\n", prog);
+                    exit(1);
+                }
+                if (a < -127.0 || a > 13.0)
+                    fprintf(stderr, "%s: warning: amplitude beyond cal\n", 
+                            prog);
+                sprintf(cmdstr + strlen(cmdstr), "%s%.2lf%s", 
+                        HP8656_AMPL, a, HP8656_UNIT_DBM);
             }
-            if (a > 17.0) {
-                fprintf(stderr, "%s: amplitude exceeds range\n", prog);
-                exit(1);
-            }
-            if (a < -127.0 || a > 13.0)
-                fprintf(stderr, "%s: warning: amplitude beyond cal\n", prog);
-            sprintf(cmdstr + strlen(cmdstr), "%s%.2lf%s", 
-                    HP8656_AMPL, a, HP8656_UNIT_DBM);
             break;
         case 'v': /* --verbose */
             verbose = 1;
@@ -174,6 +258,9 @@ main(int argc, char *argv[])
         }
     }
 
+    if (!clear && !*cmdstr && !local)
+        usage();
+
     /* find device in /etc/gpib.conf */
     d = ibfind(instrument);
     if (d < 0) {
@@ -181,29 +268,26 @@ main(int argc, char *argv[])
         exit(1);
     }
 
-    /* Clear message - sets instrument to the following state:
-     *   carrier freq:             100.0000 MHz
-     *   carrier ampl:             -127.0 dBm
-     *   AM depth:                 0%
-     *   FM peak deviation freq:   0.0 kHz
-     *   carrier freq incr:        10.0000 MHz
-     *   carrier ampl incr:        10.0 dB
-     *   AM depth incr:            1%
-     *   FM peak deviation incr:   1.0 kHz
-     *   coarse and fine tune ptr: 10.0000 MHz
-     *   seq counter:              0
-     *   10 internal storage regs: unchanged
-     */
-    _ibclr(d);
+    /* clear instrument to default settings */
+    if (clear) {
+        _ibclr(d);
+        sleep(1); /* instrument won't respond for about 1s after clear */
+    }
 
-    sleep(1);
-
-    /* write new configuration if specified */
+    /* write cmd if specified */
     if (strlen(cmdstr) > 0)
         _ibwrtf(d, "%s", cmdstr);
 
-    /* give back the front panel */
-    _ibloc(d); 
+    /* Sleep 2s to accomodate worst case settling time.
+     * FIXME: The actual settling time should be calculated based 
+     * on info in the manual.
+     */
+    if (cmdstr || clear)
+        sleep(2);
+
+    /* return front panel if requested */
+    if (local)
+        _ibloc(d); 
 
     exit(0);
 }

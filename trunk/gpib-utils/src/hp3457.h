@@ -17,62 +17,140 @@
    along with gpib-utils; if not, write to the Free Software Foundation, 
    Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
 
-#define HP3457_TONE		"TONE"		/* beep */
-#define HP3457_ID		"ID?"		/* send instrument id */
-#define HP3457_RESET		"RESET"		/* init for front panel use */
-#define HP3457_PRESET		"PRESET"	/* init for remote use */
-
-/* Max input parameter follows, e.g. "DCV .03".
- * Alternate method: "FUNC DCV; RANGE .03"
+/* Misc functions.
  */
-#define HP3457_DCV		"DCV"
-#define HP3457_ACV		"ACV"
-#define HP3457_ACDCV		"ACDCV"
-#define HP3457_2WIRE_OHMS	"OHM"
-#define HP3457_4WIRE_OHMS	"OHMF"
-#define HP3457_DCI		"DCI"
-#define HP3457_ACI		"ACI"
-#define HP3457_ACDCI		"ACDCI"
-#define HP3457_FREQ		"FREQ"
-#define HP3457_PERIOD 		"PER"
+#define HP3457_TONE		"TONE"		/* beep */
+#define HP3457_ID_QUERY		"ID?"		/* request instrument id */
+#define HP3457_ID_RESPONSE	"HP3457A"	/*   response to id query */
+#define HP3457_CALNUM_QUERY	"CALNUM?"	/* request # calibrations */
+#define HP3457_DISP		"DISP"		/* DISP {on|off|msg}{,message}*/
+#define HP3457_INBUF		"INBUF"		/* INBUF {on|off} */
+#define HP3457_LFREQ		"LFREQ"		/* LFREQ {50|60} */
+#define HP3457_LFREQ_QUERY	"LFREQ?"	/* query line freq */
+#define HP3457_LINE_QUERY	"LINE?"		/* query measured line freq */
+/* Lock keyboard.
+ */
+#define HP3457_LOCK		"LOCK"		/* LOCK {on|off} */
 
-#define HP3457_TRIGGER_AUTO	"TRIG 1" /* triggers when not busy */
-#define HP3457_TRIGGER_EXT	"TRIG 2" /* triggers on ext input */
-#define HP3457_TRIGGER_SGL	"TRIG 3" /* triggers once (upon receipt of  */
-					 /*   TRIG SGL) then HOLDs */
-#define HP3457_TRIGGER_HOLD	"TRIG 4" /* stops triggering */
-#define HP3457_TRIGGER_SYN	"TRIG 5" /* triggers when output buf empty, */
-					 /*   reading memory is off/empty, */
-					 /*   and controller requests data */
+/* Init for local use (issue GPIB device clear first):
+ * ACBAND 20; AZERO ON; CRESET; DCV AUTO; DELAY -1; DISP ON; END OFF
+ * FIXEDZ OFF; FSOURCE ACV; INBUF OFF; LOCK OFF; MATH OFF,OFF; all math
+ * regs set to 0 except DEGREE=20, SCALE=1, PERC=1, REF=1, RES=50;
+ * MEM OFF; MFORMAT SREAL; NDIG 5; NPLC 10; NRDGS 1,AUTO; OCOMP OFF;
+ * OFORMAT ASCII; SADV HOLD; SLIST (empty list); TARM AUTO; TERM FRONT;
+ * TIMER 1; TRIG AUTO.
+ */
+#define HP3457_RESET		"RESET"
 
-#define HP3457_MATH_SCALE	"M1"
-#define HP3457_MATH_ERROR	"M2"
-#define HP3457_MATH_OFF		"M3"
+/* Init for remote use (issue GPIB device clear first):
+ * ACBAND 20; AZERO ON; BEEP ON; CRESET; DCV AUTO; DELAY -1; DISP ON;
+ * FIXEDZ OFF; F SOURCE ACV; INBUF OFF; LOCK OFF; MATH OFF,OFF; all math
+ * regs set to 0 except DEGREE=20, PERC=1, REF=1, RES=50, SCALE=1; 
+ * MEM OFF; MFORMAT SREAL; NDIG 5; NPLC 1; NRDGS 1,AUTO; OCOMP OFF;
+ * OFORMAT ASCII; SADV HOLD; SLIST (empty list); TARM AUTO; TERM FRONT;
+ * TIMER 1; TRIG SYN.
+ */
+#define HP3457_PRESET		"PRESET"
 
-#define HP3457_ENTER_Y		"EY"
-#define HP3457_ENTER_Z		"EZ"
+/* Select function.
+ */
+#define HP3457_DCV		"FUNC DCV"	/* DC volts */
+#define HP3457_ACV		"FUNC ACV"	/* AC volts */
+#define HP3457_ACDCV		"FUNC ACDCV"	/* ACDC volts */
+#define HP3457_2WIRE_OHMS	"FUNC OHM"	/* ohms (2 wire) */
+#define HP3457_4WIRE_OHMS	"FUNC OHMF"	/* ohms (4 wire) */
+#define HP3457_DCI		"FUNC DCI"	/* DC current */
+#define HP3457_ACI		"FUNC ACI"	/* AC current */
+#define HP3457_ACDCI		"FUNC ACDCI"	/* ACDC current */
+#define HP3457_FREQ		"FUNC FREQ"	/* frequency */
+#define HP3457_PERIOD 		"FUNC PER"	/* period */
 
-#define HP3457_STORE_Y		"SY"
-#define HP3457_STORE_Z		"SZ"
+/* Select trigger mode.
+ */
+#define HP3457_TRIG_AUTO	"TRIG AUTO" 	/* T. on not busy */
+#define HP3457_TRIG_EXT		"TRIG EXT" 	/* T. on ext input */
+#define HP3457_TRIG_SGL		"TRIG SGL" 	/* T. once then hold */
+#define HP3457_TRIG_HOLD	"TRIG HOLD"	/* stop T. */
+#define HP3457_TRIG_SYN		"TRIG SYN"	/* T. on data read */
 
-#define HP3457_ACAL_BOTH	"ACAL 1"
-#define HP3457_ACAL_AC		"ACAL 2"
-#define HP3457_ACAL_OHMS	"ACAL 3"
+#define HP3457_TRIG_QUERY	"TRIG?"		/* query trigger mode */
+						/* 1=auto 2=ext 4=hold 5=syn */
 
-#define HP3457_TEST		"TEST"	/* execute self test */
+/* Select/request range.
+ */
+#define HP3457_RANGE		"RANGE" 	/* RANGE {max input}{,% res} */
+#define HP3457_RANGE_QUERY	"RANGE?"	/* request current range */
+
+/* Select fast/slow AC voltage measurement based on expected frequency (Hz).
+ * Slow mode is <400Hz, fast mode is >= 400 Hz.
+ */
+#define HP3457_ACBAND		"ACBAND"	/* ACBAND {freq} */
+
+/* Set autozero mode.  With AZERO on, instrument takes a zero
+ * reading before every measurement, doubling measurement time.
+ */
+#define HP3457_AZERO		"AZERO"		/* AZERO {on|off} */
+
+/* Set fixed impedance mode for DCV.
+ * If set, instrument maintains 10mohm impedeance for all ranges.
+ */
+#define HP3457_FIXEDZ		"FIXEDZ"	/* FIXEDZ {on|off} */
+#define HP3457_FIXEDZ_QUERY	"FIXEDZ?"	/* request fixedz 0=off,1=on */
+
+/* Set source for freq measurement.
+ */
+#define HP3457_FSOURCE		"FSOURCE" /* FSOURCE {acv|acdcv|aci|acdci} } */
+
+/* Math operations.
+ */
+#define HP3457_MATH_OFF		"MATH OFF"	/* math off */
+#define HP3457_MATH_CONT	"MATH CONT"	/* resume prev. math op. */
+#define HP3457_MATH_CTHRM	"MATH CTHRM"	/* ohms->thermistor (C) */
+#define HP3457_MATH_DB		"MATH DB"	/* db conversion */
+#define HP3457_MATH_DBM		"MATH DBM"	/* dbm conversion */
+#define HP3457_MATH_FILTER	"MATH FILTER"	/* low pass filter */
+#define HP3457_MATH_FTHRM	"MATH FTHRM"	/* ohms->thermistor (F) */
+#define HP3457_MATH_NULL	"MATH NULL"	/* r-offset */
+#define HP3457_MATH_PERC	"MATH PERC"	/* ((r-perc)/perc)*100 */
+#define HP3457_MATH_PFAIL	"MATH PFAIL"	/* reading vs max and min */
+#define HP3457_MATH_RMS		"MATH RMS"	/* */
+#define HP3457_MATH_SCALE	"MATH SCALE"	/* */
+#define HP3457_MATH_STAT	"MATH STAT"	/* */
+
+#define HP3457_MATH_QUERY	"MATH?"
+#define HP3457_MCOUNT		"MCOUNT?"
+
+
+
+/* Perform automatic calibrations and store result in NVRAM.
+ * Input signals should be disconnected.
+ */
+#define HP3457_ACAL_BOTH	"ACAL ALL"	/* AC+OHMS cal (takes 35s) */
+#define HP3457_ACAL_AC		"ACAL AC"	/* AC cal (takes 3s) */
+#define HP3457_ACAL_OHMS	"ACAL OHMS"	/* OHMS cal (takes 32s) */
+
+/* Perform self test.
+ */
+#define HP3457_TEST		"TEST"
 
 #define HP3457_NDIG3		"NDIG 3"
 #define HP3457_NDIG4		"NDIG 4"
 #define HP3457_NDIG5		"NDIG 5"
 #define HP3457_NDIG6		"NDIG 6"
 
+/* Status/error/aux byte operations.
+ */
 #define HP3457_REQUEST_SERVICE	"RQS" 	/* set status bits to cause SRQ */
 #define HP3457_CSB		"CSB"	/* clear status byte */
-#define HP3457_ERR		"ERR?"	/* request error register */
-#define HP3457_AUXERR		"AUXERR?" /* request aux error register */
+#define HP3457_ERR_QUERY	"ERR?"	/* request error register */
+#define HP3457_AUXERR_QUERY	"AUXERR?" /* request aux error register */
 
-/* 
- * HP3457 status byte bits
+/* Set which err bits cause status bit 7 to be set. 
+ */
+#define HP3457_EMASK		"EMASK"	/* EMASK {mask} */
+
+
+/* Status byte bits.
  */
 #define HP3457_STAT_EXEC_DONE	1  	/* program memory exec completed */
 #define HP3457_STAT_HILO_LIMIT	2  	/* hi or lo limited exceeded */
@@ -82,8 +160,7 @@
 #define HP3457_STAT_ERROR	32	/* error (consult error reg) */
 #define HP3457_STAT_SRQ		64	/* service requested */
 
-/*
- * HP3457 error register bits
+/* Error register bits.
  */
 #define HP3457_ERR_HARDWARE	1	/* hw error (consult aux error reg) */
 #define HP3457_ERR_CAL_ACAL	2	/* error in CAL or ACAL process */
@@ -97,8 +174,7 @@
 #define HP3457_ERR_CALIBRATION	512	/* out of calibration */
 #define HP3457_ERR_AUTOCAL	1024	/* autocal required */
 
-/*
- * HP3457 aux error register bits
+/* Aux error register bits.
  */
 #define HP3457_AUXERR_OISO	1	/* isolation error during operation */
 					/*   in any mode (self-test, */
