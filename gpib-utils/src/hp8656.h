@@ -18,10 +18,7 @@
    Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
 
 
-/* This instrument has a simplistic remote operation model.
- * No capability to generate SRQ, respond to serial poll, or trigger.  
- * In fact it can't talk.  Basically we can configure it and step carrier 
- * frequency up and down with a preset interval.
+/* This instrument is listen-only (no SRQ, no serial/parallel poll).
  */
 
 #define HP8656_FREQ	"FR"	/* frequency (carrier) */

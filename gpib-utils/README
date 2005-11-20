@@ -11,9 +11,12 @@ for the following GPIB-based electronic test instruments:
   - set configuration
   - take samples at regular intervals (output gnuplot-ready)
 
+* HP 8656A
+  - set configuration
+
 See the INSTALL file for instructions on setting up.
 For operation information, see the man pages for each utility:  
-   hp3455(1), hp3457(1), r5005(1), hp1630(1), hptopbm(1).
+   hp8656(1), hp3455(1), hp3457(1), r5005(1), hp1630(1), hptopbm(1).
 The examples directory that is part of the release tarball may also be of use.
 
 The usual stuff: flames, patches, bug reports - all welcome.
@@ -21,5 +24,5 @@ The usual stuff: flames, patches, bug reports - all welcome.
 Enjoy,
 
 Jim Garlick
-garlick@speakeasy.net
-Sept. 30, 2005
+garlick at speakeasy dot net
+Nov. 20, 2005

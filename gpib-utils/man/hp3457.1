@@ -20,68 +20,74 @@
 .SH NAME
 hp3457 \- control HP 3457A digital multimeter 
 .SH SYNOPSIS
-.nf
-.B hp3457 [\fI-n name\fR] [\fIOPTIONS\fR] [\fI-s nsamples\fR] [\fI-T sampleperiod\fR]
-
-.fi
+.B hp3457 [\fIOPTIONS\fR]
 .SH DESCRIPTION
 \fBhp3457\fR controls the HP 3457A digital multimeter via its GPIB interface.
 The instrument is presumed to be attached to GPIB adapter 0 and configured 
 with an entry in /etc/gpib.conf (see CONFIGURATION below).
 .PP
-\fBhp3457\fR first sends a GPIB device clear message, sets the DMM to
-a default configuration appropriate for remote use, and verifies the DMM's
-identity as an HP3457A.  It then configures the function, range, 
-trigger mode, and the number of display digits.  
-The selected range is retrieved from the DMM and displayed on stderr.
-
-If autocal is selected, it is performed; otherwise \fBhp3457\fR
-takes the requested number of samples (1 by default) and 
-displays them on standard output in two-column format with time (seconds) 
-in column one and the reading in column two.  This output format is suitable 
-for input to \fBgnuplot\fR.
+\fBhp3457\fR performs actions selected on the command line in a fixed sequence:
+.IP
+.nf
+clear
+autocal
+selftest
+select function
+select range
+select trigger mode
+select display digits
+read measurements
+local
+.fi
 .SH OPTIONS
 \fBhp3457\fR accepts the following command line options:
 .TP
-\fB\-n\fR, \fB\-\-name\fR
+\fB\-n\fR, \fB\-\-name\fR name
 Override the name used to look up the device in /etc/gpib.conf.
 Default: \fIhp3457\fR.
 .TP
-\fB\-f\fR, \fB\-\-function\fR 
+\fB\-c\fR, \fB\-\-clear\fR
+Clear the instrument, verify its model number, and load defaults 
+appropriate for remote operation including: 
+dcv, auto range, synchronous trigger and 5 digits.
+.TP
+\fB\-l\fR, \fB\-\-local\fR
+Enable front panel, and load defaults 
+appropriate for manual operation, essentially the same as \fB--clear\fR
+except trigger mode is set to auto.
+.TP
+\fB\-a\fR, \fB\-\-autocal\fR 
+Perform AC flatness/offset and extended ohms precharge 
+autocal procedures (with input signals disconnected) to
+improve the short term accuracy of certain measurements.
+Autocal should always be performed before taking measurements
+in the 3 Gohm range.
+Autocal constants are stored in NVRAM and persist across
+\fB--clear\fR and \fB--local\fR operations or an instrument power cycle.
+The two autocal procedures combined take about 35 seconds.
+.TP
+\fB\-S\fR, \fB\-\-selftest\fR 
+Run the instrument self test and report any errors discovered.
+The self test procedure takes about 7 seconds.
+.TP
+\fB\-f\fR, \fB\-\-function\fR function
 Set the function to: 
 \fIdcv\fR (DC volts), \fIacv\fR (AC volts), \fIacdcv\fR (AC + DC volts),
 \fIdci\fR (DC current), \fIaci\fR (AC current), \fIacdci\fR (AC + DC current),
 \fIohm2\fR (2-wire ohms), \fIohm4\fR (4-wire ohms), 
 \fIfreq\fR (frequency), \fIperiod\fR (period),
-\fIautocal\fR (calibrate), or \fItest\fR (self test).
-Default: \fIdcv\fR.
 .TP
-\fB\-r\fR, \fB\-\-range\fR 
-Set the range to the maximum expected reading or -1 for auto.
-Default: \fIauto\fR.
+\fB\-r\fR, \fB\-\-range\fR maxval
+Set the range to the maximum expected reading.
+A maxval of ``auto'' selects autoranging.
 .TP
-\fB\-t\fR, \fB\-\-trigger\fR 
+\fB\-t\fR, \fB\-\-trigger\fR mode
 Set the trigger mode to:
 \fIauto\fR (trigger when not busy), 
 \fIext\fR (trigger on negative edge transition of TTL pulse on rear-panel bnc),
 \fIsgl\fR (trigger once upon receipt of TRIG SGL then HOLD), 
 \fIhold\fR (stop triggering), or
 \fIsyn\fR (trigger when controller requests data and buffer empty).
-Default: \fIsyn\fR.
-.TP
-\fB\-a\fR, \fB\-\-autocal\fR 
-Perform auto calibration (with input signals disconnected) to
-improve the short term accuracy of certain measurements.
-If \fIacv\fR, \fIacdcv\fR, \fIaci\fR, or \fIacdci\fR
-functions are selected, the AC flatness and AC offset autocal are performed
-(about 3 seconds).  
-If \fIohm2\fR or \fIohm4\fR functions are selected, the
-extended ohms and precharge autocal are peformed (about 32 seconds).
-Ohms autocal should always be performed before taking measurements
-in the 3 Gohm range.
-Autocal constants are stored in NVRAM and therefore persist across
-an instrument power cycle and are not cleared when the instrument
-is initialized by the \fBhp3457\fR utility.
 .TP
 \fB\-d\fR, \fB\-\-digits\fR 
 Set the number of display digits to \fI3\fR, \fI4\fR, \fI5\fR, or \fI6\fR.
@@ -89,43 +95,50 @@ For \fIfreq\fR, \fIperiod\fR, or \fIohms2\fR or \fIohms4\fR in the 3 Gohm
 range, the number of digits displayed will be the specified number plus one.  
 For all other measurements, the number of digits will be the specified number 
 plus one half.
-Default: \fI5\fR.
 .TP
 \fB\-s\fR, \fB\-\-samples\fR 
-Specify the number of samples to take.
-Default: \fI1\fR.
+Specify the number of measurements to take.
+Measurements are displayed on stdout in the form received from the instrument.
+If more than one measurement is requested, a time in seconds since the
+first measurement was initiated is displayed in column one and the measurement
+is in column two, with a tab separating the columns.
+Default: \fI0\fR (no measurement).
 .TP
 \fB\-T\fR, \fB\-\-period\fR 
-Specify the sample period. 
-Take readings at the requested interval (regardless of trigger mode).  
-If the sample period is too short for the instruments integration time,
-the instrument will set the pace.  Measurement times range from about
-0.2ms (3.5 digit \fIdcv\fR, 0.3-300V range) to 1.2s (6.5 digit \fIohm\fR,
-3 Gohm range).
-Default: \fI0\fR (disabled).
+Sleep the specified number of seconds between measurements.
+The actual measurement period will be the sleep time plus the trigger wait
+time plus the measurement integration time.
+In synchronous trigger mode, the GPIB read immediately triggers a 
+measurement and integration varies from about 
+0.2ms (3.5 digit \fIdcv\fR, 0.3-300V range) 
+to 1.2s (6.5 digit \fIohm\fR, 3 Gohm range).
+Default: \fI0\fR (no sleep).
 .SH "EXAMPLES"
 Take 10 samples 500ms apart:
 .IP
-hp3457 -f dcv -T 500ms -s 10 >sample.dat
+hp3457 -c -l -f dcv -T 500ms -s 10 >sample.dat
 .PP
 The following gnuplot commands will plot volts vs. time:
 .IP
+.nf
 set xlabel "time (s)"
-.br
 set ylabel "dc volts (v)"
-.br
 set xrange[0:]
-.br
 set yrange[-50:50]
-.br
 set title "HP 3457A Voltmeter Test"
-.br
 plot 'sample.dat' title "Sample Plot" with linesp;
-
+.fi
 .SH "CONFIGURATION"
 The /etc/gpib.conf entry for this instrument included the following
-parameters eos = 0xa, set-reos = yes, set-bin = no, set-xeos = no, 
-set-eot = yes, timeout = T30s.
+parameters:
+.IP
+.nf
+eos = 0xa
+set-reos = yes
+set-bin = no
+set-xeos = no
+set-eot = yes
+timeout = T30s
 .fi
 .SH "SEE ALSO"
 gnuplot(1)

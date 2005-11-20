@@ -1,9 +1,9 @@
-HTMLMAN= hp1630.html hp3455.html hp3457.html r5005.html hptopbm.html
+HTMLMAN= hp8656.html hp1630.html hp3455.html hp3457.html r5005.html hptopbm.html
 VPATH=	../man
 OTHER= INSTALL screen.gif
 
 # note: dinotrace.gif is a cropped screen dump taken manually
-# note: sample.gif requires editing of sample.gp in ../examples/hp3457
+# note: filter.gif requires manual editing of filter.gp in ../examples/scripts
 
 all: $(HTMLMAN) $(OTHER)
 

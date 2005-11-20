@@ -86,6 +86,11 @@ amplstr(char *str, double *ampl)
     return result;
 }
 
+double dbmtov(double a)
+{
+    return pow(10, (a-13.0)/20);
+}
+
 #ifdef TESTMAIN
 int
 main(int argc, char *argv[])
@@ -97,7 +102,7 @@ main(int argc, char *argv[])
         if (amplstr(argv[i], &a) < 0)
             printf("error\n");
         else
-            printf("%s = %e dBm (%e V)\n", argv[i], a, pow(10, (a-13.0)/20));
+            printf("%s = %e dBm (%e V)\n", argv[i], a, dbmtov(a));
     }
     exit(0);
 }

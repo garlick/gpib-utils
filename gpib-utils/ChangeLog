@@ -1,3 +1,22 @@
+2005-11-20 Jim Garlick <garlick@speakeasy.net>
+
+  * man/hp8656.1: New.
+
+  * man/hp3457.1: Updated to refect changes in the code.
+
+  * examples/gpib.conf: added dg535 and hp8656 instruments.
+
+  * src/hp3457.c: A lot of changes related to allowing the instrument
+  state to persist across invocations, e.g. so we can run it from scripts
+  where it is invoked multiple times.
+
+  * examples/scripts: New.
+
+  * htdocs: replaced discharging battery example with RC filter freq
+  response example.  Added hp8656 links.
+
+  * : tag gpib-utils-1-1
+
 2005-10-23 Jim Garlick <garlick@speakeasy.net>
 
   * src/freq.c, src/ampl.c: cleanup.

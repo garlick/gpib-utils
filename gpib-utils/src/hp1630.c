@@ -43,9 +43,9 @@ typedef struct {
 
 #define OPTIONS "pPn:bdRsrcAta"
 static struct option longopts[] = {
+    {"name",            required_argument, 0, 'n'},
     {"print-screen",    no_argument, 0, 'p'},
     {"print-all",       no_argument, 0, 'P'},
-    {"name",            required_argument, 0, 'n'},
     {"beep",            no_argument, 0, 'b'},
     {"date",            no_argument, 0, 'd'},
     {"reset",           no_argument, 0, 'R'},
