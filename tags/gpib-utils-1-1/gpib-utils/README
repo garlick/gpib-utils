@@ -1,0 +1,28 @@
+Welcome to gpib-utils.  This package contains linux command line utilities
+for the following GPIB-based electronic test instruments:
+
+* HP 1630/1631 logic analyzer/oscilloscope
+  - save/restore system configuration and state/timing/analog data
+  - convert screen dumps to pbm format
+  - convert state/timing data to DECSIM ASCI format for off-line analysis 
+    with dinotrace (http://www.veripool.com/dinotrace/)
+
+* HP 3455, HP 3457, Racal 5005 DMM
+  - set configuration
+  - take samples at regular intervals (output gnuplot-ready)
+
+* HP 8656A
+  - set configuration
+
+See the INSTALL file for instructions on setting up.
+For operation information, see the man pages for each utility:  
+   hp8656(1), hp3455(1), hp3457(1), r5005(1), hp1630(1), hptopbm(1).
+The examples directory that is part of the release tarball may also be of use.
+
+The usual stuff: flames, patches, bug reports - all welcome.
+
+Enjoy,
+
+Jim Garlick
+garlick at speakeasy dot net
+Nov. 20, 2005

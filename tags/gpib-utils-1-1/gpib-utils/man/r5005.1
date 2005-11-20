@@ -1,0 +1,101 @@
+.\" This file is part of gpib-utils.
+.\" For details, see http://sourceforge.net/projects/gpib-utils.
+.\"
+.\" Copyright (C) 2005 Jim Garlick <garlick@speakeasy.net>
+.\"
+.\" gpib-utils is free software; you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published by
+.\" the Free Software Foundation; either version 2 of the License, or
+.\" (at your option) any later version.
+.\"
+.\" gpib-utils is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\" GNU General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public License
+.\" along with gpib-utils; if not, write to the Free Software Foundation, 
+.\" Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+.TH r5005 1  2005-04-05 "" "gpib-utils"
+.SH NAME
+r5005 \- control Racal-Dana 5005 digital multimeter
+.SH SYNOPSIS
+.nf
+.B r5005 [\fI-n name\fR] [\fIOPTIONS\fR] [\fI-s nsamples\fR] [\fI-T sampleperiod\fR]
+
+.fi
+.SH DESCRIPTION
+\fBr5005\fR controls the Racal-Dana 5005 digital multimeter via its GPIB 
+interface.  The instrument is presumed to be attached to GPIB adapter 0 and 
+configured with an entry in /etc/gpib.conf (see CONFIGURATION below).
+.PP
+\fBr5005\fR first sends a GPIB device clear message, configures 
+the front panel controls, then takes the requested number of samples 
+(1 by default) and displays them on standard output in two-column format 
+with time (seconds) in column one and the reading in column two.  
+This output format is suitable for input to \fBgnuplot\fR.
+.SH OPTIONS
+\fBr5005\fR accepts the following command line options:
+.TP
+\fB\-n\fR, \fB\-\-name\fR
+Override the name used to look up the device in /etc/gpib.conf.
+Default: \fIr5005\fR.
+.TP
+\fB\-f\fR, \fB\-\-function\fR 
+Set the function to: 
+\fIdcv\fR (DC volts), \fIacv\fR (AC volts), or \fIkohm\fR.
+Default: \fIdcv\fR.
+.TP
+\fB\-r\fR, \fB\-\-range\fR 
+Set the range to:
+\fI0.1\fR, \fI1\fR, \fI10\fR, \fI100\fR, \fI1k\fR, \fI10k\fR, or \fIauto\fR.
+Default: \fIauto\fR.
+.TP
+\fB\-t\fR, \fB\-\-trigger\fR 
+Set the trigger mode to:
+\fIint\fR (internal), \fIext\fR (external), \fIhold\fR,
+\fIextdly\fR (external with delay), or \fIholddly\fR (hold with delay).
+Default: \fIint\fR.
+.TP
+\fB\-h\fR, \fB\-\-highres\fR 
+Set the high resolution mode \fIon\fR (6-1/2 digit) or \fIoff\fR (5-1/2 digit).
+Default: \fIoff\fR.
+.TP
+\fB\-s\fR, \fB\-\-samples\fR 
+Specify the number of samples to take.
+Default: \fI1\fR.
+.TP
+\fB\-T\fR, \fB\-\-period\fR 
+Take readings from the instrument at the specified sample period.
+If trigger mode is set to \fIhold\fR or \fIholddly\fR, a GPIB trigger
+command will be sent to the instrument before each reading.
+The instrument\'s integration time, which depends on function, range, and 
+resolution, effectively limits the lower bound of the sample period.
+Default: \fI0\fR (disabled--sample period determined by trigger/integration timing).
+.SH "EXAMPLES"
+Take 10 samples 500ms apart using GPIB triggering:
+.IP
+r5005 -f dcv -r auto -t hold -T 500 -s 10 >sample.dat
+.PP
+The following gnuplot commands will plot volts vs. time:
+.IP
+set xlabel "time (s)"
+.br
+set ylabel "dc volts (v)"
+.br
+set xrange[0:]
+.br
+set yrange[-50:50]
+.br
+set title "Racal-Dana 5005 Multimeter Test"
+.br
+plot 'sample.dat' title "Sample Plot" with linesp;
+
+.SH "CONFIGURATION"
+The /etc/gpib.conf entry for this instrument included the following
+parameters eos = 0xa, set-reos = yes, set-eot = yes, timeout = T30s.
+.fi
+.SH "SEE ALSO"
+gnuplot(1)
+.br
+Racal Dana 5005 Digital Multimeter Operating and Service Manual

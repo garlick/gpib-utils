@@ -1,0 +1,111 @@
+2005-11-20 Jim Garlick <garlick@speakeasy.net>
+
+  * man/hp8656.1: New.
+
+  * man/hp3457.1: Updated to refect changes in the code.
+
+  * examples/gpib.conf: added dg535 and hp8656 instruments.
+
+  * src/hp3457.c: A lot of changes related to allowing the instrument
+  state to persist across invocations, e.g. so we can run it from scripts
+  where it is invoked multiple times.
+
+  * examples/scripts: New.
+
+  * htdocs: replaced discharging battery example with RC filter freq
+  response example.  Added hp8656 links.
+
+  * : tag gpib-utils-1-1
+
+2005-10-23 Jim Garlick <garlick@speakeasy.net>
+
+  * src/freq.c, src/ampl.c: cleanup.
+
+2005-10-21 Jim Garlick <garlick@speakeasy.net>
+
+  * src/hp8656.[ch]: New.
+
+  * htdocs: New (the sf web pages).
+
+2005-10-14 Jim Garlick <garlick@speakeasy.net>
+
+  * : tag gpib-utils-1-0
+
+2005-09-30 Jim Garlick <garlick@speakeasy.net>
+
+  * : housecleaning prior to release as sourceforge gpib-utils project.
+
+2005-07-14 Jim Garlick <garlick@speakeasy.net>
+
+  * r1500.[ch], wrappers.[ch], sd6031.[ch]: removed.
+
+  * freq.c: added
+
+  * hptodino.c: added
+
+2005-07-05 Jim Garlick <garlick@speakeasy.net>
+
+  * : moved to home subversion repo.
+
+2005-04-14 Jim Garlick <garlick@speakeasy.net>
+
+  * r5005.c: removed serial poll (called in _ibtrg) from inside 
+    sample loop.  ibrsp was occasionally failing with error 0.
+
+2005-04-08 Jim Garlick <garlick@speakeasy.net>
+
+  * r5005.1: New.
+
+  * hp3455.1: New.
+
+  * hp1630.1: New.
+
+  * hp1630.c: update for linux-gpib.  Removed wrappers.[ch] dependency.
+
+  * r5005.c: revamped based on manual and HP DVM experience.  Removed
+     wrappers.[ch] dependency.
+
+2005-04-04 Jim Garlick <garlick@speakeasy.net>
+
+  * Makefile, wrappers.[ch]: switch from Jens Torring's GPIB package,
+  http://www.physik.fu-berlin.de/~toerring; to linux-gpib,
+  http://linux-gpib.sourceforge.net/.
+
+  * hp3455.c: New for HP DVM.
+
+  * gpib.conf: update for linux-gpib.
+
+2004-08-21 Jim Garlick <garlick@speakeasy.net>
+
+  * Makefile, wrappers.c: cleaned up include/lib paths.
+
+  * Makefile: added install target.
+
+2004-08-01 Jim Garlick <garlick@speakeasy.net>
+
+  * : Moved to home CVS repo
+
+  * : tag gpib-utils-0-1
+
+2002-11-30 Jim Garlick <garlick@speakeasy.net>
+
+  * : Updated hp1630 error codes to support hp1631.
+
+  * : Added r5005 utility for Racal Dana 5005 digital multimeter
+
+  * : Added sd6041 utility for Systron Donner 1041A freq counter
+
+  * : Warn if r1500 delay/width value will be rounded due to 100ns 
+    increment limitation on continuous/multiple pulses.
+
+2002-11-29 Jim Garlick <garlick@speakeasy.net>
+
+  * : Cleanup of hp1630 util.
+
+2002-11-27 Jim Garlick <garlick@speakeasy.net>
+
+  * : Added r1500 utility for Racal Dana series 1500 delay pulse generator
+
+2002-11-25 Jim Garlick <garlick@speakeasy.net>
+
+  * : Added hp1630 utility for HP 163x series logic analyzers
