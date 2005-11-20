@@ -1,5 +1,5 @@
 Name: gpib-utils
-Version: 0.2
+Version: 1.1
 Release: 1
 Summary: GPIB Instrument Utilities
 Group: Application/Engineering
@@ -22,6 +22,7 @@ GPIB Instrument utilities for:
 * HP 3455 digital voltmeter
 * HP 3457 digital multi-meter
 * Racal 5005 digital multi-meter
+* HP 8656A syhthesized frequency generator
 
 %prep
 %setup -q -n gpib-utils-%{version}
@@ -45,6 +46,9 @@ make BINDIR=$RPM_BUILD_ROOT/usr/bin MANDIR=$RPM_BUILD_ROOT/usr/share/man/man1 in
 /usr/share/man/man1/*
 
 %changelog
+* Tue Jul 11 2005 Jim Garlick <garlick@llnl.gov>
+- Release 1.1-1
+
 * Tue Jul 11 2005 Jim Garlick <garlick@llnl.gov>
 - Repackage for sourceforge.
 - Release 0.2-1
