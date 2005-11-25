@@ -32,13 +32,10 @@
 #include <gpib/ib.h>
 
 #include "hp8656.h"
+#include "units.h"
 
 #define INSTRUMENT "hp8656" /* the /etc/gpib.conf entry */
 #define BOARD       0       /* minor board number in /etc/gpib.conf */
-
-extern int freqstr(char *str, double *f);
-extern int amplstr(char *str, double *a);
-extern double dbmtov(double a);
 
 static char *prog = "";
 static int verbose = 0;

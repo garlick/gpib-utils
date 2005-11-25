@@ -143,9 +143,9 @@ static void _checksrq(int d)
     }
 }
 
-static void _ibwrt(int d, char *str, int len)
+static void _ibwrt(int d, void *buf, int len)
 {
-    ibwrt(d, str, len);
+    ibwrt(d, buf, len);
     if (ibsta & TIMO) {
         fprintf(stderr, "%s: ibwrt timeout\n", prog);
         exit(1);
@@ -183,7 +183,7 @@ static void _ibwrtf(int d, char *fmt, ...)
         free(s);
 }
 
-static int _ibrd(int d, char *buf, int len)
+static int _ibrd(int d, void *buf, int len)
 {
     int count;
 
@@ -247,7 +247,7 @@ static void _ibclr(int d)
 static void
 _printscreen(int device, int allflag)
 {
-    char buf[128*1024];
+    uint8_t buf[128*1024];
     int count;
 
     if (allflag)
@@ -337,9 +337,9 @@ _verify_model(int device)
 static void
 _savestate(int device, char *cmd)
 {
-    unsigned char buf[16*1024];
+    uint8_t buf[16*1024];
     int count;
-    char status;
+    uint8_t status;
 
     _ibwrtf(device, "%s\r\n", cmd);
     count = _ibrd(device, buf, sizeof(buf));
@@ -360,21 +360,21 @@ _savestate(int device, char *cmd)
 
 /* Translate two-char restore command to string */
 static char * 
-_restorecmd(char *cmd)
+_restorecmd(uint8_t *cmd)
 {
-    if (!strncmp(cmd, "RC", 2))
+    if (!strncmp((char *)cmd, "RC", 2))
         return "Config";
-    else if (!strncmp(cmd, "RS", 2))
+    else if (!strncmp((char *)cmd, "RS", 2))
         return "State ";
-    else if (!strncmp(cmd, "RT", 2))
+    else if (!strncmp((char *)cmd, "RT", 2))
         return "Timing";
-    else if (!strncmp(cmd, "RA", 2))
+    else if (!strncmp((char *)cmd, "RA", 2))
         return "Analog";
     return NULL;
 }
 
 static int
-_restorelen(unsigned char *len)
+_restorelen(uint8_t *len)
 {
     return ((len[0] << 8) + len[1]);
 }
@@ -383,10 +383,10 @@ static void
 _restorestate(int device)
 {
     int c;
-    unsigned char buf[16*1024];
-    unsigned char *p = &buf[0], *q = &buf[0];
+    uint8_t buf[16*1024];
+    uint8_t *p = &buf[0], *q = &buf[0];
     int count;
-    char status;
+    uint8_t status;
 
     while ((p - buf < sizeof(buf)) && (c = getchar()) != EOF)
         *p++ = c;
