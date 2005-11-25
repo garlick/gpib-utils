@@ -18,7 +18,7 @@ timing.tra: timing.dump
 state.tra: state.dump
 	$(HPTODINO) -c 500ns <$< >$@
 
-# Note: pbmtolps is part of the 'netpbm-progs' package on my FC3 linux box.
+# Note: pbmtolps is part of the 'netpbm-progs' package on my Fedora box.
 # dump taken with "hp1630 --print-screen >screen.hp"
 %.ps : %.hp
 	cat $< | $(HPTOPBM) | pbmtolps -dpi 100 > $@

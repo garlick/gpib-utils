@@ -1,3 +1,12 @@
+2005-11-25 Jim Garlick <garlick@speakeasy.net>
+
+  * src/hptodino.c: Forgot to update for new freqstr() prototype.  Fixed.
+
+  * man/hptodino.1: New.
+
+  * man/hptopbm.1: Added reference to thinkjettopbm(1), though it doesn't seem
+    to work with hp1630 screen dumps.
+
 2005-11-20 Jim Garlick <garlick@speakeasy.net>
 
   * man/hp8656.1: New.

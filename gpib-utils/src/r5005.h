@@ -20,7 +20,18 @@
 /*
  * Commands
  */
+
+/* Put the DMM into a known state:
+ * G0 - internal reference
+ * T1 - internal trigger
+ * N0 - disable NULL
+ * P0 - disable percent 
+ * L0 - disable LAH (low average high)
+ * S0 - disable time
+ */
 #define R5005_CMD_INIT			"Z"
+
+
 #define R5005_CMD_TERM			"X"
 #define R5005_CMD_ERROR_XMIT		"Y"
 

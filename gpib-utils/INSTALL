@@ -22,8 +22,8 @@ HP1630/31: "BP" should cause the analyzer to beep.
 R5005: "Z" should cause the DMM to re-initialize.
 HP3455: "F6" should cause the DMM to run a self-test.
 HP3457: "TONE" should cause the DMM to beep.
-HP8656:
-DG535:
+HP8656: "FR200MZ" should change the carrier frequency to 200 MHz
+DG535: "DS hello" should display the string "hello" on LCD
 
 The configuration I am using is linux-gpib-3.2.06 on Fedora Core 4,
 with 2.6.14-1.1637_FC4 and a National Instruments PCI-GPIB card.  

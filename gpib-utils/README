@@ -3,7 +3,7 @@ for the following GPIB-based electronic test instruments:
 
 * HP 1630/1631 logic analyzer/oscilloscope
   - save/restore system configuration and state/timing/analog data
-  - convert screen dumps to pbm format
+  - convert screen dumps to PBM format.
   - convert state/timing data to DECSIM ASCI format for off-line analysis 
     with dinotrace (http://www.veripool.com/dinotrace/)
 
