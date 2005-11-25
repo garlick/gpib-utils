@@ -46,7 +46,7 @@ struct pods {
 char *prog = "<unknown>";
 double clock_ns = 100; /* clock period in ns */
 
-extern double freqstr(char *str);
+extern double freqstr(char *str, double *fp);
 
 #define OPTIONS "c:"
 static struct option longopts[] = {
@@ -383,6 +383,7 @@ main(int argc, char *argv[])
     int len;
     uint8_t buf[16*1024];
     int c;
+    double f;
 
     /* XXX If state and timing learn strings are both on stdin, we output 
      * a concatenated trace which is wrong.  Need to figure out how to make 
@@ -393,11 +394,11 @@ main(int argc, char *argv[])
     while ((c = getopt_long(argc, argv, OPTIONS, longopts, NULL)) != EOF) {
         switch (c) {
             case 'c':   /* --clock */
-                clock_ns = 1000000000.0/freqstr(optarg);
-                if (clock_ns < 0) {
+                if (freqstr(optarg, &f) < 0) {
                     fprintf(stderr, "%s: freq conversion error\n", prog);
                     exit(1);
                 }
+                clock_ns = 1000000000.0/f;
                 break;
             default:
                 _usage();

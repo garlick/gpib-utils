@@ -16,22 +16,33 @@
 .\" You should have received a copy of the GNU General Public License
 .\" along with gpib-utils; if not, write to the Free Software Foundation, 
 .\" Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-.TH hptopbm 1  2005-04-05 "" "gpib-utils"
+.TH hptodino 1  2005-11-25 "" "gpib-utils"
 .SH NAME
-hptopbm \- convert HP-graphics to portable bitmap (PBM) format
+hptodino \- convert HP 1630/1631 state/timing dumps to DECSIM ASCII
 .SH SYNOPSIS
 .nf
-.B hptopbm <hp-graphics-file >pbm-file
+.B hptodino [-c clockspeed] <dumpfile >dinofile
 .fi
 .SH DESCRIPTION
-\fBhptobpm\fR is a filter that converts HP-graphics bitmap format
-to portable bitmap (PBM) format on standard output.
-HP-graphics format is read by older HP-IB printers such as the 
-hp2671G and is produced by older HP instrumentation like HP 1630 logic
-analyzer series.
+\fBhptodino\fR is a filter that converts HP 1630/1631 logic analyzer
+state/timing dumps to DECSIM ASCII format that can be read by dinotrace.
 .SH EXAMPLE
-To print an HP logic analyzer screen dump on a postscript printer:
+State trace (presumes 1 us clock, and existing state.dino file):
 .IP
-hp1630 --print-screen | hptopbm | pbmtolps -dpi 100 | lpr
+.nf
+hp1630 --save-state >state.dump
+hptodino -c 500ns <state.dump >state.tra
+dinotrace state.tra
+.fi
+.PP
+Timing trace (presumes 10 ns clock, and existing timing.dino file):
+.IP
+.nf
+hp1630 --save-timing >timing.dump
+hptodino -c 10ns <timing.dump >timing.tra
+dinotrace state.tra
+.fi
 .SH "SEE ALSO"
-hp1630(1), pbm(1), pbmtolps(1), thinkjettopbm(1)
+http://www.veripool.com/dinotrace
+.PP
+hp1630(1)
