@@ -22,13 +22,15 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #define INVERSE_VIDEO
 
 /* "safe" malloc */
-char *xmalloc(int size)
+uint8_t *
+xmalloc(int size)
 {
-	char *new = malloc(size);
+	uint8_t *new = malloc(size);
 	if (!new) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
@@ -37,9 +39,10 @@ char *xmalloc(int size)
 }
 
 /* "safe" realloc */
-char *xrealloc(char *ptr, int size)
+uint8_t *
+xrealloc(char *ptr, int size)
 {
-	char *new = realloc(ptr, size);
+	uint8_t *new = realloc(ptr, size);
 	if (!new) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
@@ -48,7 +51,8 @@ char *xrealloc(char *ptr, int size)
 }
 
 /* flip all the bits in a row */
-void inverse(unsigned char *ptr, int nbytes)
+void 
+inverse(uint8_t *ptr, int nbytes)
 {
 	while (--nbytes >= 0)
 		ptr[nbytes] = ~ptr[nbytes];
@@ -59,7 +63,7 @@ void inverse(unsigned char *ptr, int nbytes)
 int
 main(int argc, char *argv[])
 {
-	unsigned char **row = NULL;
+	uint8_t **row = NULL;
 	int cur_size = 0;
 	int cur_row = 0;
 	int width = -1;
@@ -73,8 +77,8 @@ main(int argc, char *argv[])
 	while (fscanf(stdin, "\033*b%dW", &w) == 1) {
 		if (cur_row >= cur_size) {
 			cur_size += CHUNK_SIZE;
-			row = (unsigned char **)xrealloc((char *)row, 
-					cur_size * sizeof(unsigned char *));
+			row = (uint8_t **)xrealloc((char *)row, 
+					cur_size * sizeof(uint8_t *));
 		}
 		if (w <= 0) {
 			fprintf(stderr, "hptopbm: bogus row width: %d\n", w);

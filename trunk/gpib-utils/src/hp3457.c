@@ -31,8 +31,7 @@
 #include <gpib/ib.h>
 
 #include "hp3457.h"
-
-int freqstr(char *str, double *freq);
+#include "units.h"
 
 #define INSTRUMENT "hp3457" /* the /etc/gpib.conf entry */
 #define BOARD       0       /* minor board number in /etc/gpib.conf */

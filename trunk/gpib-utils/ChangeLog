@@ -7,6 +7,8 @@
   * man/hptopbm.1: Added reference to thinkjettopbm(1), though it doesn't seem
     to work with hp1630 screen dumps.
 
+  * src/hp1630.c: Fixed some unsigned vs signed char warnings.
+
 2005-11-20 Jim Garlick <garlick@speakeasy.net>
 
   * man/hp8656.1: New.

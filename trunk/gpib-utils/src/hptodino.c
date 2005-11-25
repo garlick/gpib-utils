@@ -34,6 +34,7 @@
 #include <time.h>
 
 #include "hp1630.h"
+#include "units.h"
 
 struct pods {
     uint16_t pod0; /* 8 bit state/timing */
@@ -45,8 +46,6 @@ struct pods {
 
 char *prog = "<unknown>";
 double clock_ns = 100; /* clock period in ns */
-
-extern double freqstr(char *str, double *fp);
 
 #define OPTIONS "c:"
 static struct option longopts[] = {

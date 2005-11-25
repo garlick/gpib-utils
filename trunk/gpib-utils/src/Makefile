@@ -6,8 +6,8 @@ TESTPROGS=testfreq testampl
 
 all: $(PROGS) $(TESTPROGS)
 
-hptodino: hptodino.o freq.o
-	$(CC) -o $@ hptodino.o freq.o
+hptodino: hptodino.o units.o
+	$(CC) -o $@ hptodino.o units.o $(LDADD)
 
 hp1630: hp1630.o
 	$(CC) -o $@ hp1630.o $(LDADD)
@@ -18,17 +18,17 @@ r5005: r5005.o
 hp3455: hp3455.o
 	$(CC) -o $@ hp3455.o $(LDADD)
 
-hp3457: hp3457.o freq.o
-	$(CC) -o $@ hp3457.o freq.o $(LDADD)
+hp3457: hp3457.o units.o
+	$(CC) -o $@ hp3457.o units.o $(LDADD)
 
-hp8656: hp8656.o freq.o ampl.o
-	$(CC) -o $@ hp8656.o freq.o ampl.o $(LDADD)
+hp8656: hp8656.o units.o
+	$(CC) -o $@ hp8656.o units.o $(LDADD)
 
-testampl: ampl.c
-	$(CC) -o $@ -DTESTMAIN $< -lm
+testampl: units.c
+	$(CC) -o $@ -DAMPLMAIN $< -lm
 
-testfreq: freq.c
-	$(CC) -o $@ -DTESTMAIN $< -lm
+testfreq: units.c
+	$(CC) -o $@ -DFREQMAIN $< -lm
 
 install:
 	@test $(BINDIR)
