@@ -9,6 +9,10 @@
 
   * src/hp1630.c: Fixed some unsigned vs signed char warnings.
 
+  * src/units.[ch]: Subsumed ampl.c and freq.c.
+
+  * src/ampl.c, src/freq.c: Removed.
+
 2005-11-20 Jim Garlick <garlick@speakeasy.net>
 
   * man/hp8656.1: New.
