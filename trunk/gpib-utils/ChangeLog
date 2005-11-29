@@ -1,3 +1,17 @@
+2005-11-28 Jim Garlick <garlick@speakeasy.net>
+
+  * src/errstr.[ch]: factored code from r5005.c and hp1630.c.
+
+  * src/hp1630.c: Cleanup.
+    - Add -c (clear), -l (local), and -v (verbose) options.
+    - Remove -d (date), -r (reset) options.  Actually folded these into -c.
+    - Changed short opt for --save-config from -c to -C
+    - Moved table of sb4 errors to hp1630.h and removed #defines.
+    - Restored _ibclr() function.
+
+  * src/hp1630.h: fixed status byte bit definitions (was bit pos, now mask).
+    Was incorrectly treating the bit positions as masks in checksrq().
+
 2005-11-25 Jim Garlick <garlick@speakeasy.net>
 
   * src/hptodino.c: Forgot to update for new freqstr() prototype.  Fixed.
