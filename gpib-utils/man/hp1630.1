@@ -21,7 +21,7 @@
 hp1630 \- control HP 1630/31 logic analyzer
 .SH SYNOPSIS
 .nf
-.B hp1630 [\fI-n name\fR] [\fIOPTION\fR]
+.B hp1630 [\fIOPTIONS\fR]
 
 .fi
 .SH DESCRIPTION
@@ -29,16 +29,25 @@ hp1630 \- control HP 1630/31 logic analyzer
 The instrument is presumed to be attached to GPIB adapter 0 and configured 
 with an entry in /etc/gpib.conf (see CONFIGURATION below).
 .PP
-\fBhp1630\fR first sends a GPIB device clear message, quries the analyzer
-model number and verifies the response, then performs the function selected
-by \fIOPTION\fR.
+\fBhp1630\fR performs actions selected on the command line in a fixed sequence:
+.IP
+.nf
+clear
+save/restore/print operation
+local
 .SH OPTIONS
 \fBhp1630\fR accepts the following command line options:
 .TP
 \fB\-n\fR, \fB\-\-name\fR
 Override the name used to look up the device in /etc/gpib.conf.
-This is the only option that can be used in combination with another option.
 Default: \fIhp1630\fR.
+.TP
+\fB\-c\fR, \fB\-\-clear\fR
+Clear the instrument, load power-on values, verify the model number,
+and set the date to the UNIX date (see CAVEATS below).
+.TP
+\fB\-l\fR, \fB\-\-local\fR
+Enable the front panel.
 .TP
 \fB\-p\fR, \fB\-\-print-screen\fR 
 Dump the screen contents to standard output.  
@@ -46,29 +55,18 @@ The output will be in HP-graphics format for waveform displays.
 Text displays will be in HP-text or HP-graphics format depending on the
 setting in the System Menu.
 HP-graphics can be converted to portable bitmap (PBM) format using
-the \fBhptopbm\fR utility.
+\fBhptopbm(1)\fR.
 .TP
 \fB\-P\fR, \fB\-\-print-all\fR 
 Dump the screen contents and the entire contents of the trace memory
 to standard output.
-.TP
-\fB\-b\fR, \fB\-\-beep\fR 
-Send a beep command to the analyzer.
-.TP
-\fB\-d\fR, \fB\-\-date\fR 
-Set the analyzer date and time to be the same as the UNIX date and time.
-Note that month selection depends on the date being set to its power up 
-value.
-.TP
-\fB\-r\fR, \fB\-\-reset\fR 
-Default all instrument menus.
 .TP
 \fB\-s\fR, \fB\-\-save-all\fR 
 Save the instrument configuration, state measurement data, 
 timing measurement data, and analog measurement data (hp1631 only)
 to standard output.
 .TP
-\fB\-c\fR, \fB\-\-save-config\fR 
+\fB\-C\fR, \fB\-\-save-config\fR 
 Save the instrument configuration to standard output.
 .TP
 \fB\-A\fR, \fB\-\-save-state\fR 
@@ -83,11 +81,20 @@ Save the instrument analog measurement data to standard output (hp1631 only).
 \fB\-r\fR, \fB\-\-restore\fR 
 Restore state/measurement data saved by any of the save options
 from standard input.
-
+.SH "CAVEATS"
+The algorithm for setting the date presumes that the analyzer has just
+been powered up.  Do not use the -c option more than once after power on.
 .SH "CONFIGURATION"
 The /etc/gpib.conf entry for this instrument includes the following
-parameters eos = 0xa, set-reos = no, set-bin = no, set-xeos = no, 
-set-eot = yes, timeout = T30s.
+parameters:
+.IP
+.nf
+eos = 0xa
+set-reos = no
+set-bin = no
+set-xeos = no
+set-eot = yes
+timeout = T30s
 .fi
 .SH "SEE ALSO"
 "Hewlett Packard 1630A/D Logic Analyzer Operating Manual",
