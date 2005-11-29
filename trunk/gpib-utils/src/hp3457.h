@@ -152,44 +152,44 @@
 
 /* Status byte bits.
  */
-#define HP3457_STAT_EXEC_DONE	1  	/* program memory exec completed */
-#define HP3457_STAT_HILO_LIMIT	2  	/* hi or lo limited exceeded */
-#define HP3457_STAT_SRQ_BUTTON	4	/* front panel SRQ key pressed */
-#define HP3457_STAT_SRQ_POWER	8	/* power-on SRQ occurred */
-#define HP3457_STAT_READY	16	/* ready */
-#define HP3457_STAT_ERROR	32	/* error (consult error reg) */
-#define HP3457_STAT_SRQ		64	/* service requested */
+#define HP3457_STAT_EXEC_DONE	0x01  	/* program memory exec completed */
+#define HP3457_STAT_HILO_LIMIT	0x02  	/* hi or lo limited exceeded */
+#define HP3457_STAT_SRQ_BUTTON	0x04	/* front panel SRQ key pressed */
+#define HP3457_STAT_SRQ_POWER	0x08	/* power-on SRQ occurred */
+#define HP3457_STAT_READY	0x10	/* ready */
+#define HP3457_STAT_ERROR	0x20	/* error (consult error reg) */
+#define HP3457_STAT_SRQ		0x40	/* service requested */
 
 /* Error register bits.
  */
-#define HP3457_ERR_HARDWARE	1	/* hw error (consult aux error reg) */
-#define HP3457_ERR_CAL_ACAL	2	/* error in CAL or ACAL process */
-#define HP3457_ERR_TOOFAST	4	/* trigger too fast */
-#define HP3457_ERR_SYNTAX	8	/* syntax error */
-#define HP3457_ERR_COMMAND	16	/* unknown command received */
-#define HP3457_ERR_PARAMETER	32	/* unknown parameter received */
-#define HP3457_ERR_RANGE	64	/* parameter out of range */
-#define HP3457_ERR_MISSING	128	/* required parameter missing */
-#define HP3457_ERR_IGNORED	256	/* parameter ignored */
-#define HP3457_ERR_CALIBRATION	512	/* out of calibration */
-#define HP3457_ERR_AUTOCAL	1024	/* autocal required */
+#define HP3457_ERR_HARDWARE	0x0001	/* hw error (consult aux error reg) */
+#define HP3457_ERR_CAL_ACAL	0x0002	/* error in CAL or ACAL process */
+#define HP3457_ERR_TOOFAST	0x0004	/* trigger too fast */
+#define HP3457_ERR_SYNTAX	0x0008	/* syntax error */
+#define HP3457_ERR_COMMAND	0x0010	/* unknown command received */
+#define HP3457_ERR_PARAMETER	0x0020	/* unknown parameter received */
+#define HP3457_ERR_RANGE	0x0040	/* parameter out of range */
+#define HP3457_ERR_MISSING	0x0080	/* required parameter missing */
+#define HP3457_ERR_IGNORED	0x0100	/* parameter ignored */
+#define HP3457_ERR_CALIBRATION	0x0200	/* out of calibration */
+#define HP3457_ERR_AUTOCAL	0x0400	/* autocal required */
 
 /* Aux error register bits.
  */
-#define HP3457_AUXERR_OISO	1	/* isolation error during operation */
+#define HP3457_AUXERR_OISO	0x0001	/* isolation error during operation */
 					/*   in any mode (self-test, */
 					/*   autocal, measurements, etc) */
-#define HP3457_AUXERR_SLAVE	2	/* slave processor self-test failure */
-#define HP3457_AUXERR_TISO	4	/* isolation self-test failure */
-#define HP3457_AUXERR_ICONV	8	/* integrator convergence error */
-#define HP3457_AUXERR_ZERO	16	/* front end zero meas error */
-#define HP3457_AUXERR_IGAINDIV	32	/* current src, gain sel, div fail */
-#define HP3457_AUXERR_AMPS	64	/* amps self-test failure */
-#define HP3457_AUXERR_ACAMP	128	/* ac amp dc offset failure */
-#define HP3457_AUXERR_ACFLAT	256 	/* ac flatness check */
-#define HP3457_AUXERR_OHMPC	512	/* ohms precharge fail in autocal */
-#define HP3457_AUXERR_32KROM	1024	/* 32K ROM checksum failure */
-#define HP3457_AUXERR_8KROM	2048	/* 8K ROM checksum failure */
-#define HP3457_AUXERR_NVRAM	4096	/* NVRAM failure */
-#define HP3457_AUXERR_RAM	8192	/* volatile RAM failure */
-#define HP3457_AUXERR_CALRAM	16384	/* cal RAM protection failure */
+#define HP3457_AUXERR_SLAVE	0x0002	/* slave processor self-test failure */
+#define HP3457_AUXERR_TISO	0x0004	/* isolation self-test failure */
+#define HP3457_AUXERR_ICONV	0x0008	/* integrator convergence error */
+#define HP3457_AUXERR_ZERO	0x0010	/* front end zero meas error */
+#define HP3457_AUXERR_IGAINDIV	0x0020	/* current src, gain sel, div fail */
+#define HP3457_AUXERR_AMPS	0x0040	/* amps self-test failure */
+#define HP3457_AUXERR_ACAMP	0x0080	/* ac amp dc offset failure */
+#define HP3457_AUXERR_ACFLAT	0x0100 	/* ac flatness check */
+#define HP3457_AUXERR_OHMPC	0x0200	/* ohms precharge fail in autocal */
+#define HP3457_AUXERR_32KROM	0x0400	/* 32K ROM checksum failure */
+#define HP3457_AUXERR_8KROM	0x0800	/* 8K ROM checksum failure */
+#define HP3457_AUXERR_NVRAM	0x1000	/* NVRAM failure */
+#define HP3457_AUXERR_RAM	0x2000	/* volatile RAM failure */
+#define HP3457_AUXERR_CALRAM	0x4000	/* cal RAM protection failure */

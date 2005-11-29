@@ -22,8 +22,7 @@
  * Logic Analyzer 1630A/D Operating Manual
  */
 
-/*
- * Keyboard mnemonics.
+/* Keyboard mnemonics.
  */
 #define HP1630_KEY_SYSTEM_MENU      "SM" 
 #define HP1630_KEY_FORMAT_MENU      "FM" 
@@ -64,8 +63,7 @@
 #define HP1630_KEY_PRINT            "PR"
 #define HP1630_KEY_PRINT_ALL        "PA"
 
-/*
- * Commamnds
+/* Commamnds
  */
 #define HP1630_CMD_BEEP             "BP"
 #define HP1630_CMD_CURSOR_HOME      "CH"
@@ -91,74 +89,79 @@
 #define HP1630_CMD_RECEIVE_ANALOG   "RA" /* 1631 only */
 #define HP1630_CMD_RECEIVE_ALL      "RE"
 
-/* 
- * Status byte 0 - only bits enabled by service request mask
+/* Status byte 0 - only bits enabled by service request mask
  * Status byte 1 - all bits
  */
-#define HP1630_STAT_PRINT_COMPLETE  0
-#define HP1630_STAT_MEAS_COMPLETE   1
-#define HP1630_STAT_SLOW_CLOCK      2
-#define HP1630_STAT_KEY_PRESSED     3
-#define HP1630_STAT_NOT_BUSY        4
-#define HP1630_STAT_ERROR_LAST_CMD  5
-#define HP1630_STAT_SRQ             6
+#define HP1630_STAT_PRINT_COMPLETE  0x01 
+#define HP1630_STAT_MEAS_COMPLETE   0x02 
+#define HP1630_STAT_SLOW_CLOCK      0x04
+#define HP1630_STAT_KEY_PRESSED     0x08
+#define HP1630_STAT_NOT_BUSY        0x10 
+#define HP1630_STAT_ERROR_LAST_CMD  0x20
+#define HP1630_STAT_SRQ             0x40
 
-/* 
- * Status byte 3 - trace status
+/* Status byte 3 (bits 4:7) - trace status
  */
-/* bits 4:7 */
-#define HP1630_TRACE_NONE_TAKEN	    0
-#define HP1630_TRACE_IN_PROGRESS    1
-#define HP1630_TRACE_MEAS_COMPLETE  2
-#define HP1630_TRACE_MEAS_ABORTED   4
-/* bits 0:3 */
-#define HP1630_TRACE_NOT_ACTIVE     0
-#define HP1630_TRACE_WAIT_TRIGGER   1
-#define HP1630_TRACE_WAIT_SEQ1      2
-#define HP1630_TRACE_WAIT_SEQ2      3
-#define HP1630_TRACE_WAIT_SEQ3      4
-#define HP1630_TRACE_WAIT_OV_END    5
-#define HP1630_TRACE_WAIT_OV_START  6
-#define HP1630_TRACE_SLOW_CLOCK     7
-#define HP1630_TRACE_TIMING_WAIT    8
-#define HP1630_TRACE_TIMING_DELAYED 9
-#define HP1630_TRACE_TIMING_IN_PROG 10
+#define SB3Q2_ERRORS {                                  \
+    { 0,    "no trace taken" },                         \
+    { 1,    "trace in progress" },                      \
+    { 2,    "measurement complete" },                   \
+    { 3,    "measurement aborted" },                    \
+    { 0,    NULL },                                     \
+}
 
-/* 
- * Status byte 4 - controller error codes
+/* Status byte 3 (bits 0:3) - trace status
  */
-#define HP1630_CERR_SUCCESS         0
-#define HP1630_CERR_ILLEGAL_VALUE   4
-#define HP1630_CERR_USE_NEXT_PREV   8
-#define HP1630_CERR_NUM_ENTRY_REQ   9
-#define HP1630_CERR_USE_HEX_KEYS    10
-#define HP1630_CERR_USE_ALPHA_KEYS  11
-#define HP1630_CERR_FIX_PROB_FIRST  13
-#define HP1630_CERR_DONT_CARE_ILLEG 15
-#define HP1630_CERR_USE_0_1         16
-#define HP1630_CERR_USE_0_1_DC      17
-#define HP1630_CERR_USE_0_7         18
-#define HP1630_CERR_USE_0_7_DC      19
-#define HP1630_CERR_USE_0_3         20
-#define HP1630_CERR_USE_0_3_DC      21
-#define HP1630_CERR_VAL_TOOBIG      22
-#define HP1630_CERR_USE_CHS         24
-#define HP1630_CERR_MAX_INS_USED    30
-#define HP1630_CERR_CASSETTE_ERR    40
-#define HP1630_CERR_BAD_CHECKSUM    41
-#define HP1630_CERR_NO_CASSETTE     46
-#define HP1630_CERR_ILLEG_FILENAME  47
-#define HP1630_CERR_DUP_GPIB_ADDR   48
-#define HP1630_CERR_RELOAD_DISC     49
-#define HP1630_CERR_STORAGE_ABORTED 50
-#define HP1630_CERR_FILE_NOT_FOUND  51
-#define HP1630_CERR_BAD_COMMAND     58
-#define HP1630_CERR_WP_DISC         60
-#define HP1630_CERR_RESUME_NALLOW   61
-#define HP1630_CERR_INVAL_IN_TRACE  62
-#define HP1630_CERR_WRONG_REVISION  82
+#define SB3Q1_ERRORS {                                  \
+    { 0,    "not active (no measurement in progress" }, \
+    { 1,    "waiting for state trigger term" },         \
+    { 2,    "waiting for sequence term #1" },           \
+    { 3,    "waiting for sequence term #2" },           \
+    { 4,    "waiting for sequence term #3" },           \
+    { 5,    "waiting for time interval end term" },     \
+    { 6,    "waiting for time interval start term" },   \
+    { 7,    "slow clock" },                             \
+    { 8,    "waiting for timing trigger" },             \
+    { 9,    "delaying timing trace" },                  \
+    { 10,   "timing trace in progress" },               \
+    { 0,    NULL },                                     \
+}
 
-#define _bit_test(bit, mask)	(((mask)>>(bit)) & 1)
+/* Status byte 4 - controller error codes
+ */
+#define SB4_ERRORS {                                    \
+    { 0,    "success" },                                \
+    { 4,    "illegal value" },                          \
+    { 8,    "use NEXT[] PREV[] keys" },                 \
+    { 9,    "numeric entry required" },                 \
+    { 10,   "use hex keys" },                           \
+    { 11,   "use alphanumeric keys" },                  \
+    { 13,   "fix problem first" },                      \
+    { 15,   "DONT CARE not legal here" },               \
+    { 16,   "use 0 or 1" },                             \
+    { 17,   "use 0, 1, or DONT CARE" },                 \
+    { 18,   "use 0 thru 7" },                           \
+    { 19,   "use 0 thru 7 or DONT CARE" },              \
+    { 20,   "use 0 thru 3" },                           \
+    { 21,   "use 0 thru 3 or DONT CARE" },              \
+    { 22,   "value is too large" },                     \
+    { 24,   "use CHS key" },                            \
+    { 30,   "maximum INSERTs used" },                   \
+    { 40,   "cassette contains non HP163x data" },      \
+    { 41,   "checksum does not match" },                \
+    { 46,   "no cassette in drive" },                   \
+    { 47,   "illegal filename" },                       \
+    { 48,   "duplicate GPIB address" },                 \
+    { 49,   "reload disc first" },                      \
+    { 50,   "storage operation aborted" },              \
+    { 51,   "file not found" },                         \
+    { 58,   "unrecognized command" },                   \
+    { 60,   "write protected disc" },                   \
+    { 61,   "RESUME not allowed" },                     \
+    { 62,   "invalid in this trace mode" },             \
+    { 82,   "incorrect revision code" },                \
+    { 0,    NULL },                                     \
+}
 
 /*
  * vi:tabstop=4 shiftwidth=4 expandtab

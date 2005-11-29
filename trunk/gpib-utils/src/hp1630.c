@@ -28,29 +28,33 @@
 #include <stdarg.h>
 #include <gpib/ib.h>
 
+#include "errstr.h"
 #include "hp1630.h"
 
 static char *prog;
+static int verbose = 0;
 
-typedef struct {
-    int     num;
-    char   *str;
-} errstr_t;
+/* value of status byte 4 */
+static errstr_t _sb4_errors[] = SB4_ERRORS;
 
 #define INSTRUMENT "hp1630" /* the /etc/gpib.conf entry */
 #define PATH_DATE  "/bin/date"
 
+#define MAXCONFBUF (16*1024)
+#define MAXPRINTBUF (128*1024)
+#define MAXMODELBUF (16)
 
-#define OPTIONS "pPn:bdRsrcAta"
+#define OPTIONS "n:clvpPbsCAtar"
 static struct option longopts[] = {
     {"name",            required_argument, 0, 'n'},
+    {"clear",           no_argument, 0, 'c'},
+    {"local",           no_argument, 0, 'l'},
+    {"verbose",         no_argument, 0, 'v'},
     {"print-screen",    no_argument, 0, 'p'},
     {"print-all",       no_argument, 0, 'P'},
     {"beep",            no_argument, 0, 'b'},
-    {"date",            no_argument, 0, 'd'},
-    {"reset",           no_argument, 0, 'R'},
     {"save-all",        no_argument, 0, 's'},
-    {"save-config",     no_argument, 0, 'c'},
+    {"save-config",     no_argument, 0, 'C'},
     {"save-state",      no_argument, 0, 'A'},
     {"save-timing",     no_argument, 0, 't'},
     {"save-analog",     no_argument, 0, 'a'},
@@ -63,74 +67,28 @@ usage(void)
 {
     fprintf(stderr, 
 "Usage: %s [--options]\n"
-"  -n,--name name     name of instrument [1631a]\n"
-"  -b,--beep          make the analyzer beep\n"
+"  -n,--name name     name of instrument [%s]\n"
+"  -c,--clear         set default values, verify model no., set date\n"
+"  -l,--local         return instrument to local operation on exit\n"
+"  -v,--verbose       show protocol on stderr\n"
 "  -p,--print-screen  print screen to stdout\n"
 "  -P,--print-all     print all to stdout\n"
-"  -d,--date          set analyzer date/time\n"
-"  -R,--reset         default all instrument menus to power-up values\n"
 "  -s,--save-all      save complete analyzer state to stdout\n"
-"  -c,--save-config   save config to stdout\n"
+"  -C,--save-config   save config to stdout\n"
 "  -A,--save-state    save state acquisition data to stdout\n"
 "  -t,--save-timing   save timing acquisition data to stdout\n"
 "  -a,--save-analog   save analog data to stdout (1631 only)\n"
 "  -r,--restore       restore analyzer state (partial or complete) from stdin\n"
-           , prog);
+           , prog, INSTRUMENT);
     exit(1);
 }
 
-/* value of status byte 4 */
-static errstr_t _sb4_errors[] = {
-    { HP1630_CERR_SUCCESS,          "success" },
-    { HP1630_CERR_ILLEGAL_VALUE,    "illegal value" },
-    { HP1630_CERR_USE_NEXT_PREV,    "use NEXT[] PREV[] keys" },
-    { HP1630_CERR_NUM_ENTRY_REQ,    "numeric entry required" },
-    { HP1630_CERR_USE_HEX_KEYS,     "use hex keys" },
-    { HP1630_CERR_USE_ALPHA_KEYS,   "use alphanumeric keys" },
-    { HP1630_CERR_FIX_PROB_FIRST,   "fix problem first" },
-    { HP1630_CERR_DONT_CARE_ILLEG,  "DONT CARE not legal here" },
-    { HP1630_CERR_USE_0_1,          "use 0 or 1" },
-    { HP1630_CERR_USE_0_1_DC,       "use 0, 1, or DONT CARE" },
-    { HP1630_CERR_USE_0_7,          "use 0 thru 7" },
-    { HP1630_CERR_USE_0_7_DC,       "use 0 thru 7 or DONT CARE" },
-    { HP1630_CERR_USE_0_3,          "use 0 thru 3" },
-    { HP1630_CERR_USE_0_3_DC,       "use 0 thru 3 or DONT CARE" },
-    { HP1630_CERR_VAL_TOOBIG,       "value is too large" },
-    { HP1630_CERR_USE_CHS,          "use CHS key" },
-    { HP1630_CERR_MAX_INS_USED,     "maximum INSERTs used" },
-    { HP1630_CERR_CASSETTE_ERR,     "cassette contains non HP163x data" },
-    { HP1630_CERR_BAD_CHECKSUM,     "checksum does not match" },
-    { HP1630_CERR_NO_CASSETTE,      "no cassette in drive" },
-    { HP1630_CERR_ILLEG_FILENAME,   "illegal filename" },
-    { HP1630_CERR_DUP_GPIB_ADDR,    "duplicate GPIB address" },
-    { HP1630_CERR_RELOAD_DISC,      "reload disc first" },
-    { HP1630_CERR_STORAGE_ABORTED,  "storage operation aborted" },
-    { HP1630_CERR_FILE_NOT_FOUND,   "file not found" },
-    { HP1630_CERR_BAD_COMMAND,      "unrecognized command" },
-    { HP1630_CERR_WP_DISC,          "write protected disc" },
-    { HP1630_CERR_RESUME_NALLOW,    "RESUME not allowed" },
-    { HP1630_CERR_INVAL_IN_TRACE,   "invalid in this trace mode" },
-    { HP1630_CERR_WRONG_REVISION,   "incorrect revision code" },
-    { 0, NULL },
-};
-
-static char *_finderr(errstr_t *tab, int num)
-{
-    errstr_t *tp;
-
-    for (tp = &tab[0]; tp->str != NULL; tp++)
-        if (tp->num == num)
-            break;
-
-    return tp->str ? tp->str : "unknown error";
-}
-
-/* Warning: ibrsp has the side effect of modifying ibcnt! */
-static void _checksrq(int d)
+static void 
+_checksrq(int d)
 {
     char status;
 
-    ibrsp(d, &status);
+    ibrsp(d, &status); /* NOTE: modifies ibcnt */
     if (ibsta & ERR) {
         fprintf(stderr, "%s: ibrsp error %d\n", prog, iberr);
         exit(1);
@@ -143,7 +101,8 @@ static void _checksrq(int d)
     }
 }
 
-static void _ibwrt(int d, void *buf, int len)
+static void 
+_ibwrt(int d, void *buf, int len)
 {
     ibwrt(d, buf, len);
     if (ibsta & TIMO) {
@@ -161,12 +120,16 @@ static void _ibwrt(int d, void *buf, int len)
     _checksrq(d);
 }
 
-static void _ibwrtstr(int d, char *str)
+static void 
+_ibwrtstr(int d, char *str)
 {
+    if (verbose)
+        fprintf(stderr, "T: %s", str);
     _ibwrt(d, str, strlen(str));
 }
 
-static void _ibwrtf(int d, char *fmt, ...)
+static void 
+_ibwrtf(int d, char *fmt, ...)
 {
         va_list ap;
         char *s;
@@ -183,7 +146,8 @@ static void _ibwrtf(int d, char *fmt, ...)
         free(s);
 }
 
-static int _ibrd(int d, void *buf, int len)
+static int 
+_ibrd(int d, void *buf, int len)
 {
     int count;
 
@@ -199,22 +163,26 @@ static int _ibrd(int d, void *buf, int len)
     assert(ibcnt >=0 && ibcnt <= len);
     count = ibcnt;
 
-     _checksrq(d);
+    _checksrq(d);
 
     return count;
 }
 
-static void _ibrdstr(int d, char *buf, int len)
+static void 
+_ibrdstr(int d, char *buf, int len)
 {
     int count;
     
     count = _ibrd(d, buf, len - 1);
     assert(count < len);
     buf[count] = '\0';
+    if (verbose)
+        fprintf(stderr, "R: %s\n", buf);
 }
 
 
-static void _ibloc(int d)
+static void 
+_ibloc(int d)
 {
     ibloc(d);
     if (ibsta & ERR) {
@@ -224,7 +192,6 @@ static void _ibloc(int d)
     _checksrq(d);
 }
 
-#if 0
 static void _ibclr(int d)
 {
     ibclr(d);
@@ -236,9 +203,8 @@ static void _ibclr(int d)
         fprintf(stderr, "%s: ibclr error %d\n", prog, iberr);
         exit(1);
     }
-    _checksrq(d);
+    /*_checksrq(d);*/ /* this times out */
 }
-#endif
 
 /*
  * Send analyzer screen dump to stdout.  Output may be in hp bitmap format or
@@ -247,7 +213,7 @@ static void _ibclr(int d)
 static void
 _printscreen(int device, int allflag)
 {
-    uint8_t buf[128*1024];
+    uint8_t buf[MAXPRINTBUF];
     int count;
 
     if (allflag)
@@ -255,6 +221,8 @@ _printscreen(int device, int allflag)
     else
         _ibwrtf(device, "%s\r\n", HP1630_KEY_PRINT);
     count = _ibrd(device, buf, sizeof(buf));
+    if (verbose)
+        fprintf(stderr, "R: [%d bytes]\n", count);
     if (fwrite(buf, count, 1, stdout) != 1) {
         fprintf(stderr, "%s: error writing to stdout\n", prog);
         exit(1);
@@ -317,7 +285,7 @@ _verify_model(int device)
 {
     char *supported[] = { "HP1630A", "HP1630D", "HP1630G",
                           "HP1631A", "HP1631D", NULL };
-    char buf[32];
+    char buf[MAXMODELBUF];
     int found = 0;
     int i;
 
@@ -326,7 +294,6 @@ _verify_model(int device)
     for (i = 0; supported[i] != NULL; i++)
         if (!strcmp(buf, supported[i]))
             found = 1;
-
     if (!found)
         fprintf(stderr, "%s: warning: model %s is unsupported\n", prog, buf);
 }
@@ -337,12 +304,14 @@ _verify_model(int device)
 static void
 _savestate(int device, char *cmd)
 {
-    uint8_t buf[16*1024];
+    uint8_t buf[MAXCONFBUF];
     int count;
     uint8_t status;
 
     _ibwrtf(device, "%s\r\n", cmd);
     count = _ibrd(device, buf, sizeof(buf));
+    if (verbose)
+        fprintf(stderr, "R: [%d bytes]\n", count);
 
     if (fwrite(buf, count, 1, stdout) != 1) {
         fprintf(stderr, "%s: error writing to stdout\n", prog);
@@ -351,11 +320,13 @@ _savestate(int device, char *cmd)
 
     _ibwrtf(device, "%s 4\r\n", HP1630_CMD_STATUS_BYTE); /* ask for sb 4 */
     count = _ibrd(device, &status, 1);
+    if (verbose)
+        fprintf(stderr, "R: [%d bytes]\n", count);
     if (count != 1) {
         fprintf(stderr, "%s: error reading status byte 4\n", prog);
         exit(1);
     }
-    fprintf(stderr, "%s: %s\n", prog, _finderr(_sb4_errors, status) );
+    fprintf(stderr, "%s: %s\n", prog, finderr(_sb4_errors, status) );
 }
 
 /* Translate two-char restore command to string */
@@ -376,14 +347,14 @@ _restorecmd(uint8_t *cmd)
 static int
 _restorelen(uint8_t *len)
 {
-    return ((len[0] << 8) + len[1]);
+    return ((int)(len[0] << 8) + len[1]);
 }
 
 static void
 _restorestate(int device)
 {
     int c;
-    uint8_t buf[16*1024];
+    uint8_t buf[MAXCONFBUF];
     uint8_t *p = &buf[0], *q = &buf[0];
     int count;
     uint8_t status;
@@ -409,26 +380,31 @@ _restorestate(int device)
     } while (q < p-6); /* 6 bytes of overhead in each segment */
 
 	_ibwrt(device, buf, p - buf);
+    if (verbose)
+        fprintf(stderr, "T: [%d bytes]\n", p - buf);
 
     _ibwrtf(device, "%s 4\r\n", HP1630_CMD_STATUS_BYTE); /* ask for sb 4 */
     count = _ibrd(device, &status, 1);
+    if (verbose)
+        fprintf(stderr, "R: [%d bytes]\n", count);
     if (count != 1) {
         fprintf(stderr, "%s: error reading status byte 4\n", prog);
         exit(1);
     }
-    fprintf(stderr, "%s: %s\n", prog, _finderr(_sb4_errors, status) );
+    fprintf(stderr, "%s: %s\n", prog, finderr(_sb4_errors, status) );
 }
 
 
 int
 main(int argc, char *argv[])
 {
-    enum { OPT_NONE, OPT_PRINT_ALL, OPT_PRINT_SCREEN, OPT_BEEP,
-           OPT_DATE, OPT_RESET, OPT_SAVE_ALL,
-           OPT_SAVE_STATE, OPT_SAVE_TIMING, OPT_SAVE_CONFIG, OPT_SAVE_ANALOG,
-           OPT_RESTORE, } opt = OPT_NONE;
+    enum { OPT_NONE, 
+        OPT_PRINT_ALL, OPT_PRINT_SCREEN, OPT_SAVE_ALL, OPT_SAVE_STATE, 
+        OPT_SAVE_TIMING, OPT_SAVE_CONFIG, OPT_SAVE_ANALOG, OPT_RESTORE, } opt = OPT_NONE;
     char *instrument = INSTRUMENT;
     int device, c;
+    int local = 0;
+    int clear = 0;
 
     /*
      * Handle options.
@@ -436,61 +412,67 @@ main(int argc, char *argv[])
     prog = basename(argv[0]);
     while ((c = getopt_long(argc, argv, OPTIONS, longopts, NULL)) != EOF) {
         switch (c) {
-        case 'n':
+        case 'n':   /* --name */
             instrument = optarg;
             break;
-        case 'p': opt = OPT_PRINT_SCREEN; break;
-        case 'P': opt = OPT_PRINT_ALL; break;
-        case 'b': opt = OPT_BEEP; break;
-        case 'd': opt = OPT_DATE; break;
-        case 'R': opt = OPT_RESET; break;
-        case 's': opt = OPT_SAVE_ALL; break;
-        case 'c': opt = OPT_SAVE_CONFIG; break;
-        case 'A': opt = OPT_SAVE_STATE; break;
-        case 't': opt = OPT_SAVE_TIMING; break;
-        case 'a': opt = OPT_SAVE_ANALOG; break;
-        case 'r': opt = OPT_RESTORE; break;
+        case 'l':   /* --local */
+            local = 1;
+            break;
+        case 'v':   /* --verbose */
+            verbose = 1;
+            break;
+        case 'c':   /* --clear */
+            clear = 1;
+            break;
+        case 'p':   /* --print-screen */
+            opt = OPT_PRINT_SCREEN; 
+            break;
+        case 'P':   /* --print-all */
+            opt = OPT_PRINT_ALL; 
+            break;
+        case 's': 
+            opt = OPT_SAVE_ALL; 
+            break;
+        case 'C': 
+            opt = OPT_SAVE_CONFIG; 
+            break;
+        case 'A': 
+            opt = OPT_SAVE_STATE; 
+            break;
+        case 't': 
+            opt = OPT_SAVE_TIMING; 
+            break;
+        case 'a': 
+            opt = OPT_SAVE_ANALOG; 
+            break;
+        case 'r': 
+            opt = OPT_RESTORE; 
+            break;
         }
     }
 
-    if (opt == OPT_NONE)
+    if (opt == OPT_NONE && !clear && !local)
         usage();
 
-    /*
-     * Initialize gpib and verify it's an hp163x analyzer.
-     */
+    /* find device in /etc/gpib.conf */
     device = ibfind(instrument);
     if (device < 0) {
         fprintf(stderr, "%s: not found: %s\n", prog, instrument);
         exit(1);
     } 
 
-#if 0
-    {
-        /* doesn't lose configuration */
+    if (clear) {
         _ibclr(device);
-        /* XXX this would appear to be a bad thing - it times out reading the
-         * status byte, and if the status byte read is taken out, it times out
-         * on the next operation.
-         */
+        sleep(1);
+        _ibwrtf(device, "%s\r\n", HP1630_CMD_POWER_UP);/* doesn't affect date */
+        _verify_model(device);
+        /* set the errors _checksrq() will see */
+        _ibwrtf(device, "%s %d\r\n", HP1630_CMD_SET_SRQ_MASK, 
+                HP1630_STAT_ERROR_LAST_CMD);
+        _setdate(device);
     }
-#else
-    { /* do clear out any pending SRQ's if we're not resetting though */
-        char status;
 
-        ibrsp(device, &status);
-        /* ignore result */
-    }
-#endif
-
-    /* set the errors _checksrq() will see */
-    _ibwrtf(device, "%s %d\r\n", HP1630_CMD_SET_SRQ_MASK,
-            HP1630_STAT_ERROR_LAST_CMD);
-
-    _verify_model(device);
-
-    /*
-     * Perform desired actions.
+    /* Ops involving stdin/stdout are mutually exclusive.
      */
     switch (opt) {
 
@@ -502,16 +484,6 @@ main(int argc, char *argv[])
         _printscreen(device, 1);
         break;
 
-    /* configuration/test */
-    case OPT_BEEP:
-        _ibwrtf(device, "%s\r\n", HP1630_CMD_BEEP);
-        break;
-    case OPT_DATE:
-        _setdate(device);
-        break;
-    case OPT_RESET:
-        _ibwrtf(device, "%s\r\n", HP1630_CMD_POWER_UP);
-        break;
     /* save/restore state */
     case OPT_SAVE_ALL:
         _savestate(device, HP1630_CMD_TRANSMIT_ALL);
@@ -532,11 +504,11 @@ main(int argc, char *argv[])
         _restorestate(device);
         break;
     case OPT_NONE:
-        usage();
-        /*NOTREACHED*/
+        break;
     }
 
-    _ibloc(device);
+    if (local)
+        _ibloc(device);
 
     exit(0);
 }

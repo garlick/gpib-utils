@@ -63,10 +63,10 @@
 /* 
  * HP3455 status byte bits (1=true, 0=false)
  */
-#define HP3455_STAT_DATA_READY	0x1
-#define HP3455_STAT_SYNTAX_ERR	0x2
-#define HP3455_STAT_BINARY_ERR	0x4
-#define HP3455_STAT_TOOFAST_ERR	0x8
-
+#define HP3455_STAT_DATA_READY	0x01
+#define HP3455_STAT_SYNTAX_ERR	0x02
+#define HP3455_STAT_BINARY_ERR	0x04
+#define HP3455_STAT_TOOFAST_ERR	0x08
 #define HP3455_STAT_SRQ         0x40
+
 

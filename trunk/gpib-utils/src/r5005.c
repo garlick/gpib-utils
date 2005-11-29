@@ -30,6 +30,7 @@
 #include <sys/time.h>
 #include <gpib/ib.h>
 
+#include "errstr.h"
 #include "r5005.h"
 
 #define INSTRUMENT "r5005" /* the /etc/gpib.conf entry */
@@ -37,10 +38,7 @@
 
 #define IGNORE_43   (0)     /* suppress 'error 43' - XXX do we see this now? */
 
-typedef struct {
-    int     num;
-    char   *str;
-} errstr_t;
+static errstr_t _y_errors[] = Y_ERRORS;
 
 static void _ibwrtstr_nochecksrq(int d, char *str);
 static int _ibrd(int d, char *buf, int len, int nochecksrq);
@@ -75,49 +73,6 @@ usage(void)
     exit(1);
 }
 
-/* "Y" error codes */
-static errstr_t _y_errors[] = {
-    { R5005_ERR_PERCENT_CONST,      
-        "percent constant: 0 during percent calculations" },
-    { R5005_ERR_ZERO_NOT_DC_0_1,    
-        "digital zero: not in the DC function, 0.1 range" },
-    { R5005_ERR_ZERO_NOSHORT,
-        "digital zero: input not shorted" },
-    { R5005_ERR_BADRAM_U35,    
-        "defective RAM (U35)" },
-    { R5005_ERR_NVRAM,    
-        "NVRAM contents disrupted, need to verify calibration" },
-    { R5005_ERR_ZERO_BIGOFFSET,    
-        "digital zero: digitizer offset >1000 digits was measured" },
-    { R5005_ERR_PERCENT_DEVIATION,    
-        "percent function: percent deviation >= 10^10%%" },
-    { R5005_ERR_BADRAM_U22_U31,    
-        "defective RAM (U22 and/or U31)" },
-    { R5005_ERR_STORE,    
-        "register store: overload reading or time >99.5959 hours" },
-    { R5005_ERR_RECALL,    
-        "register recall: program setting isn't stored yet" },
-    { R5005_ERR_RECALL_EMPTY,    
-        "register recall: no readings taken yet (gpib)" },
-    { R5005_ERR_TRIGGER_TOO_FAST,    
-        "triggered too fast or too often (gpib)" },
-    { R5005_ERR_SYNTAX,    
-        "syntax error during programming (gpib)" },
-    { R5005_ERR_OPTION,    
-        "option not installed (gpib)" },
-    { 0, NULL },
-};
-
-static char *_finderr(errstr_t *tab, int num)
-{
-    errstr_t *tp;
-
-    for (tp = &tab[0]; tp->str != NULL; tp++)
-        if (tp->num == num)
-            break;
-
-    return tp->str ? tp->str : "unknown error";
-}
 static unsigned long _gettime_ms(void)
 {
     struct timeval t;
@@ -162,7 +117,7 @@ static void _spoll(int d, int *rdyp)
             }
             if ((IGNORE_43) && error != 43) { /* error 43 seems innocuous... */
                 fprintf(stderr, "%s: srq: error %d: %s\n", 
-                        prog, error, _finderr(_y_errors, error));
+                        prog, error, finderr(_y_errors, error));
                 exit(1);
             }
         }

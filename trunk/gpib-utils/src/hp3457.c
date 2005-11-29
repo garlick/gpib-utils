@@ -82,7 +82,8 @@ usage(void)
     exit(1);
 }
 
-static double _gettime(void)
+static double 
+_gettime(void)
 {
     struct timeval t;
 
@@ -93,21 +94,23 @@ static double _gettime(void)
     return ((double)t.tv_sec + (double)t.tv_usec / 1000000);
 }
 
-static void _sleep_sec(double sec)
+static void 
+_sleep_sec(double sec)
 {
     if (sec > 0)
         usleep((unsigned long)(sec * 1000000.0));
 }
 
-static unsigned long _checkauxerr(int d)
+static unsigned long 
+_checkauxerr(int d)
 {
     char tmpbuf[64];
-    unsigned long err;
+    uint16_t err;
 
     _ibwrtstr(d, HP3457_AUXERR_QUERY, 0);
     _ibrdstr(d, tmpbuf, sizeof(tmpbuf), 0);
 
-    err = strtoul(tmpbuf, NULL, 10);
+    err = (uint16_t)strtoul(tmpbuf, NULL, 10);
 
     if (err & HP3457_AUXERR_OISO)
         fprintf(stderr, "%s: error: isolation error during operation\n", prog);
@@ -148,12 +151,12 @@ static unsigned long _checkauxerr(int d)
 static unsigned long _checkerr(int d)
 {
     char tmpbuf[64];
-    unsigned long err;
+    uint16_t err;
 
     _ibwrtstr(d, HP3457_ERR_QUERY, 0);
     _ibrdstr(d, tmpbuf, sizeof(tmpbuf), 0);
 
-    err = strtoul(tmpbuf, NULL, 10);
+    err = (uint16_t)strtoul(tmpbuf, NULL, 10);
 
     if (err & HP3457_ERR_HARDWARE) {
         fprintf(stderr, "%s: error: hardware (consult aux err reg)\n", prog);
