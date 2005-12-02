@@ -1,3 +1,13 @@
+2005-12-01 Jim Garlick <garlick@speakeasy.net>
+
+  * src/hp3455.c: Cleanup (make it like hp3457).
+
+  * src/r5005.c: Cleanup (make it like hp3457).
+
+  * src/dg535.c: New.
+
+  * src/gpib.[ch]: New (factored).
+
 2005-11-28 Jim Garlick <garlick@speakeasy.net>
 
   * src/errstr.[ch]: factored code from r5005.c and hp1630.c.

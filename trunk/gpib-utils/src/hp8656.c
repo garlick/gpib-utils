@@ -29,10 +29,10 @@
 #include <assert.h>
 #include <sys/time.h>
 #include <math.h>
-#include <gpib/ib.h>
 
 #include "hp8656.h"
 #include "units.h"
+#include "gpib.h"
 
 #define INSTRUMENT "hp8656" /* the /etc/gpib.conf entry */
 #define BOARD       0       /* minor board number in /etc/gpib.conf */
@@ -68,65 +68,6 @@ usage(void)
 "  -A,--incrampl value           set carrier amplitude increment [10.0dB]\n"
            , prog, INSTRUMENT);
     exit(1);
-}
-
-
-static void _ibclr(int d)
-{
-    ibclr(d);
-    if (ibsta & TIMO) {
-        fprintf(stderr, "%s: ibclr timeout\n", prog);
-        exit(1);
-    }
-    if (ibsta & ERR) {
-        fprintf(stderr, "%s: ibclr error %d\n", prog, iberr);
-        exit(1);
-    }
-}
-
-static void _ibwrtstr(int d, char *str)
-{
-    if (verbose)
-        fprintf(stderr, "T: %s\n", str);
-    ibwrt(d, str, strlen(str));
-    if (ibsta & TIMO) {
-        fprintf(stderr, "%s: ibwrt timeout\n", prog);
-        exit(1);
-    }
-    if (ibsta & ERR) {
-        fprintf(stderr, "%s: ibwrt error %d\n", prog, iberr);
-        exit(1);
-    }
-    if (ibcnt != strlen(str)) {
-        fprintf(stderr, "%s: ibwrt: short write\n", prog);
-        exit(1);
-    }
-}
-
-static void _ibwrtf(int d, char *fmt, ...)
-{
-        va_list ap;
-        char *s;
-        int n;
-
-        va_start(ap, fmt);
-        n = vasprintf(&s, fmt, ap);
-        va_end(ap);
-        if (n == -1) {
-            fprintf(stderr, "%s: out of memory\n", prog);
-            exit(1);
-        }
-        _ibwrtstr(d, s);
-        free(s);
-}
-
-static void _ibloc(int d)
-{
-    ibloc(d);
-    if (ibsta & ERR) {
-        fprintf(stderr, "%s: ibloc error %d\n", prog, iberr);
-        exit(1);
-    }
 }
 
 int
@@ -258,22 +199,17 @@ main(int argc, char *argv[])
     if (!clear && !*cmdstr && !local)
         usage();
 
-    /* find device in /etc/gpib.conf */
-    d = ibfind(instrument);
-    if (d < 0) {
-        fprintf(stderr, "%s: not found: %s\n", prog, instrument);
-        exit(1);
-    }
+    d = gpib_init(prog, instrument, verbose);
 
     /* clear instrument to default settings */
     if (clear) {
-        _ibclr(d);
+        gpib_ibclr(d);
         sleep(1); /* instrument won't respond for about 1s after clear */
     }
 
     /* write cmd if specified */
     if (strlen(cmdstr) > 0)
-        _ibwrtf(d, "%s", cmdstr);
+        gpib_ibwrtf(d, "%s", cmdstr);
 
     /* Sleep 2s to accomodate worst case settling time.
      * FIXME: The actual settling time should be calculated based 
@@ -284,7 +220,7 @@ main(int argc, char *argv[])
 
     /* return front panel if requested */
     if (local)
-        _ibloc(d); 
+        gpib_ibloc(d); 
 
     exit(0);
 }

@@ -29,10 +29,11 @@
 #include <assert.h>
 #include <sys/time.h>
 #include <math.h>
-#include <gpib/ib.h>
+#include <stdint.h>
 
 #include "dg535.h"
 #include "units.h"
+#include "gpib.h"
 
 #define INSTRUMENT "dg535"  /* the /etc/gpib.conf entry */
 #define BOARD       0       /* minor board number in /etc/gpib.conf */
@@ -40,12 +41,13 @@
 static char *prog = "";
 static int verbose = 0;
 
-#define OPTIONS "n:clv"
+#define OPTIONS "n:clvt:"
 static struct option longopts[] = {
     {"name",            required_argument, 0, 'n'},
     {"clear",           no_argument,       0, 'c'},
     {"local",           no_argument,       0, 'l'},
     {"verbose",         no_argument,       0, 'v'},
+    {"trigfreq",        required_argument, 0, 't'},
     {0, 0, 0, 0},
 };
 
@@ -58,67 +60,82 @@ usage(void)
 "  -c,--clear                    initialize instrument to default values\n"
 "  -l,--local                    return instrument to local operation on exit\n"
 "  -v,--verbose                  show protocol on stderr\n"
+"  -t,--trigfreq                 set trigger freq (0.001hz - 1.000mhz)\n"
            , prog, INSTRUMENT);
     exit(1);
 }
 
-
-static void _ibclr(int d)
+static void
+_checkerr(int d)
 {
-    ibclr(d);
-    if (ibsta & TIMO) {
-        fprintf(stderr, "%s: ibclr timeout\n", prog);
+    char buf[16];
+    int status;
+
+    /* check error status */
+    gpib_ibwrtf(d, "%s", DG535_ERROR_STATUS);
+    gpib_ibrdstr(d, buf, sizeof(buf));
+    if (*buf < '0' || *buf > '9') {
+        fprintf(stderr, "%s: error reading error status byte\n", prog);
         exit(1);
     }
-    if (ibsta & ERR) {
-        fprintf(stderr, "%s: ibclr error %d\n", prog, iberr);
+    status = strtoul(buf, NULL, 10);
+    if (status & DG535_ERR_RECALL) 
+        fprintf(stderr, "%s: recalled data was corrupt\n", prog);
+    if (status & DG535_ERR_DELAY_RANGE)
+        fprintf(stderr, "%s: delay range error\n", prog);
+    if (status & DG535_ERR_DELAY_LINKAGE)
+        fprintf(stderr, "%s: delay linkage error\n", prog);
+    if (status & DG535_ERR_CMDMODE)
+        fprintf(stderr, "%s: wrong mode for command\n", prog);
+    if (status & DG535_ERR_ERANGE)
+        fprintf(stderr, "%s: value out of range\n", prog);
+    if (status & DG535_ERR_NUMPARAM)
+        fprintf(stderr, "%s: wrong number of parameters\n", prog);
+    if (status & DG535_ERR_BADCMD)
+        fprintf(stderr, "%s: unrecognized command\n", prog);
+    if (status != 0)
         exit(1);
-    }
 }
 
-static void _ibwrtstr(int d, char *str)
+static void
+_checkinst(int d)
 {
-    if (verbose)
-        fprintf(stderr, "T: %s\n", str);
-    ibwrt(d, str, strlen(str));
-    if (ibsta & TIMO) {
-        fprintf(stderr, "%s: ibwrt timeout\n", prog);
+    char buf[16];
+    int status;
+
+    /* check instrument status */
+    gpib_ibwrtf(d, "%s", DG535_INSTR_STATUS);
+    gpib_ibrdstr(d, buf, sizeof(buf));
+    if (*buf < '0' || *buf > '9') {
+        fprintf(stderr, "%s: error reading instrument status byte\n", prog);
         exit(1);
     }
-    if (ibsta & ERR) {
-        fprintf(stderr, "%s: ibwrt error %d\n", prog, iberr);
+    status = strtoul(buf, NULL, 10);
+
+    if (status & DG535_STAT_BADMEM)
+        fprintf(stderr, "%s: memory contents corrupted\n", prog);
+    if (status & DG535_STAT_SRQ)
+        fprintf(stderr, "%s: service request\n", prog);
+    if (status & DG535_STAT_TOOFAST)
+        fprintf(stderr, "%s: trigger rate too high\n", prog);
+    if (status & DG535_STAT_PLL)
+        fprintf(stderr, "%s: 80MHz PLL is unlocked\n", prog);
+    if (status & DG535_STAT_TRIG)
+        fprintf(stderr, "%s: trigger has occurred\n", prog);
+    if (status & DG535_STAT_BUSY)
+        fprintf(stderr, "%s: busy with timing cycle\n", prog);
+    if (status & DG535_STAT_CMDERR)
+        fprintf(stderr, "%s: command error detected\n", prog);
+
+    if (status != 0)
         exit(1);
-    }
-    if (ibcnt != strlen(str)) {
-        fprintf(stderr, "%s: ibwrt: short write\n", prog);
-        exit(1);
-    }
 }
 
-static void _ibwrtf(int d, char *fmt, ...)
+static void
+dg535_checkerr(int d)
 {
-        va_list ap;
-        char *s;
-        int n;
-
-        va_start(ap, fmt);
-        n = vasprintf(&s, fmt, ap);
-        va_end(ap);
-        if (n == -1) {
-            fprintf(stderr, "%s: out of memory\n", prog);
-            exit(1);
-        }
-        _ibwrtstr(d, s);
-        free(s);
-}
-
-static void _ibloc(int d)
-{
-    ibloc(d);
-    if (ibsta & ERR) {
-        fprintf(stderr, "%s: ibloc error %d\n", prog, iberr);
-        exit(1);
-    }
+    _checkerr(d);
+    _checkinst(d);
 }
 
 int
@@ -128,6 +145,7 @@ main(int argc, char *argv[])
     int c, d;
     int clear = 0;
     int local = 0;
+    double trigfreq = 0.0;
 
     /*
      * Handle options.
@@ -147,31 +165,41 @@ main(int argc, char *argv[])
         case 'v': /* --verbose */
             verbose = 1;
             break;
+        case 't': /* --trigfreq */
+            if (freqstr(optarg, &trigfreq) < 0) {
+                fprintf(stderr, "%s: error converting trigger freq\n", prog);
+                exit(1);
+            }
+            /* instrument checks range for us */
+            break;
         default:
             usage();
             break;
         }
     }
 
-    if (!clear && !local)
+    if (!clear && !local && trigfreq == 0.0)
         usage();
 
     /* find device in /etc/gpib.conf */
-    d = ibfind(instrument);
-    if (d < 0) {
-        fprintf(stderr, "%s: not found: %s\n", prog, instrument);
-        exit(1);
-    }
+    d = gpib_init(prog, instrument, verbose);
 
     /* clear instrument to default settings */
     if (clear) {
-        _ibclr(d);
-        /*sleep(1);*/ /* instrument won't respond for about 1s after clear */
+        gpib_ibclr(d);
+        gpib_ibwrtf(d, "%s", DG535_CLEAR);
+        dg535_checkerr(d);
+    }
+
+    /* set internal trigger rate */
+    if (trigfreq != 0.0) {
+        gpib_ibwrtf(d, "%s %d,%lf", DG535_TRIG_RATE, 0, trigfreq);
+        dg535_checkerr(d);
     }
 
     /* return front panel if requested */
     if (local)
-        _ibloc(d); 
+        gpib_ibloc(d); 
 
     exit(0);
 }

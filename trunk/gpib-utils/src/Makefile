@@ -9,23 +9,23 @@ all: $(PROGS) $(TESTPROGS)
 hptodino: hptodino.o units.o
 	$(CC) -o $@ hptodino.o units.o $(LDADD)
 
-hp1630: hp1630.o errstr.o
-	$(CC) -o $@ hp1630.o errstr.o $(LDADD)
+hp1630: hp1630.o errstr.o gpib.o
+	$(CC) -o $@ hp1630.o errstr.o gpib.o $(LDADD)
 
-r5005: r5005.o
-	$(CC) -o $@ r5005.o $(LDADD)
+r5005: r5005.o units.o gpib.o
+	$(CC) -o $@ r5005.o units.o gpib.o $(LDADD)
 
-hp3455: hp3455.o
-	$(CC) -o $@ hp3455.o $(LDADD)
+hp3455: hp3455.o units.o gpib.o
+	$(CC) -o $@ hp3455.o units.o gpib.o $(LDADD)
 
-hp3457: hp3457.o units.o
-	$(CC) -o $@ hp3457.o units.o $(LDADD)
+hp3457: hp3457.o units.o gpib.o
+	$(CC) -o $@ hp3457.o units.o gpib.o $(LDADD)
 
-hp8656: hp8656.o units.o
-	$(CC) -o $@ hp8656.o units.o $(LDADD)
+hp8656: hp8656.o units.o gpib.o
+	$(CC) -o $@ hp8656.o units.o gpib.o $(LDADD)
 
-dg535: dg535.o units.o
-	$(CC) -o $@ dg535.o units.o $(LDADD)
+dg535: dg535.o units.o gpib.o
+	$(CC) -o $@ dg535.o units.o gpib.o $(LDADD)
 
 testampl: units.c
 	$(CC) -o $@ -DAMPLMAIN $< -lm
