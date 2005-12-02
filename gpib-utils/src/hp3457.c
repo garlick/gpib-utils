@@ -28,10 +28,11 @@
 #include <getopt.h>
 #include <assert.h>
 #include <sys/time.h>
-#include <gpib/ib.h>
+#include <stdint.h>
 
 #include "hp3457.h"
 #include "units.h"
+#include "gpib.h"
 
 #define INSTRUMENT "hp3457" /* the /etc/gpib.conf entry */
 #define BOARD       0       /* minor board number in /etc/gpib.conf */
@@ -56,9 +57,6 @@ static struct option longopts[] = {
     {"digits",          required_argument, 0, 'd'},
     {0, 0, 0, 0},
 };
-
-static void _ibrdstr(int d, char *buf, int len, int checksrq);
-static void _ibwrtstr(int d, char *str, int checksrq);
 
 static void 
 usage(void)
@@ -107,8 +105,8 @@ _checkauxerr(int d)
     char tmpbuf[64];
     uint16_t err;
 
-    _ibwrtstr(d, HP3457_AUXERR_QUERY, 0);
-    _ibrdstr(d, tmpbuf, sizeof(tmpbuf), 0);
+    gpib_ibwrtstr(d, HP3457_AUXERR_QUERY);
+    gpib_ibrdstr(d, tmpbuf, sizeof(tmpbuf));
 
     err = (uint16_t)strtoul(tmpbuf, NULL, 10);
 
@@ -148,13 +146,14 @@ _checkauxerr(int d)
     return err;
 }
 
-static unsigned long _checkerr(int d)
+static unsigned long 
+_checkerr(int d)
 {
     char tmpbuf[64];
     uint16_t err;
 
-    _ibwrtstr(d, HP3457_ERR_QUERY, 0);
-    _ibrdstr(d, tmpbuf, sizeof(tmpbuf), 0);
+    gpib_ibwrtstr(d, HP3457_ERR_QUERY);
+    gpib_ibrdstr(d, tmpbuf, sizeof(tmpbuf));
 
     err = (uint16_t)strtoul(tmpbuf, NULL, 10);
 
@@ -186,132 +185,45 @@ static unsigned long _checkerr(int d)
     return err;
 }
 
-
-/* Warning: ibrsp has the side effect of modifying ibcnt! */
-static void _checksrq(int d, int *rdyp)
+static void 
+hp3457_checksrq(int d)
 {
     char status;
-    int rdy = 0;
 
-    ibrsp(d, &status);
-    if (ibsta & ERR) {
-        fprintf(stderr, "%s: ibrsp error %d\n", prog, iberr);
-        exit(1);
-    }
+    gpib_ibrsp(d, &status);
     if (status & HP3457_STAT_READY) {
-        rdy = 1;
+        /* do nothing */
     }
     if (status & HP3457_STAT_SRQ_BUTTON) {
         fprintf(stderr, "%s: srq: front panel SRQ key pressed\n", prog);
-        _ibwrtstr(d, HP3457_CSB, 0);
+        gpib_ibwrtstr(d, HP3457_CSB);
     }
     if (status & HP3457_STAT_SRQ_POWER) {
         fprintf(stderr, "%s: srq: power-on SRQ occurred\n", prog);
-        _ibwrtstr(d, HP3457_CSB, 0);
+        gpib_ibwrtstr(d, HP3457_CSB);
     }
     if (status & HP3457_STAT_HILO_LIMIT) {
         fprintf(stderr, "%s: srq: hi or lo limit exceeded\n", prog);
-        _ibwrtstr(d, HP3457_CSB, 0);
+        gpib_ibwrtstr(d, HP3457_CSB);
         exit(1);
     }
     if (status & HP3457_STAT_ERROR) {
         fprintf(stderr, "%s: srq: error (consult error register)\n", prog);
         _checkerr(d);
-        _ibwrtstr(d, HP3457_CSB, 0);
+        gpib_ibwrtstr(d, HP3457_CSB);
         exit(1);
     }
-    if (rdyp)
-        *rdyp = rdy;
 }
 
-static void _ibclr(int d)
-{
-    ibclr(d);
-    if (ibsta & TIMO) {
-        fprintf(stderr, "%s: ibclr timeout\n", prog);
-        exit(1);
-    }
-    if (ibsta & ERR) {
-        fprintf(stderr, "%s: ibclr error %d\n", prog, iberr);
-        exit(1);
-    }
-    sleep(1); /* found this by trial and error */
-    _checksrq(d, NULL);
-}
-
-static void _ibwrtstr(int d, char *str, int checksrq)
-{
-    if (verbose)
-        fprintf(stderr, "T: %s\n", str);
-    ibwrt(d, str, strlen(str));
-    if (ibsta & TIMO) {
-        fprintf(stderr, "%s: ibwrt timeout\n", prog);
-        exit(1);
-    }
-    if (ibsta & ERR) {
-        fprintf(stderr, "%s: ibwrt error %d\n", prog, iberr);
-        exit(1);
-    }
-    if (ibcnt != strlen(str)) {
-        fprintf(stderr, "%s: ibwrt: short write\n", prog);
-        exit(1);
-    }
-    if (checksrq) /* so we can call from _checksrq */
-        _checksrq(d, NULL);
-}
-
-static void _ibwrtf(int d, char *fmt, ...)
-{
-        va_list ap;
-        char *s;
-        int n;
-
-        va_start(ap, fmt);
-        n = vasprintf(&s, fmt, ap);
-        va_end(ap);
-        if (n == -1) {
-            fprintf(stderr, "%s: out of memory\n", prog);
-            exit(1);
-        }
-        _ibwrtstr(d, s, 1);
-        free(s);
-}
-
-static void _ibrdstr(int d, char *buf, int len, int checksrq)
-{
-    ibrd(d, buf, len - 1);
-    if (ibsta & TIMO) {
-        fprintf(stderr, "%s: ibrd timeout\n", prog);
-        exit(1);
-    }
-    if (ibsta & ERR) {
-        fprintf(stderr, "%s: ibrd error %d\n", prog, iberr);
-        exit(1);
-    }
-    assert(ibcnt >=0 && ibcnt < len);
-    buf[ibcnt] = '\0';
-    if (checksrq) /* so we can call from _checksrq */
-        _checksrq(d, NULL);
-    if (verbose)
-        fprintf(stderr, "R: %s", buf);
-}
-
-static void _ibloc(int d)
-{
-    ibloc(d);
-    if (ibsta & ERR) {
-        fprintf(stderr, "%s: ibloc error %d\n", prog, iberr);
-        exit(1);
-    }
-    _checksrq(d, NULL);
-}
-
-static void _checkid(int d)
+static void 
+hp3457_checkid(int d)
 {
     char tmpbuf[64];
 
-    _ibwrtf(d, HP3457_ID_QUERY);
-    _ibrdstr(d, tmpbuf, sizeof(tmpbuf), 1);
+    gpib_ibwrtf(d, HP3457_ID_QUERY);
+    hp3457_checksrq(d);
+    gpib_ibrdstr(d, tmpbuf, sizeof(tmpbuf));
+    hp3457_checksrq(d);
     if (strncmp(tmpbuf, HP3457_ID_RESPONSE, strlen(HP3457_ID_RESPONSE)) != 0) {
         fprintf(stderr, "%s: device id %s != %s\n", prog, tmpbuf,
                 HP3457_ID_RESPONSE);
@@ -319,12 +231,16 @@ static void _checkid(int d)
     }
 }
 
-static void _checkrange(int d)
+static void 
+hp3457_checkrange(int d)
 {
     char tmpbuf[64];
 
-    _ibwrtf(d, "%s", HP3457_RANGE_QUERY);
-    _ibrdstr(d, tmpbuf, sizeof(tmpbuf), 1);
+    gpib_ibwrtf(d, "%s", HP3457_RANGE_QUERY);
+    hp3457_checksrq(d);
+    gpib_ibrdstr(d, tmpbuf, sizeof(tmpbuf));
+    hp3457_checksrq(d);
+    /* FIXME: more digits need to be displayed here (how many - chk manual) */
     fprintf(stderr, "%s: range is %.1lf\n", prog, strtod(tmpbuf, NULL));
 }
 
@@ -451,65 +367,68 @@ main(int argc, char *argv[])
         usage();
 
     /* find device in /etc/gpib.conf */
-    d = ibfind(instrument);
-    if (d < 0) {
-        fprintf(stderr, "%s: not found: %s\n", prog, instrument);
-        exit(1);
-    }
+    d = gpib_init(prog, instrument, verbose);
 
     /* Clear dmm state, verify that model is HP3457A, and
      * select remote defaults.
      */
     if (clear) {
-        _ibclr(d);
-        _checkid(d);
-        _ibwrtf(d, HP3457_PRESET);
+        gpib_ibclr(d);
+        sleep(1); /* found  this by trial and error */
+        hp3457_checksrq(d);
+        hp3457_checkid(d);
+        gpib_ibwrtf(d, HP3457_PRESET);
+        hp3457_checksrq(d);
     }
 
     /* Perform autocalibration.
      */
     if (autocal) {
-        _ibwrtf(d, HP3457_ACAL_BOTH);
+        gpib_ibwrtf(d, HP3457_ACAL_BOTH);
         fprintf(stderr, "%s: waiting 35 sec for AC+ohms autocal\n", prog);
         fprintf(stderr, "%s: inputs should be disconnected\n", prog);
         sleep(35); 
-        _checksrq(d, NULL); /* report any errors */
+        hp3457_checksrq(d); /* report any errors */
         fprintf(stderr, "%s: autocal complete\n", prog);
     }
 
     /* Perform selftest.
      */
     if (selftest) {
-        _ibwrtf(d, HP3457_TEST);
+        gpib_ibwrtf(d, HP3457_TEST);
         fprintf(stderr, "%s: waiting 7 sec for self-test\n", prog);
         sleep(7); 
-        _checksrq(d, NULL); /* report any errors */
+        hp3457_checksrq(d); /* report any errors */
         fprintf(stderr, "%s: self-test complete\n", prog);
     }
 
     /* Select function.
      */
     if (funstr) {
-        _ibwrtf(d, funstr);
+        gpib_ibwrtf(d, funstr);
+        hp3457_checksrq(d);
     }
 
     /* Select range.
      */
     if (rangestr) {
-        _ibwrtf(d, "%s %.1lf", rangestr, range);
-        _checkrange(d);
+        gpib_ibwrtf(d, "%s %.1lf", rangestr, range);
+        hp3457_checksrq(d);
+        hp3457_checkrange(d);
     }
 
     /* Select trigger mode.
      */
     if (trigstr) {
-        _ibwrtf(d, trigstr);
+        gpib_ibwrtf(d, trigstr);
+        hp3457_checksrq(d);
     }
 
     /* Select display digits.
      */
     if (digstr) {
-        _ibwrtf(d, digstr);
+        gpib_ibwrtf(d, digstr);
+        hp3457_checksrq(d);
     }
 
     if (samples > 0) {
@@ -524,7 +443,8 @@ main(int argc, char *argv[])
             t1 = _gettime();
             if (t0 == 0)
                 t0 = t1;
-            _ibrdstr(d, buf, sizeof(buf), 1);
+            gpib_ibrdstr(d, buf, sizeof(buf));
+            hp3457_checksrq(d);
             t2 = _gettime();
 
             /* Output suitable for gnuplot:
@@ -543,8 +463,10 @@ main(int argc, char *argv[])
 
     /* give back the front panel and set defaults for local operation */
     if (local) {
-        _ibwrtf(d, HP3457_RESET);
-        _ibloc(d); 
+        gpib_ibwrtf(d, HP3457_RESET);
+        hp3457_checksrq(d);
+        gpib_ibloc(d); 
+        hp3457_checksrq(d);
     }
 
     exit(0);

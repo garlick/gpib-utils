@@ -186,6 +186,7 @@
 #define DG535_ERR_BADCMD                0x01    /* unrecognized command */
 
 /* Instrument status byte values.
+ * These bits can generate SRQ if present in the status mask.
  */
 #define DG535_STAT_BADMEM               0x40    /* memory contents corrupted */
 #define DG535_STAT_SRQ                  0x20    /* service request */
