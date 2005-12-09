@@ -1,5 +1,5 @@
 HTMLMAN= hp8656.html hp1630.html hp3455.html hp3457.html r5005.html \
-	 hptopbm.html htdodino.html
+	 hptopbm.html hptodino.html
 VPATH=	../man
 OTHER= INSTALL screen.gif
 

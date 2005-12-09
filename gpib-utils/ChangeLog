@@ -1,3 +1,9 @@
+2005-12-09 Jim Garlick <garlick@speakeasy.net>
+
+  * src/*h: some gratuitous reformatting of text.
+
+  * src/tek2230.c: New.
+
 2005-12-01 Jim Garlick <garlick@speakeasy.net>
 
   * src/hp3455.c: Cleanup (make it like hp3457).

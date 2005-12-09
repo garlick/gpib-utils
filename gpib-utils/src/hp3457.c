@@ -75,7 +75,7 @@ usage(void)
 "  -t,--trigger auto|ext|sgl|hold|syn select trigger mode [syn]\n"
 "  -d,--digits 3|4|5|6                number of digits [5]\n"
 "  -s,--samples                       number of samples [0]\n"
-"  -T,--period                        sample period in s[0]\n"
+"  -T,--period                        sample period [0]\n"
            , prog, INSTRUMENT);
     exit(1);
 }
@@ -290,6 +290,8 @@ main(int argc, char *argv[])
         case 'T': /* --period */
             if (freqstr(optarg, &freq) < 0) {
                 fprintf(stderr, "%s: error parsing period argument\n", prog);
+                fprintf(stderr, "%s: use freq units: %s\n", prog, FREQ_UNITS);
+                fprintf(stderr, "%s: or period units: %s\n", prog,PERIOD_UNITS);
                 exit(1);
             }
             period = 1.0/freq;
