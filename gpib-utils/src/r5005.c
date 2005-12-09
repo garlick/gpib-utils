@@ -266,6 +266,7 @@ main(int argc, char *argv[])
         gpib_ibwrtf(d, "%s", highres);
         r5005_checksrq(d);
     }
+
     r5005_checksrq(d);
 
     /* take some readings and send to stdout */

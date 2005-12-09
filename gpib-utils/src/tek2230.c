@@ -22,6 +22,13 @@
  * though.
  */
 
+/* References:
+ * - "Tektronix 2230 Digital Storage Oscilloscope Service", July 1986.
+ * - "Tektronix 2230 Digital Storage Oscilloscope Operators", Aug 1986.
+ * - "Tektronix 2221A, 2224, and 2232 Optional GPIB & RS-232-C Interfaces
+ *   User Manual", May 1992.
+ */
+
 #define _GNU_SOURCE /* for asprintf */
 #include <stdio.h>
 #include <stdlib.h>
