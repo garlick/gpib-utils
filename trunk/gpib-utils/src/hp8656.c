@@ -98,6 +98,8 @@ main(int argc, char *argv[])
         case 'F': /* --incrfreq */
             if (freqstr(optarg, &f) < 0) {
                 fprintf(stderr, "%s: error parsing incrfreq arg\n", prog);
+                fprintf(stderr, "%s: use freq units: %s\n", prog, FREQ_UNITS);
+                fprintf(stderr, "%s: or period units: %s\n", prog,PERIOD_UNITS);
                 exit(1);
             }
             if (f > 989.99E6 || f < 0.1E3) {
@@ -124,6 +126,10 @@ main(int argc, char *argv[])
             } else {
                 if (freqstr(optarg, &f) < 0) {
                     fprintf(stderr, "%s: error parsing frequency arg\n", prog);
+                    fprintf(stderr, "%s: use freq units: %s\n", prog, 
+                            FREQ_UNITS);
+                    fprintf(stderr, "%s: or period units: %s\n", prog,
+                            PERIOD_UNITS);
                     exit(1);
                 }
                 if (f < 100E3 || f > 990E6) {
@@ -142,6 +148,10 @@ main(int argc, char *argv[])
 
                 if (strcasecmp(end, "db") != 0) {
                     fprintf(stderr, "%s: error parsing incrampl arg\n", prog);
+                    fprintf(stderr, "%s: use log ampl units: db, %s\n", prog, 
+                            AMPL_LOG_UNITS);
+                    fprintf(stderr, "%s: or linear ampl units: %s\n", prog, 
+                            AMPL_LIN_UNITS);
                     exit(1);
                 }
                 if (a < 0.1 || a > 144.0) {
@@ -174,6 +184,10 @@ main(int argc, char *argv[])
             } else {
                 if (amplstr(optarg, &a) < 0) {
                     fprintf(stderr, "%s: error parsing amplitude arg\n", prog);
+                    fprintf(stderr, "%s: use log ampl units: %s\n", prog, 
+                            AMPL_LOG_UNITS);
+                    fprintf(stderr, "%s: or linear ampl units: %s\n", prog, 
+                            AMPL_LIN_UNITS);
                     exit(1);
                 }
                 if (a > 17.0) {

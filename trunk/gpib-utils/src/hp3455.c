@@ -17,6 +17,11 @@
    along with gpib-utils; if not, write to the Free Software Foundation, 
    Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
 
+/* I got rid of my hp3455 (too darn big!) and this utility has been changed 
+ * to look more like the r5005 and hp3457 utils since I last had a 3455 to 
+ * test, so your mileage may vary.  Test results/patches welcome!
+ */
+
 #define _GNU_SOURCE /* for asprintf */
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,6 +50,7 @@ static struct option longopts[] = {
     {"clear",           no_argument,       0, 'c'},
     {"local",           no_argument,       0, 'l'},
     {"verbose",         no_argument,       0, 'v'},
+    {"selftest",        required_argument, 0, 'S'},
     {"function",        required_argument, 0, 'f'},
     {"range",           required_argument, 0, 'r'},
     {"trigger",         required_argument, 0, 't'},
@@ -67,6 +73,7 @@ usage(void)
 "  -c,--clear                                     clear instrument\n"
 "  -l,--local                                     re-enable front panel\n"
 "  -v,--verbose                                   watch protocol on stderr\n"
+"  -S,--selftest                                  perform selftest\n"
 "  -f,--function dcv|acv|facv|kohm2|kohm4|test    select function\n"
 "  -r,--range 0.1|1|10|100|1k|10k|auto            select range\n"
 "  -t,--trigger int|ext|hold                      select trigger mode\n"
@@ -76,7 +83,7 @@ usage(void)
 "  -y,--storey value                              store value into y reg\n"
 "  -y,--storez value                              store value into z reg\n"
 "  -s,--samples                                   number of samples [0]\n"
-"  -T,--period                                    sample period in ms [0]\n"
+"  -T,--period                                    sample period\n"
            , prog, INSTRUMENT);
     exit(1);
 }
@@ -129,6 +136,7 @@ hp3455_checksrq(int d)
 int
 main(int argc, char *argv[])
 {
+    int selftest = 0;
     int verbose = 0;
     int clear = 0;
     int local = 0;
@@ -176,9 +184,14 @@ main(int argc, char *argv[])
         case 'T': /* --period */
             if (freqstr(optarg, &freq) < 0) {
                 fprintf(stderr, "%s: error parsing period argument\n", prog);
+                fprintf(stderr, "%s: use freq units: %s\n", prog, FREQ_UNITS);
+                fprintf(stderr, "%s: or period units: %s\n", prog,PERIOD_UNITS);
                 exit(1);
             }
             period = 1.0/freq;
+            break;
+        case 'S': /* --selftest */
+            selftest = 1;
             break;
         case 's': /* --samples */
             samples = (int)strtoul(optarg, NULL, 10);
@@ -250,8 +263,6 @@ main(int argc, char *argv[])
                 function = HP3455_FUNC_2WIRE_KOHMS;
             else if (strcasecmp(optarg, "kohm4") == 0)
                 function = HP3455_FUNC_4WIRE_KOHMS;
-            else if (strcasecmp(optarg, "test") == 0)
-                function = HP3455_FUNC_TEST;
             else
                 usage();
             break;
@@ -263,7 +274,7 @@ main(int argc, char *argv[])
 
     if (!clear && !local && !function && !range && !autocal && !math 
             && !trigger && !autocal && !highres && !storey && !storez 
-            && samples == 0)
+            && !selftest && samples == 0)
         usage();
 
     /* find device in /etc/gpib.conf */
@@ -272,6 +283,12 @@ main(int argc, char *argv[])
     /* clear dmm state */
     if (clear) { 
         gpib_ibclr(d);
+        hp3455_checksrq(d);
+    }
+
+    /* self test */
+    if (selftest) {
+        gpib_ibwrtf(d, "%s", HP3455_FUNC_TEST);
         hp3455_checksrq(d);
     }
 

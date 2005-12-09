@@ -23,6 +23,13 @@
 #include <math.h>
 #include <errno.h>
 
+double 
+dbmtov(double a)
+{
+    return pow(10, (a-13.0)/20);
+}
+
+
 static int
 _vtodb(double *a, double offset)
 {
@@ -84,11 +91,6 @@ amplstr(char *str, double *ampl)
     if (result == 0 && ampl != NULL)
         *ampl = a;
     return result;
-}
-
-double dbmtov(double a)
-{
-    return pow(10, (a-13.0)/20);
 }
 
 /* Set *freq to frequency in Hz.

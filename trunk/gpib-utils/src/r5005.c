@@ -166,6 +166,8 @@ main(int argc, char *argv[])
         case 'T': /* --period */
             if (freqstr(optarg, &freq) < 0) {
                 fprintf(stderr, "%s: error parsing period argument\n", prog);
+                fprintf(stderr, "%s: use freq units: %s\n", prog, FREQ_UNITS);
+                fprintf(stderr, "%s: or period units: %s\n", prog,PERIOD_UNITS);
                 exit(1);
             }
             period = 1.0/freq;

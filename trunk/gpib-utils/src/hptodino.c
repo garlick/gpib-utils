@@ -369,9 +369,7 @@ _parse_learn_string(uint8_t *buf, int len)
 static void
 _usage(void)
 {
-    fprintf(stderr, 
-  "Usage: %s [--clock freqstr] <state.dump >state.tra\n"
-  "  freqstr is floating pt with units of hz|khz|mhz|ghz|s|ms|us|ns|ps\n",
+    fprintf(stderr, "Usage: %s [--clock freqstr] <state.dump >state.tra\n", 
             prog);
     exit(1);
 }
@@ -395,6 +393,8 @@ main(int argc, char *argv[])
             case 'c':   /* --clock */
                 if (freqstr(optarg, &f) < 0) {
                     fprintf(stderr, "%s: freq conversion error\n", prog);
+                    fprintf(stderr, "%s: use freq units: %s\n", prog, FREQ_UNITS);
+                    fprintf(stderr, "%s: or period units: %s\n", prog,PERIOD_UNITS);
                     exit(1);
                 }
                 clock_ns = 1000000000.0/f;

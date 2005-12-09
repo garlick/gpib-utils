@@ -168,6 +168,8 @@ main(int argc, char *argv[])
         case 't': /* --trigfreq */
             if (freqstr(optarg, &trigfreq) < 0) {
                 fprintf(stderr, "%s: error converting trigger freq\n", prog);
+                fprintf(stderr, "%s: use freq units: %s\n", prog, FREQ_UNITS);
+                fprintf(stderr, "%s: or period units: %s\n", prog,PERIOD_UNITS);
                 exit(1);
             }
             /* instrument checks range for us */
