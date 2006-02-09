@@ -9,8 +9,8 @@ all: $(PROGS) $(TESTPROGS)
 hptodino: hptodino.o units.o
 	$(CC) -o $@ hptodino.o units.o $(LDADD)
 
-hp1630: hp1630.o errstr.o gpib.o
-	$(CC) -o $@ hp1630.o errstr.o gpib.o $(LDADD)
+hp1630: hp1630.o errstr.o gpib.o util.o
+	$(CC) -o $@ hp1630.o errstr.o gpib.o util.o $(LDADD)
 
 r5005: r5005.o units.o gpib.o
 	$(CC) -o $@ r5005.o units.o gpib.o $(LDADD)

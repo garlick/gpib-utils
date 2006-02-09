@@ -38,7 +38,7 @@ static int
 _ibrd(int d, void *buf, int len)
 {
     int count;
-    
+
     ibrd(d, buf, len);
     if (ibsta & TIMO) {
         fprintf(stderr, "%s: ibrd timeout\n", prog);
@@ -48,7 +48,8 @@ _ibrd(int d, void *buf, int len)
         fprintf(stderr, "%s: ibrd error %d\n", prog, iberr);
         exit(1);
     }
-    assert(ibcnt >=0 && ibcnt <= len);
+    assert(ibsta & END);
+    assert(ibcnt >= 0 && ibcnt <= len);
     count = ibcnt;
    
     return count;
@@ -66,6 +67,17 @@ gpib_ibrd(int d, void *buf, int len)
 
 }
 
+#if 0
+static void
+_chomp(char *str)
+{
+    char *p = str + strlen(str) - 1;
+
+    while (*p == '\r' || *p == '\n')
+        *p-- = '\0';
+}
+#endif
+
 void
 gpib_ibrdstr(int d, char *buf, int len)
 {
@@ -74,6 +86,9 @@ gpib_ibrdstr(int d, char *buf, int len)
     count = _ibrd(d, buf, len - 1);
     assert(count < len);
     buf[count] = '\0';
+#if 0
+    _chomp(buf);
+#endif
     if (verbose) {
         char *cpy = strcpyprint(buf);
 
