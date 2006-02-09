@@ -31,6 +31,7 @@
 #include "errstr.h"
 #include "gpib.h"
 #include "hp1630.h"
+#include "util.h"
 
 static char *prog;
 
@@ -44,7 +45,7 @@ static errstr_t _sb4_errors[] = SB4_ERRORS;
 #define MAXPRINTBUF (128*1024)
 #define MAXMODELBUF (16)
 
-#define OPTIONS "n:clvpPbsCAtar"
+#define OPTIONS "n:clvpPsCAtar"
 static struct option longopts[] = {
     {"name",            required_argument, 0, 'n'},
     {"clear",           no_argument, 0, 'c'},
@@ -52,7 +53,6 @@ static struct option longopts[] = {
     {"verbose",         no_argument, 0, 'v'},
     {"print-screen",    no_argument, 0, 'p'},
     {"print-all",       no_argument, 0, 'P'},
-    {"beep",            no_argument, 0, 'b'},
     {"save-all",        no_argument, 0, 's'},
     {"save-config",     no_argument, 0, 'C'},
     {"save-state",      no_argument, 0, 'A'},
@@ -107,6 +107,7 @@ hp1630_printscreen(int d, int allflag)
 {
     uint8_t buf[MAXPRINTBUF];
     int count;
+    int graphics = 0;
 
     if (allflag)
         gpib_ibwrtf(d, "%s\r\n", HP1630_KEY_PRINT_ALL);
@@ -115,8 +116,13 @@ hp1630_printscreen(int d, int allflag)
     hp1630_checksrq(d);
     count = gpib_ibrd(d, buf, sizeof(buf));
     hp1630_checksrq(d);
-    if (fwrite(buf, count, 1, stdout) != 1) {
-        fprintf(stderr, "%s: error writing to stdout\n", prog);
+    if (count > 2 && buf[0] == '\033' && buf[1] == '*')
+        graphics = 1;
+    fprintf(stderr, "%s: Print %s: %d bytes (%s format)\n", prog,
+            allflag ? "all" : "screen", count,
+            graphics ? "HP graphics" : "HP text");
+    if (write_all(1, buf, count) < 0) {
+        perror("write");
         exit(1);
     }
     hp1630_checksrq(d);
@@ -160,13 +166,11 @@ hp1630_setdate(int d)
 
     _getdate(&month, datestr, 64); /* get date from UNIX */
 
-	/* Position cursor on month and hit 'next' enough times to 
-	 * advance from jan to the desired month.
- 	 * FIXME: assumes that the analyzer was just powered on and is set to
-	 * [Jan] 00 0000 00:00:00.
+	/* Position cursor on month, clear entry to reset month to Jan,
+     * then hit 'next' enough times to advance to the desired month.
 	 */
-	gpib_ibwrtf(d, "%s;%s;%s\r\n", HP1630_KEY_SYSTEM_MENU, 
-                    HP1630_KEY_NEXT, HP1630_KEY_CURSOR_DOWN);
+	gpib_ibwrtf(d, "%s;%s;%s;%s\r\n", HP1630_KEY_SYSTEM_MENU, HP1630_KEY_NEXT,
+                    HP1630_KEY_CURSOR_DOWN, HP1630_KEY_CLEAR_ENTRY);
     hp1630_checksrq(d);
 	for (i = 1; i < month; i++) {     /* 1 = jan, 2 = feb, etc. */
 		gpib_ibwrtf(d, "%s\r\n", HP1630_KEY_NEXT);
@@ -197,91 +201,132 @@ hp1630_verify_model(int d)
         fprintf(stderr, "%s: warning: model %s is unsupported\n", prog, buf);
 }
 
-/* NOTE: if analyzer is not configured with any state lines (e.g. analog only
- * on a 1631), save all and save state will return 'unrecognized command'.
+/* Return a string representation of learn string command,
+ * or NULL if invalid.
  */
-static void
-hp1630_savestate(int d, char *cmd)
-{
-    uint8_t buf[MAXCONFBUF];
-    int count;
-    uint8_t status;
-
-    gpib_ibwrtf(d, "%s\r\n", cmd);
-    hp1630_checksrq(d);
-    count = gpib_ibrd(d, buf, sizeof(buf));
-    hp1630_checksrq(d);
-
-    if (fwrite(buf, count, 1, stdout) != 1) {
-        fprintf(stderr, "%s: error writing to stdout\n", prog);
-        exit(1);
-    }
-
-    gpib_ibwrtf(d, "%s 4\r\n", HP1630_CMD_STATUS_BYTE); /* ask for sb 4 */
-    hp1630_checksrq(d);
-    count = gpib_ibrd(d, &status, 1);
-    hp1630_checksrq(d);
-    if (count != 1) {
-        fprintf(stderr, "%s: error reading status byte 4\n", prog);
-        exit(1);
-    }
-    fprintf(stderr, "%s: %s\n", prog, finderr(_sb4_errors, status) );
-}
-
-/* Translate two-char restore command to string */
 static char * 
-_restorecmd(uint8_t *cmd)
+_ls_cmd(uint8_t *ls)
 {
-    if (!strncmp((char *)cmd, "RC", 2))
+    if (!strncmp((char *)&ls[0], "RC", 2))
         return "Config";
-    else if (!strncmp((char *)cmd, "RS", 2))
+    else if (!strncmp((char *)&ls[0], "RS", 2))
         return "State ";
-    else if (!strncmp((char *)cmd, "RT", 2))
+    else if (!strncmp((char *)&ls[0], "RT", 2))
         return "Timing";
-    else if (!strncmp((char *)cmd, "RA", 2))
+    else if (!strncmp((char *)&ls[0], "RA", 2))
         return "Analog";
     return NULL;
 }
 
-static int
-_restorelen(uint8_t *len)
+/* Return the learn string length.
+ * Includes data + CRC, not cmd + length.
+ */
+static uint16_t
+_ls_len(uint8_t *ls)
 {
-    return ((int)(len[0] << 8) + len[1]);
+    return ((uint16_t)(ls[2] << 8) + ls[3]);
+}
+
+/* Return the learn string CRC.
+ */
+static uint16_t
+_ls_crc(uint8_t *ls)
+{
+    uint16_t len = _ls_len(ls) + 4; /* including cmd + length */
+
+    return ((uint16_t)(ls[len - 2] << 8) + ls[len - 1]);
+}
+
+static int
+_ls_parse(uint8_t *ls, int rawlen)
+{
+    char *cmd;
+    uint16_t len;
+    uint16_t crc;
+
+    if (rawlen < 4 || (len = _ls_len(ls)) + 4 > rawlen) {
+        fprintf(stderr, "%s: truncated learn string\n", prog);
+        exit(1);
+    }
+    if (!(cmd = _ls_cmd(ls))) {
+        fprintf(stderr, "%s: corrupt learn string header\n", prog);
+        exit(1);
+    }
+    crc = _ls_crc(ls);
+    /*fprintf(stderr, "XXX check this someday! CRC=%-5.5u\n", crc);*/
+
+    fprintf(stderr, "%s: %s: %-4.4d+4 bytes\n", 
+        prog, cmd, len);
+
+    return len + 4;
 }
 
 static void
-hp1630_restorestate(int d)
+hp1630_restore(int d)
 {
-    int c;
+    int len, i;
     uint8_t buf[MAXCONFBUF];
-    uint8_t *p = &buf[0], *q = &buf[0];
-    int count;
-    uint8_t status;
 
-    while ((p - buf < sizeof(buf)) && (c = getchar()) != EOF)
-        *p++ = c;
-    if (p - buf < 4) {
-        fprintf(stderr, "%s: short read\n", prog);
-        exit(1);;
+    len = read_all(0, buf, sizeof(buf));
+    if (len < 0) {
+        perror("read");
+        exit(1);
     }
-    do {
-        char *str = _restorecmd(q);
-        int count = _restorelen(q+2);
 
-        if (str == NULL) {
-            fprintf(stderr, "%s: corrupt state file (byte %d)\n", prog,
-                    q - buf);
+    /* Iterate through concatenated learn strings:
+     * parsing, verifying, and writing to analyzer.
+     */
+    i = 0;
+    while (i < len) {
+        int lslen; 
+        uint8_t status;
+        int count;
+
+        lslen = _ls_parse(buf + i, len - i);
+
+        /* write the learn string command */
+        gpib_ibwrt(d, buf + i, lslen);
+        hp1630_checksrq(d);
+
+        /* get status byte 4 and check for error */
+        gpib_ibwrtf(d, "%s 4\r\n", HP1630_CMD_STATUS_BYTE);
+        hp1630_checksrq(d);
+        count = gpib_ibrd(d, &status, 1);
+        hp1630_checksrq(d);
+        if (count != 1) {
+            fprintf(stderr, "%s: error reading status byte 4\n", prog);
             exit(1);
         }
-        fprintf(stderr, "%s: restoring %s: %-4.4d+4 bytes\n", 
-                prog, str, count);
-        q += (count + 4);
-    } while (q < p-6); /* 6 bytes of overhead in each segment */
+        if (status != 0)
+            fprintf(stderr, "%s: %s\n", prog, finderr(_sb4_errors, status) );
 
-	gpib_ibwrt(d, buf, p - buf);
+        i += lslen;
+    }
+}
+
+/* NOTE: if analyzer is not configured with any state lines (e.g. analog only
+ * on a 1631), save all and save state will return 'unrecognized command'.
+ */
+static void
+hp1630_save(int d, char *cmd)
+{
+    uint8_t buf[MAXCONFBUF];
+    int count, len;
+    uint8_t status;
+    int i;
+
+    gpib_ibwrtf(d, "%s\r\n", cmd);
+    hp1630_checksrq(d);
+    len = gpib_ibrd(d, buf, sizeof(buf));
     hp1630_checksrq(d);
 
-    gpib_ibwrtf(d, "%s 4\r\n", HP1630_CMD_STATUS_BYTE); /* ask for sb 4 */
+    if (write_all(1, buf, len) < 0) {
+        perror("write");
+        exit(1);
+    }
+
+    /* get status byte 4 and check for error */
+    gpib_ibwrtf(d, "%s 4\r\n", HP1630_CMD_STATUS_BYTE);
     hp1630_checksrq(d);
     count = gpib_ibrd(d, &status, 1);
     hp1630_checksrq(d);
@@ -289,20 +334,33 @@ hp1630_restorestate(int d)
         fprintf(stderr, "%s: error reading status byte 4\n", prog);
         exit(1);
     }
-    fprintf(stderr, "%s: %s\n", prog, finderr(_sb4_errors, status) );
+    if (status != 0)
+        fprintf(stderr, "%s: %s\n", prog, finderr(_sb4_errors, status) );
+
+    /* parse what was read */
+    i = 0;
+    while (i < len)
+        i += _ls_parse(buf + i, len - i);
 }
+
 
 int
 main(int argc, char *argv[])
 {
-    enum { OPT_NONE, 
-        OPT_PRINT_ALL, OPT_PRINT_SCREEN, OPT_SAVE_ALL, OPT_SAVE_STATE, 
-        OPT_SAVE_TIMING, OPT_SAVE_CONFIG, OPT_SAVE_ANALOG, OPT_RESTORE, } opt = OPT_NONE;
     char *instrument = INSTRUMENT;
     int d, c;
     int local = 0;
     int clear = 0;
     int verbose = 0;
+    int print_all = 0;
+    int print_screen = 0;
+    int save_all = 0;
+    int save = 0;
+    int save_state = 0;
+    int save_timing = 0;
+    int save_config = 0;
+    int save_analog = 0;
+    int restore = 0;
 
     /*
      * Handle options.
@@ -323,33 +381,40 @@ main(int argc, char *argv[])
             clear = 1;
             break;
         case 'p':   /* --print-screen */
-            opt = OPT_PRINT_SCREEN; 
+            print_screen = 1;
             break;
         case 'P':   /* --print-all */
-            opt = OPT_PRINT_ALL; 
+            print_all = 1;
             break;
-        case 's': 
-            opt = OPT_SAVE_ALL; 
+        case 's':   /* --save-all */
+            save_all = 1;
             break;
-        case 'C': 
-            opt = OPT_SAVE_CONFIG; 
+        case 'C':   /* --save-config */
+            save = 1;
+            save_config = 1;
             break;
-        case 'A': 
-            opt = OPT_SAVE_STATE; 
+        case 'A':   /* --save-state */
+            save = 1;
+            save_state = 1;
             break;
-        case 't': 
-            opt = OPT_SAVE_TIMING; 
+        case 't':   /* --save-timing */
+            save = 1;
+            save_timing = 1;
             break;
-        case 'a': 
-            opt = OPT_SAVE_ANALOG; 
+        case 'a':   /* --save-analog (1631 only) */
+            save = 1;
+            save_analog = 1;
             break;
-        case 'r': 
-            opt = OPT_RESTORE; 
+        case 'r':   /* --restore */
+            restore = 1;
             break;
         }
     }
 
-    if (opt == OPT_NONE && !clear && !local)
+    if (!clear && !local && !print_screen && !print_all && !save 
+            && !save_all && !restore)
+        usage();
+    if (save + save_all + restore + print_screen + print_all > 1)
         usage();
 
     d = gpib_init(prog, instrument, verbose);
@@ -357,7 +422,7 @@ main(int argc, char *argv[])
     if (clear) {
         gpib_ibclr(d);
         sleep(1);
-        gpib_ibwrtf(d, "%s\r\n", HP1630_CMD_POWER_UP);/* doesn't affect date */
+        gpib_ibwrtf(d, "%s\r\n", HP1630_CMD_POWER_UP);
         hp1630_checksrq(d);
         hp1630_verify_model(d);
         /* set the errors _checksrq() will see */
@@ -367,39 +432,25 @@ main(int argc, char *argv[])
         hp1630_setdate(d);
     }
 
-    /* Ops involving stdin/stdout are mutually exclusive.
-     */
-    switch (opt) {
-
-    /* print */
-    case OPT_PRINT_SCREEN:
+    if (print_screen) {
         hp1630_printscreen(d, 0);
-        break;
-    case OPT_PRINT_ALL:
+    } else if (print_all) {
         hp1630_printscreen(d, 1);
-        break;
-
-    /* save/restore state */
-    case OPT_SAVE_ALL:
-        hp1630_savestate(d, HP1630_CMD_TRANSMIT_ALL);
-        break;
-    case OPT_SAVE_CONFIG:
-        hp1630_savestate(d, HP1630_CMD_TRANSMIT_CONFIG);
-        break;
-    case OPT_SAVE_STATE:
-        hp1630_savestate(d, HP1630_CMD_TRANSMIT_STATE);
-        break;
-    case OPT_SAVE_TIMING:
-        hp1630_savestate(d, HP1630_CMD_TRANSMIT_TIMING);
-        break;
-    case OPT_SAVE_ANALOG: /* 1631 only */
-        hp1630_savestate(d, HP1630_CMD_TRANSMIT_ANALOG);
-        break;
-    case OPT_RESTORE:
-        hp1630_restorestate(d);
-        break;
-    case OPT_NONE:
-        break;
+    } else if (restore) {
+        hp1630_restore(d);
+    } else if (save_all) {
+        hp1630_save(d, HP1630_CMD_TRANSMIT_ALL);
+    } else if (save) {
+        /* Learn strings can be concatenated and restored as a unit.
+         */
+        if (save_config)
+            hp1630_save(d, HP1630_CMD_TRANSMIT_CONFIG);
+        if (save_state)
+            hp1630_save(d, HP1630_CMD_TRANSMIT_STATE);
+        if (save_timing)
+            hp1630_save(d, HP1630_CMD_TRANSMIT_TIMING);
+        if (save_analog)
+            hp1630_save(d, HP1630_CMD_TRANSMIT_ANALOG);
     }
 
     if (local)
