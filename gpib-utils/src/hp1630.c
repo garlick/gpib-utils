@@ -255,8 +255,7 @@ _ls_parse(uint8_t *ls, int rawlen)
     crc = _ls_crc(ls);
     /*fprintf(stderr, "XXX check this someday! CRC=%-5.5u\n", crc);*/
 
-    fprintf(stderr, "%s: %s: %-4.4d+4 bytes\n", 
-        prog, cmd, len);
+    fprintf(stderr, "%s: %s: %-4.4d+4 bytes\n", prog, cmd, len);
 
     return len + 4;
 }

@@ -2,12 +2,14 @@
 
   * src/util.[ch]: New.
 
-  * src/hp1630.c: Use read_all(), write_all() functions instead of 
-    fread/fwrite for save/restore/print.
+  * src/hp1630.c: Use read_all(), write_all() instead of getchar(), fread(),
+    and fwrite() for save/restore/print.
 
-  * src/hp1630.c: Cleanup save/restore functions.  Check learn string
-    length.  Restore learn strings to the analyzer individually, checking
-    status byte 4 on each restore.  Display learn string cmd+lengths on save.
+  * src/hp1630.c: Cleanup save/restore functions.  
+    - Check learn string length.  
+    - Restore learn strings to the analyzer individually, checking
+      status byte 4 on each restore.  
+    - Display learn string cmd+lengths on save.
 
 2006-02-08 Jim Garlick <garlick@speakeasy.net>
 
