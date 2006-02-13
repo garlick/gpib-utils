@@ -7,7 +7,7 @@ TESTPROGS=testfreq testampl
 all: $(PROGS) $(TESTPROGS)
 
 hptodino: hptodino.o units.o
-	$(CC) -o $@ hptodino.o units.o $(LDADD)
+	$(CC) -o $@ hptodino.o units.o -lm
 
 hp1630: hp1630.o errstr.o gpib.o util.o
 	$(CC) -o $@ hp1630.o errstr.o gpib.o util.o $(LDADD)
