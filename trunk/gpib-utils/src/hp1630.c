@@ -92,14 +92,21 @@ hp1630_checksrq(int d)
 
     if ((status & HP1630_STAT_SRQ)) {
         if (status & HP1630_STAT_ERROR_LAST_CMD) {
-            fprintf(stderr, "%s: srq: syntax error\n", prog);
+            fprintf(stderr, "%s: srq: problem with last command\n", prog);
             exit(1);
         }
     }
 }
 
-/*
- * Send analyzer screen dump to stdout.  Output may be in hp bitmap format or
+/* Return true if buffer begins with HP graphics magic.
+ */
+static int
+_hpgraphics(uint8_t *buf, int len)
+{
+    return (len > 2 && buf[0] == '\033' && buf[1] == '*');
+}
+
+/* Send analyzer screen dump to stdout.  Output may be in hp bitmap format or
  * it may be text with hp escape sequences to indicate bold, etc...
  */
 static void
@@ -107,7 +114,6 @@ hp1630_printscreen(int d, int allflag)
 {
     uint8_t buf[MAXPRINTBUF];
     int count;
-    int graphics = 0;
 
     if (allflag)
         gpib_ibwrtf(d, "%s\r\n", HP1630_KEY_PRINT_ALL);
@@ -116,11 +122,9 @@ hp1630_printscreen(int d, int allflag)
     hp1630_checksrq(d);
     count = gpib_ibrd(d, buf, sizeof(buf));
     hp1630_checksrq(d);
-    if (count > 2 && buf[0] == '\033' && buf[1] == '*')
-        graphics = 1;
     fprintf(stderr, "%s: Print %s: %d bytes (%s format)\n", prog,
             allflag ? "all" : "screen", count,
-            graphics ? "HP graphics" : "HP text");
+            _hpgraphics(buf, count) ? "HP graphics" : "HP text");
     if (write_all(1, buf, count) < 0) {
         perror("write");
         exit(1);
@@ -154,8 +158,7 @@ _getdate(int *month, char *datestr, int len)
     free(cmd);
 }
 
-/*
- * Set the date on the analyzer to match the UNIX date.
+/* Set the date on the analyzer to match the UNIX date.
  */
 static void
 hp1630_setdate(int d)
@@ -210,7 +213,7 @@ _ls_cmd(uint8_t *ls)
     if (!strncmp((char *)&ls[0], "RC", 2))
         return "Config";
     else if (!strncmp((char *)&ls[0], "RS", 2))
-        return "State ";
+        return "State";
     else if (!strncmp((char *)&ls[0], "RT", 2))
         return "Timing";
     else if (!strncmp((char *)&ls[0], "RA", 2))
@@ -237,12 +240,23 @@ _ls_crc(uint8_t *ls)
     return ((uint16_t)(ls[len - 2] << 8) + ls[len - 1]);
 }
 
+/* Return the learn string Rev code.
+ */
+static uint8_t
+_ls_rev(uint8_t *ls)
+{
+    uint16_t len = _ls_len(ls) + 4; /* including cmd + length */
+
+    return ls[len - 3];
+}
+
 static int
 _ls_parse(uint8_t *ls, int rawlen)
 {
     char *cmd;
     uint16_t len;
     uint16_t crc;
+    uint8_t rev;
 
     if (rawlen < 4 || (len = _ls_len(ls)) + 4 > rawlen) {
         fprintf(stderr, "%s: truncated learn string\n", prog);
@@ -253,9 +267,16 @@ _ls_parse(uint8_t *ls, int rawlen)
         exit(1);
     }
     crc = _ls_crc(ls);
-    /*fprintf(stderr, "XXX check this someday! CRC=%-5.5u\n", crc);*/
+#if 0
+    {
+        unsigned long ncrc = hpcrc(ls+4, len-2);
 
-    fprintf(stderr, "%s: %s: %-4.4d+4 bytes\n", prog, cmd, len);
+        fprintf(stderr, "XXX mycrc=%x read=%hx\n", (unsigned)ncrc, crc);
+    }
+#endif
+    rev = _ls_rev(ls);
+
+    fprintf(stderr, "%s: %s: %-4.4d+4 bytes (rev %d)\n", prog, cmd, len, rev);
 
     return len + 4;
 }
