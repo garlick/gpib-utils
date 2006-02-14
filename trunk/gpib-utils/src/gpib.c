@@ -37,20 +37,23 @@ strcpyprint(char *str)
 static int
 _ibrd(int d, void *buf, int len)
 {
-    int count;
+    int count = 0;
 
-    ibrd(d, buf, len);
-    if (ibsta & TIMO) {
-        fprintf(stderr, "%s: ibrd timeout\n", prog);
-        exit(1);
-    }
-    if (ibsta & ERR) {
-        fprintf(stderr, "%s: ibrd error %d\n", prog, iberr);
-        exit(1);
-    }
+    do {
+        ibrd(d, buf + count, len - count);
+        if (ibsta & TIMO) {
+            fprintf(stderr, "%s: ibrd timeout\n", prog);
+            exit(1);
+        }
+        if (ibsta & ERR) {
+            fprintf(stderr, "%s: ibrd error %d\n", prog, iberr);
+            exit(1);
+        }
+        count += ibcnt;
+        assert(len >= 0);
+    } while (!(ibsta & END) && ibcnt > 0 && len - count > 0);
     assert(ibsta & END);
-    assert(ibcnt >= 0 && ibcnt <= len);
-    count = ibcnt;
+    assert(count >= 0 && count <= len);
    
     return count;
 }
