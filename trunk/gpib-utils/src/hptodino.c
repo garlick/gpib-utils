@@ -35,6 +35,7 @@
 
 #include "hp1630.h"
 #include "units.h"
+#include "hpcrc.h"
 
 struct pods {
     uint16_t pod0; /* 8 bit state/timing */
@@ -67,7 +68,7 @@ _getint32(uint8_t *buf)
 }
 #endif
 
-/* one int contains two padded bcd digits */
+/* one byte contains two padded bcd digits */
 static int 
 _getint8bcd(uint8_t v)
 {
@@ -104,33 +105,11 @@ _gettime(uint8_t *buf)
 }
 
 static int
-_check_crc(uint8_t *buf, int len, uint16_t crc)
-{
-#if 0
-    uint16_t s; 
-    int i;
-
-    fprintf(stderr, "XXX: crc=%hu\n", crc);
-    for (s = 0, i = 0; i < len-2; i++) 
-        s += buf[i];
-    fprintf(stderr, "XXX: allsum=%hu\n", s);
-    for (s = 0, i = 2; i < len-2; i++) 
-        s += buf[i];
-    fprintf(stderr, "XXX: sumnoRX=%hu\n", s);
-    for (s = 0, i = 4; i < len-2; i++) 
-        s += buf[i];
-    fprintf(stderr, "XXX: sumnoRXlen=%hu\n", s);
-#endif
-    
-    /* XXX need to figure out CRC algorithm someday */
-    return 1; 
-}
-
-static int
 _read_learn_string(uint8_t *buf, int size)
 {
     uint16_t crc;
     uint16_t len = 0;
+
 
     if (fread(&buf[0], 4, 1, stdin) == 1) {
         if (buf[0] != 'R')
@@ -143,7 +122,7 @@ _read_learn_string(uint8_t *buf, int size)
         }
         len += 4; /* make len be length of whole learn string */
         crc = _getint16(&buf[len - 2]);
-        if (!_check_crc(buf, len, crc)) {
+        if (hpcrc(buf+4, len-6) != crc) {
             fprintf(stderr, "%s: crc failure\n", prog);
             exit(1);
         }
