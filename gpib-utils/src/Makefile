@@ -6,11 +6,11 @@ TESTPROGS=testfreq testampl
 
 all: $(PROGS) $(TESTPROGS)
 
-hptodino: hptodino.o units.o
-	$(CC) -o $@ hptodino.o units.o -lm
+hptodino: hptodino.o units.o hpcrc.o
+	$(CC) -o $@ hptodino.o units.o hpcrc.o -lm
 
-hp1630: hp1630.o errstr.o gpib.o util.o
-	$(CC) -o $@ hp1630.o errstr.o gpib.o util.o $(LDADD)
+hp1630: hp1630.o errstr.o gpib.o util.o hpcrc.o
+	$(CC) -o $@ hp1630.o errstr.o gpib.o util.o hpcrc.o $(LDADD)
 
 r5005: r5005.o units.o gpib.o
 	$(CC) -o $@ r5005.o units.o gpib.o $(LDADD)

@@ -53,7 +53,8 @@ _ibrd(int d, void *buf, int len)
         assert(len >= 0);
     } while (!(ibsta & END) && ibcnt > 0 && len - count > 0);
     assert(ibsta & END);
-    assert(count >= 0 && count <= len);
+    assert(count >= 0);
+    assert(count <= len);
    
     return count;
 }
@@ -103,19 +104,20 @@ gpib_ibrdstr(int d, char *buf, int len)
 static void 
 _ibwrt(int d, void *buf, int len)
 {
-    ibwrt(d, buf, len);
-    if (ibsta & TIMO) {
-        fprintf(stderr, "%s: ibwrt timeout\n", prog);
-        exit(1);
-    }
-    if (ibsta & ERR) {
-        fprintf(stderr, "%s: ibwrt error %d\n", prog, iberr);
-        exit(1);
-    }
-    if (ibcnt != len) {
-        fprintf(stderr, "%s: ibwrt: short write\n", prog);
-        exit(1);
-    }
+    int count = 0;
+
+    do {
+        ibwrt(d, buf + count, len - count);
+        if (ibsta & TIMO) {
+            fprintf(stderr, "%s: ibwrt timeout\n", prog);
+            exit(1);
+        }
+        if (ibsta & ERR) {
+            fprintf(stderr, "%s: ibwrt error %d\n", prog, iberr);
+            exit(1);
+        }
+        count += ibcnt;
+    } while (len - count > 0);
 }
 
 void
