@@ -1,6 +1,6 @@
 2006-02-13 Jim Garlick <garlick@speakeasy.net>
 
-  * src/hpcrc.[c,h]: New. CRC algorithm for hp1630. [Adam Goldman]
+  * src/hpcrc.[ch]: New. CRC algorithm for hp1630. [Adam Goldman]
 
   * src/gpib.c: in gpib_ibrd(), remove EOI assertion, continue reading until 
     EOI or zero ibcnt.
@@ -9,7 +9,7 @@
 
   * src/hp1630.c: verify CRC on save/restore of learn strings.
 
-  * src/dinotrace.c: verify CRC on read of learn string.
+  * src/hptodino.c: verify CRC on read of learn string.
 
 2006-02-09 Jim Garlick <garlick@speakeasy.net>
 
