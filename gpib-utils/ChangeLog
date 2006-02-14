@@ -1,3 +1,10 @@
+2006-02-13 Jim Garlick <garlick@speakeasy.net>
+
+  * src/hp1630.c: verify CRC in learn strings on read/write [Adam Goldman]
+
+  * src/gpib.c: in gpib_ibrd(), remove EOI assertion, continue reading until 
+    EOI or zero ibcnt.
+
 2006-02-09 Jim Garlick <garlick@speakeasy.net>
 
   * src/util.[ch]: New.
@@ -10,6 +17,8 @@
     - Restore learn strings to the analyzer individually, checking
       status byte 4 on each restore.  
     - Display learn string cmd+lengths on save.
+
+  * src/gpib.c: in gpib_ibrd(), assert that EOI is set.
 
 2006-02-08 Jim Garlick <garlick@speakeasy.net>
 

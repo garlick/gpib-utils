@@ -26,7 +26,7 @@ HP8656: "FR200MZ" should change the carrier frequency to 200 MHz
 DG535: "DS hello" should display the string "hello" on LCD
 
 The configuration I am using is linux-gpib-3.2.06 on Fedora Core 4,
-with 2.6.14-1.1637_FC4 and a National Instruments PCI-GPIB card.  
+with kernel 2.6.14-1.1637_FC4 and a National Instruments PCI-GPIB card.  
 On Fedora, there are a couple of things you can do for linux-gpib to 
 make your life simpler:
 
@@ -45,5 +45,5 @@ for your gpib adapter and run gpib_config after the device appears:
    remove gpib /sbin/modprobe -r tnt4882
 
 Jim Garlick
-garlick@speakeasy.net
-Nov. 20, 2005
+garlick at speakeasy dot net
+Feb. 9, 2006
