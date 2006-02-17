@@ -50,7 +50,6 @@ _ibrd(int d, void *buf, int len)
             exit(1);
         }
         count += ibcnt;
-        assert(len >= 0);
     } while (!(ibsta & END) && ibcnt > 0 && len - count > 0);
     assert(ibsta & END);
     assert(count >= 0);
@@ -117,7 +116,7 @@ _ibwrt(int d, void *buf, int len)
             exit(1);
         }
         count += ibcnt;
-    } while (len - count > 0);
+    } while (ibcnt > 0 && len - count > 0);
 }
 
 void
