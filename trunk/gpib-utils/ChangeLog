@@ -1,3 +1,7 @@
+2006-02-26 Jim Garlick <garlick@speakeasy.net>
+
+  * src/Makefile: fix link line for r5005.
+
 2006-02-17 Jim Garlick <garlick@speakeasy.net>
 
   * gpib-utils.spec: Update for Fedora packaging guidlines.
