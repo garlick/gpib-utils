@@ -12,8 +12,8 @@ hptodino: hptodino.o units.o hpcrc.o
 hp1630: hp1630.o errstr.o gpib.o util.o hpcrc.o
 	$(CC) -o $@ hp1630.o errstr.o gpib.o util.o hpcrc.o $(LDADD)
 
-r5005: r5005.o units.o gpib.o
-	$(CC) -o $@ r5005.o units.o gpib.o $(LDADD)
+r5005: r5005.o units.o gpib.o errstr.o
+	$(CC) -o $@ r5005.o units.o gpib.o errstr.o $(LDADD)
 
 hp3455: hp3455.o units.o gpib.o
 	$(CC) -o $@ hp3455.o units.o gpib.o $(LDADD)
