@@ -290,6 +290,12 @@ hp1630_restore(int d)
 
         /* write the learn string command */
         gpib_ibwrt(d, buf + i, lslen);
+        /* XXX The following string is written after each learn string
+         * to work around a possible HP1630D firmware bug identified by
+         * Adam Goldman where the analyzer seems to be inappropriately 
+         * waiting for more data in some cases.
+         */
+        gpib_ibwrtf(d,"\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n");
         hp1630_checksrq(d);
 
         /* get status byte 4 and check for error */

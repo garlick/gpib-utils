@@ -2,9 +2,14 @@
 
   * src/Makefile: fix link line for r5005.
 
+  * src/hp1630.c: workaround for possible HP1630D firmware bug [Adam Goldman].
+
+  * src/gpib.c: comment out ibrd() EOI assertion and remove short read and 
+  write handling which probably can't happen.
+
 2006-02-17 Jim Garlick <garlick@speakeasy.net>
 
-  * gpib-utils.spec: Update for Fedora packaging guidlines.
+  * gpib-utils.spec: Update for Fedora packaging guidelines.
 
 2006-02-13 Jim Garlick <garlick@speakeasy.net>
 
