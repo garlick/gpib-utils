@@ -37,25 +37,27 @@ strcpyprint(char *str)
 static int
 _ibrd(int d, void *buf, int len)
 {
-    int count = 0;
+    ibrd(d, buf, len);
+    if (ibsta & TIMO) {
+        fprintf(stderr, "%s: ibrd timeout\n", prog);
+        exit(1);
+    }
+    if (ibsta & ERR) {
+        fprintf(stderr, "%s: ibrd error %d\n", prog, iberr);
+        exit(1);
+    }
 
-    do {
-        ibrd(d, buf + count, len - count);
-        if (ibsta & TIMO) {
-            fprintf(stderr, "%s: ibrd timeout\n", prog);
-            exit(1);
-        }
-        if (ibsta & ERR) {
-            fprintf(stderr, "%s: ibrd error %d\n", prog, iberr);
-            exit(1);
-        }
-        count += ibcnt;
-    } while (!(ibsta & END) && ibcnt > 0 && len - count > 0);
-    assert(ibsta & END);
-    assert(count >= 0);
-    assert(count <= len);
+    /* XXX This assertion for EOI at the end of a read is commented out
+     * because Adam sees it trigger on "hp1630 --save-all", but he still
+     * gets complete learn strings.  The reason for the assertion is to
+     * document the assumption that 'len' bytes is sufficient to contain
+     * the whole instrument response.  Figure out why we are seeing this.
+     */
+    /*assert(ibsta & END);*/ 
+    assert(ibcnt >= 0);
+    assert(ibcnt <= len);
    
-    return count;
+    return ibcnt;
 }
 
 int
@@ -67,19 +69,7 @@ gpib_ibrd(int d, void *buf, int len)
         fprintf(stderr, "R: [%d bytes]\n", count);
 
     return count;
-
 }
-
-#if 0
-static void
-_chomp(char *str)
-{
-    char *p = str + strlen(str) - 1;
-
-    while (*p == '\r' || *p == '\n')
-        *p-- = '\0';
-}
-#endif
 
 void
 gpib_ibrdstr(int d, char *buf, int len)
@@ -89,9 +79,7 @@ gpib_ibrdstr(int d, char *buf, int len)
     count = _ibrd(d, buf, len - 1);
     assert(count < len);
     buf[count] = '\0';
-#if 0
-    _chomp(buf);
-#endif
+
     if (verbose) {
         char *cpy = strcpyprint(buf);
 
@@ -103,20 +91,16 @@ gpib_ibrdstr(int d, char *buf, int len)
 static void 
 _ibwrt(int d, void *buf, int len)
 {
-    int count = 0;
-
-    do {
-        ibwrt(d, buf + count, len - count);
-        if (ibsta & TIMO) {
-            fprintf(stderr, "%s: ibwrt timeout\n", prog);
-            exit(1);
-        }
-        if (ibsta & ERR) {
-            fprintf(stderr, "%s: ibwrt error %d\n", prog, iberr);
-            exit(1);
-        }
-        count += ibcnt;
-    } while (ibcnt > 0 && len - count > 0);
+    ibwrt(d, buf, len);
+    if (ibsta & TIMO) {
+        fprintf(stderr, "%s: ibwrt timeout\n", prog);
+        exit(1);
+    }
+    if (ibsta & ERR) {
+        fprintf(stderr, "%s: ibwrt error %d\n", prog, iberr);
+        exit(1);
+    }
+    assert(ibcnt == len);
 }
 
 void
