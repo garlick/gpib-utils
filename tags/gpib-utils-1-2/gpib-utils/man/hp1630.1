@@ -1,0 +1,106 @@
+.\" This file is part of gpib-utils.
+.\" For details, see http://sourceforge.net/projects/gpib-utils.
+.\"
+.\" Copyright (C) 2005 Jim Garlick <garlick@speakeasy.net>
+.\"
+.\" gpib-utils is free software; you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published by
+.\" the Free Software Foundation; either version 2 of the License, or
+.\" (at your option) any later version.
+.\"
+.\" gpib-utils is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\" GNU General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public License
+.\" along with gpib-utils; if not, write to the Free Software Foundation, 
+.\" Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+.TH hp1630 1  2005-04-05 "" "gpib-utils"
+.SH NAME
+hp1630 \- control HP 1630/31 logic analyzer
+.SH SYNOPSIS
+.nf
+.B hp1630 [\fIOPTIONS\fR]
+
+.fi
+.SH DESCRIPTION
+\fBhp1630\fR controls the HP 1630/31 logic analyzer via its GPIB interface.
+The instrument is presumed to be attached to GPIB adapter 0 and configured 
+with an entry in /etc/gpib.conf (see CONFIGURATION below).
+.PP
+\fBhp1630\fR performs actions selected on the command line in a fixed sequence:
+.IP
+.nf
+clear
+save/restore/print operation
+local
+.SH OPTIONS
+\fBhp1630\fR accepts the following command line options:
+.TP
+\fB\-n\fR, \fB\-\-name\fR
+Override the name used to look up the device in /etc/gpib.conf.
+Default: \fIhp1630\fR.
+.TP
+\fB\-c\fR, \fB\-\-clear\fR
+Clear the instrument, load power-on values, verify the model number,
+and set the date to the UNIX date.
+.TP
+\fB\-l\fR, \fB\-\-local\fR
+Enable the front panel.
+.TP
+\fB\-p\fR, \fB\-\-print-screen\fR 
+Dump the screen contents to standard output.  
+The output will be in HP-graphics format for waveform displays.
+Text displays will be in HP-text or HP-graphics format depending on the
+setting in the System Menu.
+HP-graphics can be converted to portable bitmap (PBM) format using
+\fBhptopbm(1)\fR.
+.TP
+\fB\-P\fR, \fB\-\-print-all\fR 
+Dump the screen contents and the entire contents of the trace memory
+to standard output.
+.TP
+\fB\-s\fR, \fB\-\-save-all\fR 
+Save the instrument configuration, state measurement data, 
+timing measurement data, and analog measurement data (hp1631 only)
+to standard output.
+.TP
+\fB\-C\fR, \fB\-\-save-config\fR 
+Save the instrument configuration to standard output.
+.TP
+\fB\-A\fR, \fB\-\-save-state\fR 
+Save the instrument state measurement data to standard output.
+.TP
+\fB\-t\fR, \fB\-\-save-timing\fR 
+Save the instrument timing measurement data to standard output.
+.TP
+\fB\-a\fR, \fB\-\-save-analog\fR 
+Save the instrument analog measurement data to standard output (hp1631 only).
+.TP
+\fB\-r\fR, \fB\-\-restore\fR 
+Restore state/measurement data saved by any of the save options
+from standard input.
+.SH "CONFIGURATION"
+The /etc/gpib.conf entry for this instrument includes the following
+parameters:
+.IP
+.nf
+eos = 0xa
+set-reos = no
+set-bin = no
+set-xeos = no
+set-eot = yes
+timeout = T30s
+.fi
+.SH "SEE ALSO"
+"Hewlett Packard 1630A/D Logic Analyzer Operating Manual",
+second edition, May 1983.
+.PP
+"Hewlett Packard 1631A/D Logic Analyer Operating and Programming Manual",
+Aug. 1985.
+.PP
+"Hewlett Packard 1630A/D/G and 1631A/D Logic Analyzers Service Manual",
+Apr. 1988.
+.PP
+hptopbm(1), hptodino(1)
