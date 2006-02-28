@@ -199,7 +199,7 @@ hp1630_verify_model(int d)
 	gpib_ibrdstr(d, buf, sizeof(buf));
     hp1630_checksrq(d);
     for (i = 0; supported[i] != NULL; i++)
-        if (!strcmp(buf, supported[i]))
+        if (!strncmp(buf, supported[i], strlen(supported[i])))
             found = 1;
     if (!found)
         fprintf(stderr, "%s: warning: model %s is unsupported\n", prog, buf);
