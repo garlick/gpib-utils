@@ -32,7 +32,6 @@ tek2230: tek2230.o gpib.o
 
 testampl: units.c
 	$(CC) -o $@ -DAMPLMAIN $< -lm
-
 testfreq: units.c
 	$(CC) -o $@ -DFREQMAIN $< -lm
 

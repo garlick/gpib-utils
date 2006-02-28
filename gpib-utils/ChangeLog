@@ -2,6 +2,8 @@
 
   * src/hp1630.c: drop \r\n in model comparison
 
+  * : tag gpib-utils-1-2
+
 2006-02-26 Jim Garlick <garlick@speakeasy.net>
 
   * src/Makefile: fix link line for r5005.

@@ -1,5 +1,5 @@
 Name: gpib-utils
-Version: 1.1
+Version: 1.2
 Release: 1
 Summary: GPIB Instrument Utilities
 License:  GPL
