@@ -29,7 +29,7 @@ strcpyprint(char *str)
         else if (str[i] == '\r')
             strcat(cpy, "\\r");
         else
-            sprintf(cpy + strlen(cpy), "%c", str[i]);
+            strncat(cpy, &str[i], 1);
     }
     return cpy;
 }
