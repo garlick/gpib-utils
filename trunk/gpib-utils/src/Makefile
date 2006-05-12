@@ -1,7 +1,7 @@
 CFLAGS=-Wall -g
 LDADD=-lgpib -lm
 
-PROGS=hp1630 hptopbm hptodino r5005 hp3455 hp3457 hp8656 dg535 tek2230
+PROGS=hp1630 hptopbm hptodino r5005 hp3455 hp3457 hp8656 dg535 tek2230 hp3488
 TESTPROGS=testfreq testampl
 
 all: $(PROGS) $(TESTPROGS)
@@ -29,6 +29,9 @@ dg535: dg535.o units.o gpib.o
 
 tek2230: tek2230.o gpib.o
 	$(CC) -o $@ tek2230.o gpib.o $(LDADD)
+
+hp3488: hp3488.o gpib.o
+	$(CC) -o $@ hp3488.o gpib.o $(LDADD)
 
 testampl: units.c
 	$(CC) -o $@ -DAMPLMAIN $< -lm
