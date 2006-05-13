@@ -59,16 +59,15 @@ Perform unit self test.
 \fB\-L\fR, \fB\-\-list\fR
 List the cards installed in each slot including model number, description, 
 and valid channel numbers.
-Note: in order to distinguish 44476 and 44477 from 44471 we must close 
-channel 4 and 9 and look for errors, therefore this option may 
-momentarily alter the state of those cards.
+NOTE: This option may momentarily close channel 04 and 09 of a 44471 or 44477.
+See CAVEATS below.
 .TP
 \fB\-q\fR, \fB\-\-query\fR \fBcaddr[,caddr]\fR
 Query the state of the specified channels.
 Channel addresses are three digits: card number (1-5) followed by two
 digit channel number as reported by the \fB\-\-list\fR option.
 A single digit is interpreted as a slot number, in which case all
-channels for that slot are reported.
+channels for that slot are reported.  See CAVEATS below.
 .TP
 \fB\-0\fR, \fB\-\-open\fR \fBcaddr[,caddr]\fR
 Open the specified channels.
@@ -77,9 +76,7 @@ Open the specified channels.
 Close the specified channels.
 .TP
 \fB\-Q\fR, \fB\-\-queryall\fR
-Query the state of all channels.  Note: this option will not alter
-the state of any channels, thus it lists 10 channels for the 4-channel 44476 
-and 7-channel 44477 cards (see note under \fB\-\-list\fR description).
+Query the state of all channels.  See CAVEATS below.
 .SH "EXAMPLES"
 .nf
 # This script toggles a relay (slot 2 channel 01) on and off every 5s
@@ -101,6 +98,14 @@ set-xeos = no
 set-eot = yes
 timeout = T3s
 .fi
+.SH "CAVEATS"
+The 3488 reports 44476 and 44477 cards as 44471.
+The \fB\-\-list\fR option closes channel 04 and 09 and looks for errors 
+to disambiguate the models, and therefore will momentarily close
+channel 04 and 09 on the 44471, and channel 04 on the 44477.
+Other options such \fB\-\-query\fR do not perform this disambiguation 
+and treat the 4-channel 44476 and 7-channel 44477 as though it had 10 
+channels like the 44471.
 .SH "SEE ALSO"
 "HP 3488A Switch/Control Unit: Operating, Programming, and Configuration 
 Manual", Sept. 1, 1995.

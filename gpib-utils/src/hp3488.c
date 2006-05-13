@@ -110,38 +110,40 @@ hp3488_checksrq(int d, int *errp)
     int ready = 0;
     int err = 0;
     int loops = 0;
+    int fatal = 0;
 
     do {
-        if (loops > 0)
-            usleep(100000);
+        usleep(loops*100000); /* backoff-delay */
         gpib_ibrsp(d, &status);
         if ((status & HP3488_STATUS_READY)) {
             ready = 1;
         }
         if ((status & HP3488_STATUS_SRQ_POWER)) {
             fprintf(stderr, "%s: srq: power-on SRQ occurred\n", prog);
-            exit(1);
+            fatal = 1;
         }
         if ((status & HP3488_STATUS_SRQ_BUTTON)) {
             fprintf(stderr, "%s: srq: front panel SRQ key pressed\n", prog);
-            exit(1);
+            fatal = 1;
         }
         if ((status & HP3488_STATUS_ERROR)) {
             err = _checkerror(d); /* clears error */
         }
         if ((status & HP3488_STATUS_RQS)) {
             fprintf(stderr, "%s: srq: rqs\n", prog);
-            exit(1);
+            fatal = 1;
         }
         loops++;
-    } while (!ready && !err);
+    } while (!ready && !err && !fatal);
 
     if (errp)
         *errp = err;
     if (!errp && err) {
         _reporterror(err);
-        exit(1);
+        fatal = 1;
     }
+    if (fatal)
+        exit(1);
 }
 
 static void
@@ -165,31 +167,15 @@ hp3488_checkid(int d)
 static void
 hp3488_open(int d, char *list)
 {
-    char *caddr;
-    char buf[256];
-
-    caddr = strtok_r(list, ",", (char **)&buf);
-    while (caddr) {
-        gpib_ibwrtf(d, "%s %s", HP3488_OPEN, caddr);
-        hp3488_checksrq(d, NULL);
-        printf("opened %s\n", caddr);
-        caddr = strtok_r(NULL, ",", (char **)&buf);
-    }
+    gpib_ibwrtf(d, "%s %s", HP3488_OPEN, list);
+    hp3488_checksrq(d, NULL);
 }
 
 static void
 hp3488_close(int d, char *list)
 {
-    char *caddr;
-    char buf[256];
-
-    caddr = strtok_r(list, ",", (char **)&buf);
-    while (caddr) {
-        gpib_ibwrtf(d, "%s %s", HP3488_CLOSE, caddr);
-        hp3488_checksrq(d, NULL);
-        printf("closed %s\n", caddr);
-        caddr = strtok_r(NULL, ",", (char **)&buf);
-    }
+    gpib_ibwrtf(d, "%s %s", HP3488_CLOSE, list);
+    hp3488_checksrq(d, NULL);
 }
 
 
@@ -222,6 +208,9 @@ _disambiguate_ctype(int d, int slot)
     int err4, err9;
     int model;
 
+    gpib_ibwrtf(d, "%s", HP3488_DISP_OFF);
+    hp3488_checksrq(d, NULL);
+
     gpib_ibwrtf(d, "%s %d04", HP3488_CLOSE, slot);
     hp3488_checksrq(d, &err4);
     if (!(err4 == 0 || err4 == HP3488_ERROR_LOGIC)) {
@@ -250,6 +239,9 @@ _disambiguate_ctype(int d, int slot)
     gpib_ibwrtf(d, "%s %d", HP3488_CRESET, slot);
     hp3488_checksrq(d, NULL);
 
+    gpib_ibwrtf(d, "%s", HP3488_DISP_ON);
+    hp3488_checksrq(d, NULL);
+
     return model;
 }
 
@@ -276,6 +268,7 @@ static void
 hp3488_query_caddr(int d, char *caddr)
 {
     char buf[128];
+    int state;
 
     gpib_ibwrtf(d, "%s %s", HP3488_VIEW_QUERY, caddr);
     hp3488_checksrq(d, NULL);
@@ -283,7 +276,15 @@ hp3488_query_caddr(int d, char *caddr)
     gpib_ibrdstr(d, buf, sizeof(buf));
     hp3488_checksrq(d, NULL);
 
-    printf("%s: %s", caddr, buf);
+    if (!strncmp(buf, "OPEN   1", 8))
+        state = 0;
+    else if (!strncmp(buf, "CLOSED 0", 8))
+        state = 1;
+    else {
+        fprintf(stderr, "%s: parse error\n", prog);
+        exit(1);
+    }
+    printf("%s: %d\n", caddr, state);
 }
 
 static void
