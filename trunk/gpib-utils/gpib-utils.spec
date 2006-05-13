@@ -16,7 +16,8 @@ GPIB Instrument utilities for:
 * HP 3455 digital voltmeter
 * HP 3457 digital multi-meter
 * Racal 5005 digital multi-meter
-* HP 8656A syhthesized frequency generator
+* HP 8656A synthesized frequency generator
+* HP 3488A switch/control unit
 
 %prep
 %setup

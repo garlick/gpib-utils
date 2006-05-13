@@ -4,8 +4,13 @@
 
   * man/Makefile: added hp3488.1
 
-  * src/hp3488.[ch]: better error reporting, better slot config listing,
-  added --selftest option.
+  * src/hp3488.[ch]: 
+  - hp3488_checksrq(): interpret error register contents.
+  - hp3488_list(): include descriptions in slot listing.
+  - add --selftest option.
+  - _disambiguate_ctype(): turn off display while probing.
+  - hp3488_open()/hp3488_close(): pass entire channel list in one command.
+  - hp3488_query_caddr(): report query result as 1 (closed) or 0 (open).
 
 2006-05-12 Jim Garlick <garlick@speakeasy.net>
 
