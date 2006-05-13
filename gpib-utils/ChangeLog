@@ -1,3 +1,12 @@
+2006-05-13 Jim Garlick <garlick@speakeasy.net>
+
+  * man/hp3488.1: New.
+
+  * man/Makefile: added hp3488.1
+
+  * src/hp3488.[ch]: better error reporting, better slot config listing,
+  added --selftest option.
+
 2006-05-12 Jim Garlick <garlick@speakeasy.net>
 
   * src/hp3488.[ch]: New.

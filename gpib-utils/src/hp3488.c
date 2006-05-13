@@ -39,13 +39,14 @@
 
 static char *prog = "";
 
-#define OPTIONS "n:clvL0:1:q:Q"
+#define OPTIONS "n:cltvL0:1:q:Q"
 static struct option longopts[] = {
     {"name",            required_argument, 0, 'n'},
     {"clear",           no_argument,       0, 'c'},
     {"local",           no_argument,       0, 'l'},
-    {"list",            no_argument,       0, 'L'},
     {"verbose",         no_argument,       0, 'v'},
+    {"selftest",        no_argument,       0, 't'},
+    {"list",            no_argument,       0, 'L'},
     {"open",            required_argument, 0, '0'},
     {"close",           required_argument, 0, '1'},
     {"query",           required_argument, 0, 'q'},
@@ -66,6 +67,7 @@ usage(void)
 "  -1,--close caddr[,caddr]...   close contacts for specified channels\n"
 "  -q,--query caddr[,caddr]...   view state of specified channels (or slots)\n"
 "  -Q,--queryall                 view state of all channels\n"
+"  -t,--selftest                 execute self test\n"
 "  -L,--list                     list slot configuration (may alter state!)\n"
            , prog, INSTRUMENT);
     exit(1);
@@ -80,6 +82,22 @@ _checkerror(int d)
     gpib_ibrdstr(d, tmpbuf, sizeof(tmpbuf)); /* clears error */
 
     return strtoul(tmpbuf, NULL, 10);
+}
+
+static void
+_reporterror(int err)
+{
+    /* presumably since error is a mask, we can have more than one? */
+    if ((err & HP3488_ERROR_SYNTAX))
+        fprintf(stderr, "%s: syntax error\n", prog);
+    if ((err & HP3488_ERROR_EXEC))
+        fprintf(stderr, "%s: execution error\n", prog);
+    if ((err & HP3488_ERROR_TOOFAST))
+        fprintf(stderr, "%s: trigger too fast\n", prog);
+    if ((err & HP3488_ERROR_LOGIC))
+        fprintf(stderr, "%s: logic error\n", prog);
+    if ((err & HP3488_ERROR_POWER))
+        fprintf(stderr, "%s: power supply failure\n", prog);
 }
 
 /* Spin until ready for another command or an error has occurred.
@@ -121,7 +139,7 @@ hp3488_checksrq(int d, int *errp)
     if (errp)
         *errp = err;
     if (!errp && err) {
-        fprintf(stderr, "%s: error: %d\n", prog, err);
+        _reporterror(err);
         exit(1);
     }
 }
@@ -206,9 +224,17 @@ _disambiguate_ctype(int d, int slot)
 
     gpib_ibwrtf(d, "%s %d04", HP3488_CLOSE, slot);
     hp3488_checksrq(d, &err4);
+    if (!(err4 == 0 || err4 == HP3488_ERROR_LOGIC)) {
+        _reporterror(err4);
+        exit(1);
+    }
 
     gpib_ibwrtf(d, "%s %d09", HP3488_CLOSE, slot);
     hp3488_checksrq(d, &err9);
+    if (!(err9 == 0 || err9 == HP3488_ERROR_LOGIC)) {
+        _reporterror(err9);
+        exit(1);
+    }
 
     if (err4 && err9)
         model = 44476;
@@ -229,6 +255,7 @@ _disambiguate_ctype(int d, int slot)
 
 typedef struct {
     int model;
+    char *desc;
     char *list;
 } caddrtab_t;
 
@@ -275,18 +302,20 @@ hp3488_query_slot(int d, int slot)
         fprintf(stderr, "%s: problem looking up slot ctype %d\n", prog, model);
         exit(1);
     }
-    listcpy = strdup(cp->list);
-    if (listcpy == NULL) {
-        fprintf(stderr, "%s: out of memory\n", prog);
-        exit(1);
+    if (cp->list) {
+        listcpy = strdup(cp->list);
+        if (listcpy == NULL) {
+            fprintf(stderr, "%s: out of memory\n", prog);
+            exit(1);
+        }
+        chan = strtok_r(listcpy, ",", (char **)&buf);
+        while (chan) {
+            sprintf(caddr, "%d%s", slot, chan);
+            hp3488_query_caddr(d, caddr);
+            chan = strtok_r(NULL, ",", (char **)&buf);
+        }
+        free(listcpy);
     }
-    chan = strtok_r(listcpy, ",", (char **)&buf);
-    while (chan) {
-        sprintf(caddr, "%d%s", slot, chan);
-        hp3488_query_caddr(d, caddr);
-        chan = strtok_r(NULL, ",", (char **)&buf);
-    }
-    free(listcpy);
 }
 
 static void
@@ -332,11 +361,17 @@ hp3488_list(int d)
         if (model == 44471)
             model = _disambiguate_ctype(d, slot);
         cp = _caddrtab_find(model);
-        if (model == 0)
-            printf("%d: empty slot\n", slot);
-        else
-            printf("%d: %d (%s)\n", slot, model, cp ? cp->list : "");
+        printf("%d: %-.5d %-21s %s\n", slot, model, cp->desc, 
+                cp->list ? cp->list : "");
     }
+}
+
+static void
+hp3488_test(int d)
+{
+    gpib_ibwrtf(d, "%s", HP3488_TEST);
+    hp3488_checksrq(d, NULL);
+    printf("%s: selftest passed\n", prog);
 }
 
 int
@@ -352,6 +387,7 @@ main(int argc, char *argv[])
     char *close = NULL;
     char *query = NULL;
     int query_all = 0;
+    int selftest = 0;
 
     /*
      * Handle options.
@@ -386,13 +422,17 @@ main(int argc, char *argv[])
         case 'Q': /* --queryall */
             query_all = 1;
             break;
+        case 't': /* --selftest */
+            selftest = 1;
+            break;
         default:
             usage();
             break;
         }
     }
 
-    if (!clear && !local && !list && !open && !close && !query && !query_all)
+    if (!clear && !local && !list && !open && !close && !query && !query_all
+            && !selftest)
         usage();
 
     d = gpib_init(prog, instrument, verbose);
@@ -403,9 +443,12 @@ main(int argc, char *argv[])
      */
     if (clear) {
         gpib_ibclr(d);
-        usleep(100000); /* XXX set by trial and error */
+        sleep(1); 
         hp3488_checkid(d);
     }
+
+    if (selftest)
+        hp3488_test(d);
 
     if (list)
         hp3488_list(d);
