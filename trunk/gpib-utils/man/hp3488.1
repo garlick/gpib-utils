@@ -64,7 +64,7 @@ See CAVEATS below.
 .TP
 \fB\-q\fR, \fB\-\-query\fR \fBcaddr[,caddr]\fR
 Query the state of the specified channels.
-Channel addresses are three digits: card number (1-5) followed by two
+Channel addresses are three digits: slot number (1-5) followed by two
 digit channel number as reported by the \fB\-\-list\fR option.
 A single digit is interpreted as a slot number, in which case all
 channels for that slot are reported.  See CAVEATS below.
@@ -100,12 +100,14 @@ timeout = T3s
 .fi
 .SH "CAVEATS"
 The 3488 reports 44476 and 44477 cards as 44471.
-The \fB\-\-list\fR option closes channel 04 and 09 and looks for errors 
-to disambiguate the models, and therefore will momentarily close
-channel 04 and 09 on the 44471, and channel 04 on the 44477.
-Other options such \fB\-\-query\fR do not perform this disambiguation 
-and treat the 4-channel 44476 and 7-channel 44477 as though it had 10 
-channels like the 44471.
+When it sees a 44471, the \fB\-\-list\fR option closes channel 
+04 and 09 and looks for errors to disambiguate the models, and 
+therefore will momentarily close channel 04 and 09 on the 44471, 
+and channel 04 on the 44477.  Other options such \fB\-\-query\fR 
+do not perform this disambiguation and treat the 4-channel 44476 
+and 7-channel 44477 as though it had 10 channels like the 44471.
+The 3488 will report these "phantom" channels as open, but will 
+return an error if you try to close them.
 .SH "SEE ALSO"
 "HP 3488A Switch/Control Unit: Operating, Programming, and Configuration 
 Manual", Sept. 1, 1995.
