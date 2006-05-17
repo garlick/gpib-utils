@@ -39,13 +39,13 @@
 
 static char *prog = "";
 
-#define OPTIONS "n:cltvL0:1:q:Q"
+#define OPTIONS "n:clSvL0:1:q:Q"
 static struct option longopts[] = {
     {"name",            required_argument, 0, 'n'},
     {"clear",           no_argument,       0, 'c'},
     {"local",           no_argument,       0, 'l'},
     {"verbose",         no_argument,       0, 'v'},
-    {"selftest",        no_argument,       0, 't'},
+    {"selftest",        no_argument,       0, 'S'},
     {"list",            no_argument,       0, 'L'},
     {"open",            required_argument, 0, '0'},
     {"close",           required_argument, 0, '1'},
@@ -63,12 +63,12 @@ usage(void)
 "  -c,--clear                    initialize instrument to default values\n"
 "  -l,--local                    return instrument to local operation on exit\n"
 "  -v,--verbose                  show protocol on stderr\n"
+"  -S,--selftest                 execute self test\n"
+"  -Q,--queryall                 view state of all channels\n"
+"  -L,--list                     list slot configuration (may alter state!)\n"
 "  -0,--open caddr[,caddr]...    open contacts for specified channels\n"
 "  -1,--close caddr[,caddr]...   close contacts for specified channels\n"
 "  -q,--query caddr[,caddr]...   view state of specified channels (or slots)\n"
-"  -Q,--queryall                 view state of all channels\n"
-"  -t,--selftest                 execute self test\n"
-"  -L,--list                     list slot configuration (may alter state!)\n"
            , prog, INSTRUMENT);
     exit(1);
 }
@@ -320,23 +320,15 @@ hp3488_query_slot(int d, int slot)
 }
 
 static void
-hp3488_query_all(int d)
-{
-    int slot;
-
-    for (slot = 1; slot <= 5; slot++)
-        hp3488_query_slot(d, slot);
-}
-
-static void
 hp3488_query(int d, char *list)
 {
     char *caddr;
     int slot;
     char buf[256];
 
-    if (!list || strlen(list) == 0)  {
-        hp3488_query_all(d);                    /* query all slots */
+    if (!list) {
+        for (slot = 1; slot <= 5; slot++)       /* query all slots */
+            hp3488_query_slot(d, slot);
     } else {
         caddr = strtok_r(list, ",", (char **)&buf);
         while (caddr) {
@@ -423,7 +415,7 @@ main(int argc, char *argv[])
         case 'Q': /* --queryall */
             query_all = 1;
             break;
-        case 't': /* --selftest */
+        case 'S': /* --selftest */
             selftest = 1;
             break;
         default:
@@ -431,6 +423,9 @@ main(int argc, char *argv[])
             break;
         }
     }
+
+    if (optind < argc)
+        usage();
 
     if (!clear && !local && !list && !open && !close && !query && !query_all
             && !selftest)
