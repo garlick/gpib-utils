@@ -17,8 +17,8 @@
    along with gpib-utils; if not, write to the Free Software Foundation, 
    Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
 
-int read_all(int fd, unsigned char *buf, int count);
-int write_all(int fd, unsigned char *buf, int count);
+int read_all(int fd, void *buf, int count);
+int write_all(int fd, void *buf, int count);
 
 /*
  * vi:tabstop=4 shiftwidth=4 expandtab

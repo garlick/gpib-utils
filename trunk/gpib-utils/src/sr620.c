@@ -31,23 +31,28 @@
 #include <math.h>
 #include <stdint.h>
 
-#include "dg535.h"
+#include "sr620.h"
 #include "units.h"
 #include "gpib.h"
+#include "util.h"
 
-#define INSTRUMENT "dg535"  /* the /etc/gpib.conf entry */
+#define INSTRUMENT "sr620"  /* the /etc/gpib.conf entry */
 #define BOARD       0       /* minor board number in /etc/gpib.conf */
+
+#define MAXCONFBUF  256
+#define MAXIDBUF    80
 
 static char *prog = "";
 static int verbose = 0;
 
-#define OPTIONS "n:clvt:"
+#define OPTIONS "n:clvsr"
 static struct option longopts[] = {
     {"name",            required_argument, 0, 'n'},
     {"clear",           no_argument,       0, 'c'},
     {"local",           no_argument,       0, 'l'},
     {"verbose",         no_argument,       0, 'v'},
-    {"trigfreq",        required_argument, 0, 't'},
+    {"save",            no_argument,       0, 's'},
+    {"restore",         no_argument,       0, 'r'},
     {0, 0, 0, 0},
 };
 
@@ -60,11 +65,15 @@ usage(void)
 "  -c,--clear                    initialize instrument to default values\n"
 "  -l,--local                    return instrument to local operation on exit\n"
 "  -v,--verbose                  show protocol on stderr\n"
-"  -t,--trigfreq                 set trigger freq (0.001hz - 1.000mhz)\n"
+"  -s,--save                     save complete instrument setup to stdout\n"
+"  -r,--restore                  restore instrument setup from stdin\n"
            , prog, INSTRUMENT);
     exit(1);
 }
 
+
+
+#if 0
 static void
 _checkerr(int d)
 {
@@ -72,26 +81,26 @@ _checkerr(int d)
     int status;
 
     /* check error status */
-    gpib_ibwrtf(d, "%s", DG535_ERROR_STATUS);
+    gpib_ibwrtf(d, "%s", SR620_ERROR_STATUS);
     gpib_ibrdstr(d, buf, sizeof(buf));
     if (*buf < '0' || *buf > '9') {
         fprintf(stderr, "%s: error reading error status byte\n", prog);
         exit(1);
     }
     status = strtoul(buf, NULL, 10);
-    if (status & DG535_ERR_RECALL) 
+    if (status & SR620_ERR_RECALL) 
         fprintf(stderr, "%s: recalled data was corrupt\n", prog);
-    if (status & DG535_ERR_DELAY_RANGE)
+    if (status & SR620_ERR_DELAY_RANGE)
         fprintf(stderr, "%s: delay range error\n", prog);
-    if (status & DG535_ERR_DELAY_LINKAGE)
+    if (status & SR620_ERR_DELAY_LINKAGE)
         fprintf(stderr, "%s: delay linkage error\n", prog);
-    if (status & DG535_ERR_CMDMODE)
+    if (status & SR620_ERR_CMDMODE)
         fprintf(stderr, "%s: wrong mode for command\n", prog);
-    if (status & DG535_ERR_ERANGE)
+    if (status & SR620_ERR_ERANGE)
         fprintf(stderr, "%s: value out of range\n", prog);
-    if (status & DG535_ERR_NUMPARAM)
+    if (status & SR620_ERR_NUMPARAM)
         fprintf(stderr, "%s: wrong number of parameters\n", prog);
-    if (status & DG535_ERR_BADCMD)
+    if (status & SR620_ERR_BADCMD)
         fprintf(stderr, "%s: unrecognized command\n", prog);
     if (status != 0)
         exit(1);
@@ -104,7 +113,7 @@ _checkinst(int d)
     int status;
 
     /* check instrument status */
-    gpib_ibwrtf(d, "%s", DG535_INSTR_STATUS);
+    gpib_ibwrtf(d, "%s", SR620_INSTR_STATUS);
     gpib_ibrdstr(d, buf, sizeof(buf));
     if (*buf < '0' || *buf > '9') {
         fprintf(stderr, "%s: error reading instrument status byte\n", prog);
@@ -112,19 +121,19 @@ _checkinst(int d)
     }
     status = strtoul(buf, NULL, 10);
 
-    if (status & DG535_STAT_BADMEM)
+    if (status & SR620_STAT_BADMEM)
         fprintf(stderr, "%s: memory contents corrupted\n", prog);
-    if (status & DG535_STAT_SRQ)
+    if (status & SR620_STAT_SRQ)
         fprintf(stderr, "%s: service request\n", prog);
-    if (status & DG535_STAT_TOOFAST)
+    if (status & SR620_STAT_TOOFAST)
         fprintf(stderr, "%s: trigger rate too high\n", prog);
-    if (status & DG535_STAT_PLL)
+    if (status & SR620_STAT_PLL)
         fprintf(stderr, "%s: 80MHz PLL is unlocked\n", prog);
-    if (status & DG535_STAT_TRIG)
+    if (status & SR620_STAT_TRIG)
         fprintf(stderr, "%s: trigger has occurred\n", prog);
-    if (status & DG535_STAT_BUSY)
+    if (status & SR620_STAT_BUSY)
         fprintf(stderr, "%s: busy with timing cycle\n", prog);
-    if (status & DG535_STAT_CMDERR)
+    if (status & SR620_STAT_CMDERR)
         fprintf(stderr, "%s: command error detected\n", prog);
 
     if (status != 0)
@@ -132,27 +141,104 @@ _checkinst(int d)
 }
 
 static void
-dg535_checkerr(int d)
+sr620_checkerr(int d)
 {
     _checkerr(d);
     _checkinst(d);
 }
+#endif
 
-/* --output-chan trig|t0|a|b|ab|c|d|cd
- *   --output-mode ttl|nim|ecl|var
- *   --output-ampl N
- *   --output-offset N
- *   --output-polarity +|-
- *   --output-delay N,N
- * --trigger-mode int|ext|ss|bur
- * --trigger-rate-int N
- * --trigger-rate-burst N
- * --trigger-slope up|dn
- * --trigger-z lo|hi
- * --trigger-single
- * --burst-count N
- * --burst-period N
+static void
+sr620_save(int d)
+{
+    char buf[MAXCONFBUF];
+    int len;
+
+    gpib_ibwrtf(d, "%s\r\n", SR620_SETUP_QUERY);
+    len = gpib_ibrd(d, buf, sizeof(buf));
+    if (write_all(1, buf, len) < 0) {
+        perror("write");
+        exit(1);
+    }
+}
+
+/* Convert integer config string representation of "1,2,5 sequence"
+ * back to float accepted by commands.
  */
+static double
+_decode125(int i)
+{
+    switch (i % 3) {
+        case 0:
+            return exp10(i / 3) * 1;
+        case 1:
+            return exp10(i / 3) * 2;
+        case 2:
+            return exp10(i / 3) * 5;
+    }
+    /*NOTREACHED*/
+    return 0;
+}
+
+static void
+sr620_restore(int d)
+{
+    char buf[MAXCONFBUF];
+    int n;     
+    int mode, srce, armm, gate;
+    int size, disp, dgph, setup1;
+    int setup2, setup3, setup4, hvscale;
+    int hhscale, hbin, mgvert, jgvert;
+    int setup5, setup6, rs232wait, ssetup;
+    int ssd1, ssd0, shd2, shd1, shd0;
+
+    if ((n = read_all(0, buf, MAXCONFBUF)) < 0) {
+        perror("write");
+        exit(1);
+    }
+    assert(n < MAXCONFBUF);
+    buf[n] = '\0';
+    n = sscanf(buf, 
+            "%d,%d,%d,%d,"
+            "%d,%d,%d,%d,"
+            "%d,%d,%d,%d,"
+            "%d,%d,%d,%d,"
+            "%d,%d,%d,%d,"
+            "%d,%d,%d,%d,%d",
+            &mode, &srce, &armm, &gate,
+            &size, &disp, &dgph, &setup1,
+            &setup2, &setup3, &setup4, &hvscale,
+            &hhscale, &hbin, &mgvert, &jgvert,
+            &setup5, &setup6, &rs232wait, &ssetup,
+            &ssd1, &ssd0, &shd2, &shd1, &shd0);
+    if (n != 25) {
+        fprintf(stderr, "%s: error scanning configuration string\n", prog);
+        exit(1);
+    }
+    gpib_ibwrtf(d, "%s %d", SR620_MODE, mode);
+    gpib_ibwrtf(d, "%s %d", SR620_SRCE, srce);
+    gpib_ibwrtf(d, "%s %d", SR620_TRIG_ARMMODE, armm);
+    gpib_ibwrtf(d, "%s %.0E", SR620_GATE, _decode125(gate)); // XXX untested
+
+    gpib_ibwrtf(d, "%s %.0E", SR620_SIZE, _decode125(size));
+    // XXX unfinished
+}
+
+static void
+sr620_checkid(int d)
+{
+    char tmpbuf[MAXIDBUF];
+
+    gpib_ibwrtf(d, "%s", SR620_ID_QUERY);
+
+    gpib_ibrdstr(d, tmpbuf, sizeof(tmpbuf));
+    //hp3488_checksrq(d, NULL);
+
+    if (strncmp(tmpbuf, SR620_ID_RESPONSE, strlen(SR620_ID_RESPONSE)) != 0) {
+        fprintf(stderr, "%s: unsupported instrument: %s", prog, tmpbuf);
+        exit(1);
+    }
+}
 
 int
 main(int argc, char *argv[])
@@ -161,7 +247,8 @@ main(int argc, char *argv[])
     int c, d;
     int clear = 0;
     int local = 0;
-    double trigfreq = 0.0;
+    int save = 0;
+    int restore = 0;
 
     /*
      * Handle options.
@@ -181,14 +268,11 @@ main(int argc, char *argv[])
         case 'v': /* --verbose */
             verbose = 1;
             break;
-        case 't': /* --trigfreq */
-            if (freqstr(optarg, &trigfreq) < 0) {
-                fprintf(stderr, "%s: error converting trigger freq\n", prog);
-                fprintf(stderr, "%s: use freq units: %s\n", prog, FREQ_UNITS);
-                fprintf(stderr, "%s: or period units: %s\n", prog,PERIOD_UNITS);
-                exit(1);
-            }
-            /* instrument checks range for us */
+        case 's': /* --save */
+            save = 1;
+            break;
+        case 'r': /* --restore */
+            restore = 1;
             break;
         default:
             usage();
@@ -196,23 +280,28 @@ main(int argc, char *argv[])
         }
     }
 
-    if (!clear && !local && trigfreq == 0.0)
+    if (!clear && !local && !save && !restore)
         usage();
 
     /* find device in /etc/gpib.conf */
     d = gpib_init(prog, instrument, verbose);
 
-    /* clear instrument to default settings */
+    /* Set instrument to default configurations.
+     * (same as holding down "clr rel" at power on)
+     */
     if (clear) {
         gpib_ibclr(d);
-        gpib_ibwrtf(d, "%s", DG535_CLEAR);
-        dg535_checkerr(d);
+        //sr620_checkerr(d);
+        gpib_ibwrtf(d, "%s", SR620_RESET);
+        sr620_checkid(d);
     }
 
-    /* set internal trigger rate */
-    if (trigfreq != 0.0) {
-        gpib_ibwrtf(d, "%s %d,%lf", DG535_TRIG_RATE, 0, trigfreq);
-        dg535_checkerr(d);
+    if (save) {
+        sr620_save(d);
+    }
+
+    if (restore) {
+        sr620_restore(d);
     }
 
     /* return front panel if requested */
