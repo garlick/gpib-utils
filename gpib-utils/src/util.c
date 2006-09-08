@@ -21,7 +21,7 @@
 #include <errno.h>
 
 int
-read_all(int fd, unsigned char *buf, int len)
+read_all(int fd, void *buf, int len)
 {
     int n;
     int bc = 0;
@@ -38,7 +38,7 @@ read_all(int fd, unsigned char *buf, int len)
 }
 
 int
-write_all(int fd, unsigned char *buf, int len)
+write_all(int fd, void *buf, int len)
 {
     int n;
     int bc = 0;

@@ -203,7 +203,7 @@ gpib_init(char *progname, char *instrument, int vflag)
 
     d = ibfind(instrument);
     if (d < 0) {
-        fprintf(stderr, "%s: counld not find device named %s in gpib.conf\n", 
+        fprintf(stderr, "%s: could not find device named %s in gpib.conf\n", 
                 prog, instrument);
         exit(1);
     }

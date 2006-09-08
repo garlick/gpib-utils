@@ -1,3 +1,11 @@
+2006-09-08 Jim Garlick <garlick@speakeasy.net>
+
+  * src/util.[ch]: Use void * for read/write buffers.
+  
+  * src/gpib.c: Fix error message typo.
+
+  * src/sr620.[ch]: New (incomplete).
+
 2006-05-13 Jim Garlick <garlick@speakeasy.net>
 
   * man/hp3488.1: New.
