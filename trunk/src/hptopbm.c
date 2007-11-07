@@ -23,32 +23,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <libgen.h>
+
+#include "util.h"
 
 #define INVERSE_VIDEO
 
-/* "safe" malloc */
-uint8_t *
-xmalloc(int size)
-{
-	uint8_t *new = malloc(size);
-	if (!new) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
-	return new;
-}
-
-/* "safe" realloc */
-uint8_t *
-xrealloc(char *ptr, int size)
-{
-	uint8_t *new = realloc(ptr, size);
-	if (!new) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
-	return new;
-}
+char *prog = NULL;
 
 /* flip all the bits in a row */
 void 
@@ -68,6 +49,8 @@ main(int argc, char *argv[])
 	int cur_row = 0;
 	int width = -1;
 	int i, w;
+
+	prog = basename(argv[0]);
 
 	/* input: HP bitmap */
 

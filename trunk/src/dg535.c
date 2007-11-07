@@ -38,7 +38,7 @@
 #define INSTRUMENT "dg535"  /* the /etc/gpib.conf entry */
 #define BOARD       0       /* minor board number in /etc/gpib.conf */
 
-static char *prog = "";
+char *prog = "";
 static int verbose = 0;
 
 #define OPTIONS "n:clvt:"
@@ -66,14 +66,14 @@ usage(void)
 }
 
 static void
-_checkerr(int d)
+_checkerr(gd_t gd)
 {
     char buf[16];
     int status;
 
     /* check error status */
-    gpib_ibwrtf(d, "%s", DG535_ERROR_STATUS);
-    gpib_ibrdstr(d, buf, sizeof(buf));
+    gpib_wrtf(gd, "%s", DG535_ERROR_STATUS);
+    gpib_rdstr(gd, buf, sizeof(buf));
     if (*buf < '0' || *buf > '9') {
         fprintf(stderr, "%s: error reading error status byte\n", prog);
         exit(1);
@@ -98,14 +98,14 @@ _checkerr(int d)
 }
 
 static void
-_checkinst(int d)
+_checkinst(gd_t gd)
 {
     char buf[16];
     int status;
 
     /* check instrument status */
-    gpib_ibwrtf(d, "%s", DG535_INSTR_STATUS);
-    gpib_ibrdstr(d, buf, sizeof(buf));
+    gpib_wrtf(gd, "%s", DG535_INSTR_STATUS);
+    gpib_rdstr(gd, buf, sizeof(buf));
     if (*buf < '0' || *buf > '9') {
         fprintf(stderr, "%s: error reading instrument status byte\n", prog);
         exit(1);
@@ -132,10 +132,10 @@ _checkinst(int d)
 }
 
 static void
-dg535_checkerr(int d)
+dg535_checkerr(gd_t gd)
 {
-    _checkerr(d);
-    _checkinst(d);
+    _checkerr(gd);
+    _checkinst(gd);
 }
 
 /* --output-chan trig|t0|a|b|ab|c|d|cd
@@ -158,10 +158,11 @@ int
 main(int argc, char *argv[])
 {
     char *instrument = INSTRUMENT;
-    int c, d;
+    int c;
     int clear = 0;
     int local = 0;
     double trigfreq = 0.0;
+    gd_t gd;
 
     /*
      * Handle options.
@@ -200,24 +201,32 @@ main(int argc, char *argv[])
         usage();
 
     /* find device in /etc/gpib.conf */
-    d = gpib_init(prog, instrument, verbose);
+    gd = gpib_init(instrument, NULL, 0);
+    if (!gd) {
+        fprintf(stderr, "%s: couldn't find device %s in /etc/gpib.conf\n", 
+                prog, instrument);
+        exit(1);
+    }
+    gpib_set_verbose(gd, verbose);
 
     /* clear instrument to default settings */
     if (clear) {
-        gpib_ibclr(d);
-        gpib_ibwrtf(d, "%s", DG535_CLEAR);
-        dg535_checkerr(d);
+        gpib_clr(gd, 0);
+        gpib_wrtf(gd, "%s", DG535_CLEAR);
+        dg535_checkerr(gd);
     }
 
     /* set internal trigger rate */
     if (trigfreq != 0.0) {
-        gpib_ibwrtf(d, "%s %d,%lf", DG535_TRIG_RATE, 0, trigfreq);
-        dg535_checkerr(d);
+        gpib_wrtf(gd, "%s %d,%lf", DG535_TRIG_RATE, 0, trigfreq);
+        dg535_checkerr(gd);
     }
 
     /* return front panel if requested */
     if (local)
-        gpib_ibloc(d); 
+        gpib_loc(gd); 
+
+    gpib_fini(gd);
 
     exit(0);
 }

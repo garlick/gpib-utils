@@ -97,18 +97,18 @@ _sleep_sec(double sec)
 }
 
 static void 
-r5005_checksrq(int d)
+r5005_checksrq(gd_t gd)
 {
-    char status, error = 0;
+    unsigned char status, error = 0;
     int count, rdy = 0;
 
-    gpib_ibrsp(d, &status);
+    gpib_rsp(gd, &status);
     if ((status & R5005_STAT_SRQ)) {
         if (status & R5005_STAT_DATA_READY)
             rdy = 1;
         if (status & R5005_STAT_ERROR_AVAIL) {
-            gpib_ibwrtstr(d, R5005_CMD_ERROR_XMIT); /* get Y error */
-            count = gpib_ibrd(d, &error, 1);
+            gpib_wrtstr(gd, R5005_CMD_ERROR_XMIT); /* get Y error */
+            count = gpib_rd(gd, &error, 1);
             if (count != 1) {
                 fprintf(stderr, "%s: error reading error byte\n", prog);
                 exit(1);
@@ -136,7 +136,8 @@ main(int argc, char *argv[])
     int local = 0;
     int showtime = 0;
     char *instrument = INSTRUMENT;
-    int d, c;
+    gd_t gd;
+    int c;
     char *function = NULL;
     char *range = NULL;
     char *trigger = NULL;
@@ -238,36 +239,40 @@ main(int argc, char *argv[])
         usage();
 
     /* find device in /etc/gpib.conf */
-    d = gpib_init(prog, instrument, verbose);
+    gd = gpib_init(instrument, NULL, 0);
+    if (!gd) {
+        fprintf(stderr, "%s: couldn't find device %s in /etc/gpib.conf\n",                 prog, instrument);
+        exit(1);
+    }
+    gpib_set_verbose(gd, verbose);
 
     /* clear dmm state */
     if (clear) {
-        gpib_ibclr(d);
-        _sleep_sec(0.1);
-        r5005_checksrq(d);
-        gpib_ibwrtf(d, "%s", R5005_CMD_INIT);
-        r5005_checksrq(d);
+        gpib_clr(gd, 100000);
+        r5005_checksrq(gd);
+        gpib_wrtf(gd, "%s", R5005_CMD_INIT);
+        r5005_checksrq(gd);
     }
 
     /* configure dmm */
     if (function) {
-        gpib_ibwrtf(d, "%s", function);
-        r5005_checksrq(d);
+        gpib_wrtf(gd, "%s", function);
+        r5005_checksrq(gd);
     }
     if (range) {
-        gpib_ibwrtf(d, "%s", range);
-        r5005_checksrq(d);
+        gpib_wrtf(gd, "%s", range);
+        r5005_checksrq(gd);
     }
     if (trigger) {
-        gpib_ibwrtf(d, "%s", trigger);
-        r5005_checksrq(d);
+        gpib_wrtf(gd, "%s", trigger);
+        r5005_checksrq(gd);
     }
     if (highres) {
-        gpib_ibwrtf(d, "%s", highres);
-        r5005_checksrq(d);
+        gpib_wrtf(gd, "%s", highres);
+        r5005_checksrq(gd);
     }
 
-    r5005_checksrq(d);
+    r5005_checksrq(gd);
 
     /* take some readings and send to stdout */
     if (samples > 0) {
@@ -279,8 +284,8 @@ main(int argc, char *argv[])
             t1 = _gettime();
             if (t0 == 0)
                 t0 = t1;
-            gpib_ibrdstr(d, buf, sizeof(buf));
-            r5005_checksrq(d);
+            gpib_rdstr(gd, buf, sizeof(buf));
+            r5005_checksrq(gd);
             t2 = _gettime();
 
             /* Output suitable for gnuplot:
@@ -299,9 +304,11 @@ main(int argc, char *argv[])
 
     /* give back the front panel */
     if (local) {
-        gpib_ibloc(d); 
-        r5005_checksrq(d);
+        gpib_loc(gd); 
+        r5005_checksrq(gd);
     }
+
+    gpib_fini(gd);
 
     exit(0);
 }

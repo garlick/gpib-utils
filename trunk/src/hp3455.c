@@ -33,7 +33,6 @@
 #include <getopt.h>
 #include <assert.h>
 #include <sys/time.h>
-#include <gpib/ib.h>
 
 #include "gpib.h"
 #include "hp3455.h"
@@ -110,11 +109,11 @@ _sleep_sec(double sec)
 
 /* Warning: ibrsp has the side effect of modifying ibcnt! */
 static void 
-hp3455_checksrq(int d)
+hp3455_checksrq(gd_t gd)
 {
-    char status;
+    unsigned char status;
 
-    gpib_ibrsp(d, &status);
+    gpib_rsp(gd, &status);
     if ((status & HP3455_STAT_SRQ)) {
         if (status & HP3455_STAT_DATA_READY) {
         }
@@ -136,13 +135,14 @@ hp3455_checksrq(int d)
 int
 main(int argc, char *argv[])
 {
+    gd_t gd;
     int selftest = 0;
     int verbose = 0;
     int clear = 0;
     int local = 0;
     int showtime = 0;
     char *instrument = INSTRUMENT;
-    int d, c;
+    int c;
     char *function = NULL;
     char *range = NULL;
     char *trigger = NULL;
@@ -278,54 +278,60 @@ main(int argc, char *argv[])
         usage();
 
     /* find device in /etc/gpib.conf */
-    d = gpib_init(prog, instrument, verbose);
+    gd = gpib_init(instrument, NULL, 0);
+    if (!gd) {
+        fprintf(stderr, "%s: couldn't find device %s in /etc/gpib.conf\n",                 prog, instrument);
+        exit(1);
+    }
+
+    gpib_set_verbose(gd, verbose);
 
     /* clear dmm state */
     if (clear) { 
-        gpib_ibclr(d);
-        hp3455_checksrq(d);
+        gpib_clr(gd, 0);
+        hp3455_checksrq(gd);
     }
 
     /* self test */
     if (selftest) {
-        gpib_ibwrtf(d, "%s", HP3455_FUNC_TEST);
-        hp3455_checksrq(d);
+        gpib_wrtf(gd, "%s", HP3455_FUNC_TEST);
+        hp3455_checksrq(gd);
     }
 
     /* configure dmm */
     if (function) {
-        gpib_ibwrtf(d, "%s", function);
-        hp3455_checksrq(d);
+        gpib_wrtf(gd, "%s", function);
+        hp3455_checksrq(gd);
     }
     if (range) {
-        gpib_ibwrtf(d, "%s", range);
-        hp3455_checksrq(d);
+        gpib_wrtf(gd, "%s", range);
+        hp3455_checksrq(gd);
     }
     if (trigger) {
-        gpib_ibwrtf(d, "%s", trigger);
-        hp3455_checksrq(d);
+        gpib_wrtf(gd, "%s", trigger);
+        hp3455_checksrq(gd);
     }
     if (math) {
-        gpib_ibwrtf(d, "%s", math);
-        hp3455_checksrq(d);
+        gpib_wrtf(gd, "%s", math);
+        hp3455_checksrq(gd);
     }
     if (autocal) {
-        gpib_ibwrtf(d, "%s", autocal);
-        hp3455_checksrq(d);
+        gpib_wrtf(gd, "%s", autocal);
+        hp3455_checksrq(gd);
     }
     if (highres) {
-        gpib_ibwrtf(d, "%s", highres);
-        hp3455_checksrq(d);
+        gpib_wrtf(gd, "%s", highres);
+        hp3455_checksrq(gd);
     }
 
     /* store y and z register values */
     if (storey) {
-        gpib_ibwrtf(d, "%s %f %s", HP3455_ENTER_Y, y, HP3455_STORE_Y);
-        hp3455_checksrq(d);
+        gpib_wrtf(gd, "%s %f %s", HP3455_ENTER_Y, y, HP3455_STORE_Y);
+        hp3455_checksrq(gd);
     }
     if (storez) {
-        gpib_ibwrtf(d, "%s %f %s", HP3455_ENTER_Z, z, HP3455_STORE_Z);
-        hp3455_checksrq(d);
+        gpib_wrtf(gd, "%s %f %s", HP3455_ENTER_Z, z, HP3455_STORE_Z);
+        hp3455_checksrq(gd);
     }
 
     /* take some readings and send to stdout */
@@ -339,8 +345,8 @@ main(int argc, char *argv[])
             if (t0 == 0)
                 t0 = t1;
  
-            gpib_ibrdstr(d, buf, sizeof(buf));
-            hp3455_checksrq(d);
+            gpib_rdstr(gd, buf, sizeof(buf));
+            hp3455_checksrq(gd);
             t2 = _gettime();
 
             /* Output suitable for gnuplot:
@@ -359,7 +365,9 @@ main(int argc, char *argv[])
 
     /* give back the front panel */
     if (local)
-        gpib_ibloc(d); 
+        gpib_loc(gd); 
+
+    gpib_fini(gd);
 
     exit(0);
 }

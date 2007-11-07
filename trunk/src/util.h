@@ -20,6 +20,14 @@
 int read_all(int fd, void *buf, int count);
 int write_all(int fd, void *buf, int count);
 
+void *xmalloc(size_t size);
+char *xstrdup(char *str);
+void *xrealloc(void *ptr, int size);
+
+char *xstrcpyprint(char *str);
+char *xstrcpyunprint(char *str);
+
+
 /*
  * vi:tabstop=4 shiftwidth=4 expandtab
  */

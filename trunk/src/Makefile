@@ -1,42 +1,54 @@
-CFLAGS=-Wall -g
-LDADD=-lgpib -lm
+CFLAGS=-Wall -Wno-unused -g -DHAVE_GPIB=0
+#LDADD=-lgpib -lm
+LDADD=-lrpcsvc -lm
 
-PROGS=hp1630 hptopbm hptodino r5005 hp3455 hp3457 hp8656 dg535 tek2230  \
-      hp3488 sr620
+PROGS=hp1630 hptopbm hptodino r5005 hp3455 hp3457 hp8656 dg535 \
+      hp3488 sr620 hp603x gpsh
+LIBOBJS=util.o gpib.o units.o errstr.o vxi11_xdr.o vxi11_clnt.o
 TESTPROGS=testfreq testampl
 
 all: $(PROGS) $(TESTPROGS)
 
-hptodino: hptodino.o units.o hpcrc.o
-	$(CC) -o $@ hptodino.o units.o hpcrc.o -lm
+# utilities
+hptopbm: hptopbm.o $(LIBOBJS)
+	$(CC) -o $@ hptopbm.o $(LIBOBJS) $(LDADD)
+hptodino: hptodino.o hpcrc.o $(LIBOBJS)
+	$(CC) -o $@ hptodino.o hpcrc.o $(LIBOBJS) $(LDADD)
+hp1630: hp1630.o hpcrc.o $(LIBOBJS)
+	$(CC) -o $@ hp1630.o hpcrc.o $(LIBOBJS) $(LDADD)
+r5005: r5005.o $(LIBOBJS)
+	$(CC) -o $@ r5005.o $(LIBOBJS) $(LDADD)
+hp3455: hp3455.o $(LIBOBJS)
+	$(CC) -o $@ hp3455.o $(LIBOBJS) $(LDADD)
+hp3457: hp3457.o $(LIBOBJS)
+	$(CC) -o $@ hp3457.o $(LIBOBJS) $(LDADD)
+hp8656: hp8656.o $(LIBOBJS)
+	$(CC) -o $@ hp8656.o $(LIBOBJS) $(LDADD)
+dg535: dg535.o $(LIBOBJS)
+	$(CC) -o $@ dg535.o $(LIBOBJS) $(LDADD)
+sr620: sr620.o $(LIBOBJS)
+	$(CC) -o $@ sr620.o $(LIBOBJS) $(LDADD)
+hp3488: hp3488.o $(LIBOBJS)
+	$(CC) -o $@ hp3488.o $(LIBOBJS) $(LDADD)
+hp603x: hp603x.o $(LIBOBJS)
+	$(CC) -o $@ hp603x.o $(LIBOBJS) $(LDADD)
+gpsh: gpsh.o $(LIBOBJS)
+	$(CC) -o $@ gpsh.o $(LIBOBJS) $(LDADD) -lreadline -ltermcap
 
-hp1630: hp1630.o errstr.o gpib.o util.o hpcrc.o
-	$(CC) -o $@ hp1630.o errstr.o gpib.o util.o hpcrc.o $(LDADD)
+gpib.o: vxi11.h
 
-r5005: r5005.o units.o gpib.o errstr.o
-	$(CC) -o $@ r5005.o units.o gpib.o errstr.o $(LDADD)
+# VXI-11 support
+vxi11: vxi11.h vxi11_xdr.c vxi11_clnt.c
+vxi11.h: vxi11.x
+	rpcgen -o $@ -h vxi11.x
+vxi11_xdr.c: vxi11.x vxi11.h
+	rpcgen -o $@ -c vxi11.x
+vxi11_clnt.c: vxi11.x vxi11.h
+	rpcgen -o $@ -l vxi11.x
+vxi11_svc.c:  vxi11.x vxi11.h
+	rpcgen -o $@ -m vxi11.x
 
-hp3455: hp3455.o units.o gpib.o
-	$(CC) -o $@ hp3455.o units.o gpib.o $(LDADD)
-
-hp3457: hp3457.o units.o gpib.o
-	$(CC) -o $@ hp3457.o units.o gpib.o $(LDADD)
-
-hp8656: hp8656.o units.o gpib.o
-	$(CC) -o $@ hp8656.o units.o gpib.o $(LDADD)
-
-dg535: dg535.o units.o gpib.o
-	$(CC) -o $@ dg535.o units.o gpib.o $(LDADD)
-
-sr620: sr620.o units.o gpib.o util.o
-	$(CC) -o $@ sr620.o units.o gpib.o util.o $(LDADD)
-
-tek2230: tek2230.o gpib.o
-	$(CC) -o $@ tek2230.o gpib.o $(LDADD)
-
-hp3488: hp3488.o gpib.o
-	$(CC) -o $@ hp3488.o gpib.o $(LDADD)
-
+# test programs
 testampl: units.c
 	$(CC) -o $@ -DAMPLMAIN $< -lm
 testfreq: units.c
@@ -51,3 +63,5 @@ install:
 clean:
 	rm -f *.o $(PROGS)
 	rm -f $(TESTPROGS)
+	rm -f vxi11.h vxi11_xdr.c vxi11_clnt.c vxi11_svc.c
+
