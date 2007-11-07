@@ -1,0 +1,33 @@
+VXI-11 Support
+
+The VXI-11.3 specification defines a protocol based on ONC RPC for
+communicating with instruments over ethernet, either natively to a LAN
+jack on the back of an instrument, or via an Ethernet-to-GPIB gateway.
+
+Adding VXI-11 support to gpib-utils was a matter of including the
+vxi11.x ONC RPC definitions from the VXI-11 spec, adding Makefile targets
+to generate the stubs for the VXI-11 services with rpcgen, and adding 
+VXI-11 function calls to gpib.c, where all gpib-utils's I/O functions 
+are wrapped.  Because the gpib.c wrappers were already there, it was 
+possible to add VXI-11 support without modifying the instrument utilities 
+themselves.
+
+Each utility takes an instrument name argument which is passed to the
+gpib.c wrappers during initialization.  If it contains a colon, it is 
+interpreted to be a VXI-11 hostname:logical_device.  Instrument names 
+without colons are passed to linux-gpib to be looked up in /etc/gpib.conf 
+as before.  For example, a native VXI-11 instrument might be called 
+"192.168.1.25:inst0", while an instrument behind an Ethernet-to-GPIB 
+controller such as the ICS 8065 might be addressed as "192.168.1.40:gpib0,9"
+
+Since gpib-utils is rather unsophisticated in its use of GPIB facilities,
+only the core VXI-11 channel was used.  The abort and intr (SRQ) channels
+were not implemented.
+
+Note it is possible for gpib-utils to be compiled standalone without
+linux-gpib if only VXI-11 protocol is used to access instruments.
+Simply define -DHAVE_GPIB=0 in CFLAGS and remove -lgpib from LDADD.
+
+Special thanks to ICS Electronics (iscelect.com) for providing their
+model 8065 Ethernet-to-GPIB controller as the development platform for
+adding VXI-11 support to gpib-utils.

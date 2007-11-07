@@ -8,6 +8,8 @@
 
 	* : Rename local wrapper functions from gpib_ib* to gpib_*.
 
+	* README.vxi : Description of VXI-11 support.
+
 2006-10-01 Jim Garlick <garlick.jim@gmail.com>
 
 	* src/hp603x.[ch] : New (incomplete).
