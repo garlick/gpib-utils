@@ -37,7 +37,7 @@
 #define INSTRUMENT "hp8656" /* the /etc/gpib.conf entry */
 #define BOARD       0       /* minor board number in /etc/gpib.conf */
 
-static char *prog = "";
+char *prog = "";
 static int verbose = 0;
 
 #define OPTIONS "n:f:a:vclF:A:"
@@ -74,9 +74,10 @@ int
 main(int argc, char *argv[])
 {
     char *instrument = INSTRUMENT;
+    gd_t gd;
     char cmdstr[1024] = "";
     double f, a;
-    int c, d;
+    int c;
     int clear = 0;
     int local = 0;
 
@@ -213,17 +214,21 @@ main(int argc, char *argv[])
     if (!clear && !*cmdstr && !local)
         usage();
 
-    d = gpib_init(prog, instrument, verbose);
+    gd = gpib_init(instrument, NULL, 0);
+    if (!gd) {
+        fprintf(stderr, "%s: couldn't find device %s in /etc/gpib.conf\n",                 prog, instrument);
+        exit(1);
+    }
+    gpib_set_verbose(gd, verbose);
 
     /* clear instrument to default settings */
     if (clear) {
-        gpib_ibclr(d);
-        sleep(1); /* instrument won't respond for about 1s after clear */
+        gpib_clr(gd, 1000000);
     }
 
     /* write cmd if specified */
     if (strlen(cmdstr) > 0)
-        gpib_ibwrtf(d, "%s", cmdstr);
+        gpib_wrtf(gd, "%s", cmdstr);
 
     /* Sleep 2s to accomodate worst case settling time.
      * FIXME: The actual settling time should be calculated based 
@@ -234,7 +239,9 @@ main(int argc, char *argv[])
 
     /* return front panel if requested */
     if (local)
-        gpib_ibloc(d); 
+        gpib_loc(gd); 
+
+    gpib_fini(gd);
 
     exit(0);
 }

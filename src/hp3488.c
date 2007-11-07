@@ -37,7 +37,9 @@
 #define INSTRUMENT "hp3488" /* the /etc/gpib.conf entry */
 #define BOARD       0       /* minor board number in /etc/gpib.conf */
 
-static char *prog = "";
+char *prog = "";
+static int lerr_flag = 1;   /* logic errors: 0=ignored, 1=fatal */
+                            /*   See: disambiguate_ctype() */
 
 #define OPTIONS "n:clSvL0:1:q:Q"
 static struct option longopts[] = {
@@ -73,109 +75,73 @@ usage(void)
     exit(1);
 }
 
-static int
-_checkerror(int d)
-{
-    char tmpbuf[64];
-
-    gpib_ibwrtstr(d, HP3488_ERR_QUERY);
-    gpib_ibrdstr(d, tmpbuf, sizeof(tmpbuf)); /* clears error */
-
-    return strtoul(tmpbuf, NULL, 10);
-}
-
-static void
-_reporterror(int err)
-{
-    /* presumably since error is a mask, we can have more than one? */
-    if ((err & HP3488_ERROR_SYNTAX))
-        fprintf(stderr, "%s: syntax error\n", prog);
-    if ((err & HP3488_ERROR_EXEC))
-        fprintf(stderr, "%s: execution error\n", prog);
-    if ((err & HP3488_ERROR_TOOFAST))
-        fprintf(stderr, "%s: trigger too fast\n", prog);
-    if ((err & HP3488_ERROR_LOGIC))
-        fprintf(stderr, "%s: logic error\n", prog);
-    if ((err & HP3488_ERROR_POWER))
-        fprintf(stderr, "%s: power supply failure\n", prog);
-}
-
-/* Spin until ready for another command or an error has occurred.
- * FIXME: we should go to sleep and let device driver wake us up.
+/* Check the error register.
+ *   Return: 0=nonfatal, 1=fatal.
  */
-static void
-hp3488_checksrq(int d, int *errp)
-{
-    char status;
-    int ready = 0;
-    int err = 0;
-    int loops = 0;
-    int fatal = 0;
-
-    do {
-        usleep(loops*100000); /* backoff-delay */
-        gpib_ibrsp(d, &status);
-        if ((status & HP3488_STATUS_READY)) {
-            ready = 1;
-        }
-        if ((status & HP3488_STATUS_SRQ_POWER)) {
-            fprintf(stderr, "%s: srq: power-on SRQ occurred\n", prog);
-            fatal = 1;
-        }
-        if ((status & HP3488_STATUS_SRQ_BUTTON)) {
-            fprintf(stderr, "%s: srq: front panel SRQ key pressed\n", prog);
-            fatal = 1;
-        }
-        if ((status & HP3488_STATUS_ERROR)) {
-            err = _checkerror(d); /* clears error */
-        }
-        if ((status & HP3488_STATUS_RQS)) {
-            fprintf(stderr, "%s: srq: rqs\n", prog);
-            fatal = 1;
-        }
-        loops++;
-    } while (!ready && !err && !fatal);
-
-    if (errp)
-        *errp = err;
-    if (!errp && err) {
-        _reporterror(err);
-        fatal = 1;
-    }
-    if (fatal)
-        exit(1);
-}
-
-static void
-hp3488_checkid(int d)
+static int
+_check_error(gd_t gd, char *msg)
 {
     char tmpbuf[64];
+    int res = 0;
+    unsigned char err;
 
-    gpib_ibwrtf(d, "%s", HP3488_ID_QUERY);
-    hp3488_checksrq(d, NULL);
+    gpib_wrtstr(gd, HP3488_ERR_QUERY);
+    gpib_rdstr(gd, tmpbuf, sizeof(tmpbuf));   /* clears error */
 
-    gpib_ibrdstr(d, tmpbuf, sizeof(tmpbuf));
-    hp3488_checksrq(d, NULL);
-
-    if (strncmp(tmpbuf, HP3488_ID_RESPONSE, strlen(HP3488_ID_RESPONSE)) != 0) {
-        fprintf(stderr, "%s: device id %s != %s\n", prog, tmpbuf,
-                HP3488_ID_RESPONSE);
-        exit(1);
+    err = strtoul(tmpbuf, NULL, 10);
+    if ((err & HP3488_ERROR_SYNTAX)) {
+        fprintf(stderr, "%s: %s: syntax error\n", prog, msg);
+        res = 1;
     }
+    if ((err & HP3488_ERROR_EXEC)) {
+        fprintf(stderr, "%s: %s: execution error\n", prog, msg);
+        res = 1;
+    }
+    if ((err & HP3488_ERROR_TOOFAST)) {
+        fprintf(stderr, "%s: %s: trigger too fast\n", prog, msg);
+        res = 1;
+    }
+    if ((err & HP3488_ERROR_POWER)) {
+        fprintf(stderr, "%s: %s: power supply failure\n", prog, msg);
+        res = 1;
+    }
+    if ((err & HP3488_ERROR_LOGIC)) {
+        if (lerr_flag == 0) {
+            lerr_flag = 1;
+        } else {
+            fprintf(stderr, "%s: %s: logic error\n", prog, msg);
+            res = 1;
+        }
+    }
+    return res;
 }
 
-static void
-hp3488_open(int d, char *list)
+/* Interpet serial poll results (status byte)
+ *   Return: 0=non-fatal/no error, >0=fatal, -1=retry.
+ */
+static int
+_interpret_status(gd_t gd, unsigned char status, char *msg)
 {
-    gpib_ibwrtf(d, "%s %s", HP3488_OPEN, list);
-    hp3488_checksrq(d, NULL);
-}
+    int err = 0;
 
-static void
-hp3488_close(int d, char *list)
-{
-    gpib_ibwrtf(d, "%s %s", HP3488_CLOSE, list);
-    hp3488_checksrq(d, NULL);
+    if ((status & HP3488_STATUS_SRQ_POWER)) {
+        fprintf(stderr, "%s: %s: power-on SRQ occurred\n", prog, msg);
+    }
+    if ((status & HP3488_STATUS_SRQ_BUTTON)) {
+        fprintf(stderr, "%s: %s: front panel SRQ key pressed\n", prog, msg);
+        err = 1;
+    }
+    if ((status & HP3488_STATUS_RQS)) {
+        fprintf(stderr, "%s: %s: rqs\n", prog, msg);
+        err = 1;
+    }
+    if ((status & HP3488_STATUS_ERROR)) {
+        err = _check_error(gd, msg);
+    }
+    if (err == 0 && !(status & HP3488_STATUS_READY))
+        err = -1;
+
+    return err;
 }
 
 
@@ -183,15 +149,12 @@ hp3488_close(int d, char *list)
  * Warning: 44477 and 44476 will look like 44471.
  */
 static int
-hp3488_ctype(int d, int slot)
+_ctype(gd_t gd, int slot)
 {
     char buf[128];
 
-    gpib_ibwrtf(d, "%s %d", HP3488_CTYPE, slot);
-    hp3488_checksrq(d, NULL);
-
-    gpib_ibrdstr(d, buf, sizeof(buf));
-    hp3488_checksrq(d, NULL);
+    gpib_wrtf(gd, "%s %d", HP3488_CTYPE, slot);
+    gpib_rdstr(gd, buf, sizeof(buf));
 
     if (strlen(buf) < 15) {
         fprintf(stderr, "%s: parse error reading slot ctype\n", prog);
@@ -203,27 +166,20 @@ hp3488_ctype(int d, int slot)
 /* Close a couple of relays to disambiguate 44477 and 44476 from 44471.
  */
 static int
-_disambiguate_ctype(int d, int slot)
+_disambiguate_ctype(gd_t gd, int slot)
 {
     int err4, err9;
     int model;
 
-    gpib_ibwrtf(d, "%s", HP3488_DISP_OFF);
-    hp3488_checksrq(d, NULL);
+    gpib_wrtf(gd, "%s", HP3488_DISP_OFF);
 
-    gpib_ibwrtf(d, "%s %d04", HP3488_CLOSE, slot);
-    hp3488_checksrq(d, &err4);
-    if (!(err4 == 0 || err4 == HP3488_ERROR_LOGIC)) {
-        _reporterror(err4);
-        exit(1);
-    }
-
-    gpib_ibwrtf(d, "%s %d09", HP3488_CLOSE, slot);
-    hp3488_checksrq(d, &err9);
-    if (!(err9 == 0 || err9 == HP3488_ERROR_LOGIC)) {
-        _reporterror(err9);
-        exit(1);
-    }
+    lerr_flag = 0;  /* next logic error will set lerr_flag */
+    gpib_wrtf(gd, "%s %d04", HP3488_CLOSE, slot);
+    err4 = lerr_flag;
+    lerr_flag = 0;  /* next logic error will set lerr_flag */
+    gpib_wrtf(gd, "%s %d09", HP3488_CLOSE, slot);
+    err9 = lerr_flag;
+    lerr_flag = 1;  /* back to default logic error handling */
 
     if (err4 && err9)
         model = 44476;
@@ -236,11 +192,8 @@ _disambiguate_ctype(int d, int slot)
         exit(1);
     }
 
-    gpib_ibwrtf(d, "%s %d", HP3488_CRESET, slot);
-    hp3488_checksrq(d, NULL);
-
-    gpib_ibwrtf(d, "%s", HP3488_DISP_ON);
-    hp3488_checksrq(d, NULL);
+    gpib_wrtf(gd, "%s %d", HP3488_CRESET, slot);
+    gpib_wrtf(gd, "%s", HP3488_DISP_ON);
 
     return model;
 }
@@ -264,19 +217,18 @@ _caddrtab_find(int model)
     return NULL;
 }
 
+/* List the state of a particular channel address.
+ */
 static void
-hp3488_query_caddr(int d, char *caddr)
+_query_caddr(gd_t gd, char *caddr)
 {
     char buf[128];
     int state;
 
-    gpib_ibwrtf(d, "%s %s", HP3488_VIEW_QUERY, caddr);
-    hp3488_checksrq(d, NULL);
-               
-    gpib_ibrdstr(d, buf, sizeof(buf));
-    hp3488_checksrq(d, NULL);
+    gpib_wrtf(gd, "%s %s", HP3488_VIEW_QUERY, caddr);
+    gpib_rdstr(gd, buf, sizeof(buf));
 
-    if (!strncmp(buf, "OPEN   1", 8))
+    if (!strncmp(buf,      "OPEN   1", 8))
         state = 0;
     else if (!strncmp(buf, "CLOSED 0", 8))
         state = 1;
@@ -287,8 +239,10 @@ hp3488_query_caddr(int d, char *caddr)
     printf("%s: %d\n", caddr, state);
 }
 
+/* List the state of all channels in a particular slot.
+ */
 static void
-hp3488_query_slot(int d, int slot)
+_query_slot(gd_t gd, int slot)
 {
     int model;
     char *listcpy;
@@ -297,7 +251,7 @@ hp3488_query_slot(int d, int slot)
     char caddr[64];
     char buf[256];
 
-    model = hp3488_ctype(d, slot);
+    model = _ctype(gd, slot);
     cp = _caddrtab_find(model);
     if (cp == NULL) {
         fprintf(stderr, "%s: problem looking up slot ctype %d\n", prog, model);
@@ -312,15 +266,18 @@ hp3488_query_slot(int d, int slot)
         chan = strtok_r(listcpy, ",", (char **)&buf);
         while (chan) {
             sprintf(caddr, "%d%s", slot, chan);
-            hp3488_query_caddr(d, caddr);
+            _query_caddr(gd, caddr);
             chan = strtok_r(NULL, ",", (char **)&buf);
         }
         free(listcpy);
     }
 }
 
+/* List the state of a list of channel addresses, or if list is NULL,
+ * of every channel in the system. 
+ */
 static void
-hp3488_query(int d, char *list)
+hp3488_query(gd_t gd, char *list)
 {
     char *caddr;
     int slot;
@@ -328,31 +285,34 @@ hp3488_query(int d, char *list)
 
     if (!list) {
         for (slot = 1; slot <= 5; slot++)       /* query all slots */
-            hp3488_query_slot(d, slot);
+            _query_slot(gd, slot);
     } else {
         caddr = strtok_r(list, ",", (char **)&buf);
         while (caddr) {
             slot = strtoul(caddr, NULL, 10);
             if (slot >= 1 && slot <= 5)
-                hp3488_query_slot(d, slot);     /* query whole slot */
+                _query_slot(gd, slot);     /* query whole slot */
             else
-                hp3488_query_caddr(d, caddr);   /* query individual caddr */
+                _query_caddr(gd, caddr);   /* query individual caddr */
 
             caddr = strtok_r(NULL, ",", (char **)&buf);
         }
     }
 }
 
+/* List the model numbers of card plugged into the mainframe.
+ */
 static void
-hp3488_list(int d)
+hp3488_list(gd_t gd)
 {
     int slot, model;
     caddrtab_t *cp;
 
     for (slot = 1; slot <= 5; slot++) {
-        model = hp3488_ctype(d, slot);
-        if (model == 44471)
-            model = _disambiguate_ctype(d, slot);
+        model = _ctype(gd, slot);
+        if (model == 44471) {
+            model = _disambiguate_ctype(gd, slot);
+        }
         cp = _caddrtab_find(model);
         printf("%d: %-.5d %-21s %s\n", slot, model, cp->desc, 
                 cp->list ? cp->list : "");
@@ -360,18 +320,55 @@ hp3488_list(int d)
 }
 
 static void
-hp3488_test(int d)
+hp3488_open(gd_t gd, char *list)
 {
-    gpib_ibwrtf(d, "%s", HP3488_TEST);
-    hp3488_checksrq(d, NULL);
+    gpib_wrtf(gd, "%s %s", HP3488_OPEN, list);
+}
+
+static void
+hp3488_close(gd_t gd, char *list)
+{
+    gpib_wrtf(gd, "%s %s", HP3488_CLOSE, list);
+}
+
+/* Run the instrument self test.
+ */
+static void
+hp3488_test(gd_t gd)
+{
+    gpib_wrtf(gd, "%s", HP3488_TEST);
+    /* if we don't exit via serial poll callback, we passed */
     printf("%s: selftest passed\n", prog);
+}
+
+/* Clear instrument to default settings: relays open, dig I/O to hi-Z.
+ * Stored setups not destroyed.
+ * Verify identity.
+ */
+static void
+hp3488_clear(gd_t gd)
+{
+    char tmpbuf[64];
+
+    gpib_clr(gd, 1000000);
+
+    /* verify the instrument id is what we expect */
+    gpib_wrtf(gd, "%s", HP3488_ID_QUERY);
+    gpib_rdstr(gd, tmpbuf, sizeof(tmpbuf));
+
+    if (strncmp(tmpbuf, HP3488_ID_RESPONSE, strlen(HP3488_ID_RESPONSE)) != 0) {
+        fprintf(stderr, "%s: device id %s != %s\n", prog, tmpbuf,
+                HP3488_ID_RESPONSE);
+        exit(1);
+    }
 }
 
 int
 main(int argc, char *argv[])
 {
     char *instrument = INSTRUMENT;
-    int c, d;
+    gd_t gd;
+    int c;
     int verbose = 0;
     int clear = 0;
     int local = 0;
@@ -431,35 +428,36 @@ main(int argc, char *argv[])
             && !selftest)
         usage();
 
-    d = gpib_init(prog, instrument, verbose);
-
-    /* Clear instrument to default settings: relays open, dig I/O to hi-Z.
-     * Stored setups not destroyed.
-     * Verify identity.
+    /* After every operation, perform serial poll, then call
+     * _interpret_status() with the status byte as an argument.
      */
-    if (clear) {
-        gpib_ibclr(d);
-        sleep(1); 
-        hp3488_checkid(d);
+    gd = gpib_init(instrument, _interpret_status, 100000);
+    if (!gd) {
+        fprintf(stderr, "%s: couldn't find device %s in /etc/gpib.conf\n",                 prog, instrument);
+        exit(1);
     }
+    gpib_set_verbose(gd, verbose);
+
+    if (clear)
+        hp3488_clear(gd);
 
     if (selftest)
-        hp3488_test(d);
-
+        hp3488_test(gd);
     if (list)
-        hp3488_list(d);
+        hp3488_list(gd);
     if (open)
-        hp3488_open(d, open);
+        hp3488_open(gd, open);
     if (close)
-        hp3488_close(d, close);
+        hp3488_close(gd, close);
     if (query)
-        hp3488_query(d, query);
+        hp3488_query(gd, query);
     if (query_all)
-        hp3488_query(d, NULL);
+        hp3488_query(gd, NULL);
 
-    /* return front panel if requested */
     if (local)
-        gpib_ibloc(d); 
+        gpib_loc(gd); 
+
+    gpib_fini(gd);
 
     exit(0);
 }

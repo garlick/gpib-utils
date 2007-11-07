@@ -18,7 +18,12 @@
    Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
 
 #include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <errno.h>
+#include <string.h>
+
+extern char *prog;
 
 int
 read_all(int fd, void *buf, int len)
@@ -53,6 +58,97 @@ write_all(int fd, void *buf, int len)
 
     return bc;
 }
+
+void *
+xmalloc(size_t size)
+{
+    void *new = malloc(size);
+
+    if (!new) {
+        fprintf(stderr, "%s: out of memory\n", prog);
+        exit(1);
+    }
+    return new;
+}
+
+void *
+xrealloc(void *ptr, int size)
+{
+    void *new = realloc(ptr, size);
+
+    if (!new) {
+        fprintf(stderr, "%s: out of memory\n", prog);
+        exit(1);
+    }
+    return new;
+}
+
+char *
+xstrdup(char *str)
+{
+    char *new = strdup(str);
+
+    if (!new) {
+        fprintf(stderr, "%s: out of memory\n", prog);
+        exit(1);
+    }
+    return new;
+}
+
+char *
+xstrcpyprint(char *str)
+{
+    char *cpy = xmalloc(strlen(str)*2 + 1);
+    int i;
+
+    *cpy = '\0';
+    for (i = 0; i < strlen(str); i++) {
+        if (str[i] == '\n')
+            strcat(cpy, "\\n");
+        else if (str[i] == '\r')
+            strcat(cpy, "\\r");
+        else
+            strncat(cpy, &str[i], 1);
+    }
+    return cpy;
+}
+
+char *
+xstrcpyunprint(char *str)
+{
+    char *cpy = xmalloc(strlen(str) + 1);
+    int i;
+    int esc = 0;
+
+    *cpy = '\0';
+    for (i = 0; i < strlen(str); i++) {
+        if (esc) {
+            switch (str[i]) {
+                case 'r':
+                    strcat(cpy, "\r");
+                    break;
+                case 'n':
+                    strcat(cpy, "\n");
+                    break;
+                case '\\':
+                    strcat(cpy, "\\");
+                    break;
+                default:
+                    strcat(cpy, "\\");
+                    strncat(cpy, &str[i], 1);
+                    break;
+            }
+            esc = 0;
+        } else if (str[i] == '\\') {
+            esc = 1;
+        } else {
+            strncat(cpy, &str[i], 1);
+        }
+    }
+
+    return cpy;
+}
+
 
 /*
  * vi:tabstop=4 shiftwidth=4 expandtab

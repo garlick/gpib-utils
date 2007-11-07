@@ -35,6 +35,7 @@
 #include "units.h"
 #include "gpib.h"
 #include "util.h"
+#include "errstr.h"
 
 #define INSTRUMENT "sr620"  /* the /etc/gpib.conf entry */
 #define BOARD       0       /* minor board number in /etc/gpib.conf */
@@ -42,10 +43,16 @@
 #define MAXCONFBUF  256
 #define MAXIDBUF    80
 
-static char *prog = "";
+#define SR620_GENERAL_TIMEOUT 10    /* 10s general timeout */
+#define SR620_AUTOCAL_TIMEOUT 180   /* 180s for autocal */
+
+char *prog = "";
 static int verbose = 0;
 
-#define OPTIONS "n:clvsr"
+static errstr_t _selftest_errors[] = SR620_TEST_ERRORS;
+static errstr_t _autocal_errors[] = SR620_AUTOCAL_ERRORS;
+
+#define OPTIONS "n:clvsrSapPjCgG"
 static struct option longopts[] = {
     {"name",            required_argument, 0, 'n'},
     {"clear",           no_argument,       0, 'c'},
@@ -53,6 +60,14 @@ static struct option longopts[] = {
     {"verbose",         no_argument,       0, 'v'},
     {"save",            no_argument,       0, 's'},
     {"restore",         no_argument,       0, 'r'},
+    {"selftest",        no_argument,       0, 'S'},
+    {"autocal",         no_argument,       0, 'a'},
+    {"graph-histogram", no_argument,       0, 'p'},
+    {"graph-mean",      no_argument,       0, 'P'},
+    {"graph-jitter",    no_argument,       0, 'j'},
+    {"graph-clear",     no_argument,       0, 'C'},
+    {"graph-enable",    no_argument,       0, 'G'},
+    {"graph-disable",   no_argument,       0, 'g'},
     {0, 0, 0, 0},
 };
 
@@ -61,105 +76,147 @@ usage(void)
 {
     fprintf(stderr, 
 "Usage: %s [--options]\n"
-"  -n,--name name                instrument name [%s]\n"
-"  -c,--clear                    initialize instrument to default values\n"
-"  -l,--local                    return instrument to local operation on exit\n"
-"  -v,--verbose                  show protocol on stderr\n"
-"  -s,--save                     save complete instrument setup to stdout\n"
-"  -r,--restore                  restore instrument setup from stdin\n"
+"  -n,--name name        instrument name [%s]\n"
+"  -c,--clear            initialize instrument to default values\n"
+"  -l,--local            return instrument to local operation on exit\n"
+"  -v,--verbose          show protocol on stderr\n"
+"  -s,--save             save instrument setup to stdout\n"
+"  -r,--restore          restore instrument setup from stdin\n"
+"  -S,--selftest         run instrument self test\n"
+"  -a,--autocal          run autocal procedure\n"
+"  -C,--graph-clear      clear graph\n"
+"  -G,--graph-enable     enable graph mode\n"
+"  -g,--graph-disable    disable graph mode (improves measurement throughput)\n"
+"  -p,--graph-histogram  graph histogram\n"
+"  -P,--graph-mean       graph mean stripchart\n"
+"  -P,--graph-jitter     graph jitter stripchart\n"
            , prog, INSTRUMENT);
     exit(1);
 }
 
-
-
-#if 0
-static void
-_checkerr(int d)
+static int
+_check_esr(gd_t gd, char *msg)
 {
-    char buf[16];
-    int status;
+    int err = 0;
+    int esb;
 
-    /* check error status */
-    gpib_ibwrtf(d, "%s", SR620_ERROR_STATUS);
-    gpib_ibrdstr(d, buf, sizeof(buf));
-    if (*buf < '0' || *buf > '9') {
-        fprintf(stderr, "%s: error reading error status byte\n", prog);
+    gpib_wrtf(gd, "%s", SR620_ESR_QUERY);
+    if (gpib_rdf(gd, "%d", &esb) != 1) {
+        fprintf(stderr, "%s: error parsing ESR query response\n", prog);
         exit(1);
     }
-    status = strtoul(buf, NULL, 10);
-    if (status & SR620_ERR_RECALL) 
-        fprintf(stderr, "%s: recalled data was corrupt\n", prog);
-    if (status & SR620_ERR_DELAY_RANGE)
-        fprintf(stderr, "%s: delay range error\n", prog);
-    if (status & SR620_ERR_DELAY_LINKAGE)
-        fprintf(stderr, "%s: delay linkage error\n", prog);
-    if (status & SR620_ERR_CMDMODE)
-        fprintf(stderr, "%s: wrong mode for command\n", prog);
-    if (status & SR620_ERR_ERANGE)
-        fprintf(stderr, "%s: value out of range\n", prog);
-    if (status & SR620_ERR_NUMPARAM)
-        fprintf(stderr, "%s: wrong number of parameters\n", prog);
-    if (status & SR620_ERR_BADCMD)
-        fprintf(stderr, "%s: unrecognized command\n", prog);
-    if (status != 0)
-        exit(1);
+
+    if ((esb & SR620_ESR_OPC)) {
+        /* operation complete */    
+    }
+    if ((esb & SR620_ESR_QUERY_ERR)) {
+        fprintf(stderr, "%s: %s: query error\n", prog, msg);
+        err = 1;
+    }
+    if ((esb & SR620_ESR_EXEC_ERR)) {
+        fprintf(stderr, "%s: %s: execution error\n", prog, msg);
+        err = 1;
+    }
+    if ((esb & SR620_ESR_CMD_ERR)) {
+        fprintf(stderr, "%s: %s: command error\n", prog, msg);
+        err = 1;
+    }
+    if ((esb & SR620_ESR_CMD_URQ)) {
+        /* keypress or trigger knob rotation */
+    }
+    if ((esb & SR620_ESR_CMD_PON)) {
+        /* power on */
+    }
+
+    return err;
 }
 
-static void
-_checkinst(int d)
+static int
+_check_tic(gd_t gd, char *msg)
 {
-    char buf[16];
-    int status;
+    int err = 0;
 
-    /* check instrument status */
-    gpib_ibwrtf(d, "%s", SR620_INSTR_STATUS);
-    gpib_ibrdstr(d, buf, sizeof(buf));
-    if (*buf < '0' || *buf > '9') {
-        fprintf(stderr, "%s: error reading instrument status byte\n", prog);
+    return err;
+}
+
+static int
+_check_error(gd_t gd, char *msg)
+{
+    int err = 0;
+    int error;
+
+    gpib_wrtf(gd, "%s", SR620_ERROR_QUERY);
+    if (gpib_rdf(gd, "%d", &error) != 1) {
+        fprintf(stderr, "%s: error parsing error query response\n", prog);
         exit(1);
     }
-    status = strtoul(buf, NULL, 10);
 
-    if (status & SR620_STAT_BADMEM)
-        fprintf(stderr, "%s: memory contents corrupted\n", prog);
-    if (status & SR620_STAT_SRQ)
-        fprintf(stderr, "%s: service request\n", prog);
-    if (status & SR620_STAT_TOOFAST)
-        fprintf(stderr, "%s: trigger rate too high\n", prog);
-    if (status & SR620_STAT_PLL)
-        fprintf(stderr, "%s: 80MHz PLL is unlocked\n", prog);
-    if (status & SR620_STAT_TRIG)
-        fprintf(stderr, "%s: trigger has occurred\n", prog);
-    if (status & SR620_STAT_BUSY)
-        fprintf(stderr, "%s: busy with timing cycle\n", prog);
-    if (status & SR620_STAT_CMDERR)
-        fprintf(stderr, "%s: command error detected\n", prog);
-
-    if (status != 0)
-        exit(1);
-}
-
-static void
-sr620_checkerr(int d)
-{
-    _checkerr(d);
-    _checkinst(d);
-}
-#endif
-
-static void
-sr620_save(int d)
-{
-    char buf[MAXCONFBUF];
-    int len;
-
-    gpib_ibwrtf(d, "%s\r\n", SR620_SETUP_QUERY);
-    len = gpib_ibrd(d, buf, sizeof(buf));
-    if (write_all(1, buf, len) < 0) {
-        perror("write");
-        exit(1);
+    if ((error & SR620_ERROR_PRINT)) {
+        fprintf(stderr, "%s: print error\n", prog);
+        err = 1;
     }
+    if ((error & SR620_ERROR_NOCLOCK)) {
+        fprintf(stderr, "%s: no clock\n", prog);
+        err = 1;
+    }
+    if ((error & SR620_ERROR_AUTOLEV_A)) {
+        fprintf(stderr, "%s: trigger lost on channel A\n", prog);
+        err = 1;
+    }
+    if ((error & SR620_ERROR_AUTOLEV_B)) {
+        fprintf(stderr, "%s: trigger lost on channel B\n", prog);
+        err = 1;
+    }
+    if ((error & SR620_ERROR_TEST)) {
+        fprintf(stderr, "%s: self test error\n", prog);
+        err = 1;
+    }
+    if ((error & SR620_ERROR_CAL)) {
+        fprintf(stderr, "%s: autocal error\n", prog);
+        err = 1;
+    }
+    if ((error & SR620_ERROR_WARMUP)) {
+        /* unit warmed up */
+    }
+    if ((error & SR620_ERROR_OVFLDIV0)) {
+        fprintf(stderr, "%s: interval counter overflow/ratio mode divide by zero\n",
+                prog);
+        err = 1;
+    }
+
+    return err;
+}
+
+static int
+_interpret_status(gd_t gd, unsigned char status, char *msg)
+{
+    int err = 0;
+
+    if ((status & SR620_STATUS_ERROR)) {
+        err = _check_error(gd, msg);
+    }
+    if ((status & SR620_STATUS_TIC)) {
+        err = _check_tic(gd, msg);
+    }
+    if ((status & SR620_STATUS_MAV)) {
+        /* data available in gpib buffer - ignore */
+    }
+    if ((status & SR620_STATUS_ESB)) {
+        err = _check_esr(gd, msg);
+        /* check ESB */
+    }
+    if ((status & SR620_STATUS_RQS)) {
+    }
+    if (err == 0 && !(status & SR620_STATUS_READY)) {
+        //err = -1;
+    } 
+    if (err == 0 && !(status & SR620_STATUS_SREADY)) {
+        //err = -1;
+    }
+    if (err == 0 && !(status & SR620_STATUS_PREADY)) {
+        //err = -1;
+    }
+    return err;
 }
 
 /* Convert integer config string representation of "1,2,5 sequence"
@@ -169,19 +226,43 @@ static double
 _decode125(int i)
 {
     switch (i % 3) {
-        case 0:
-            return exp10(i / 3) * 1;
-        case 1:
-            return exp10(i / 3) * 2;
-        case 2:
-            return exp10(i / 3) * 5;
+        case 0: return exp10(i / 3) * 1;
+        case 1: return exp10(i / 3) * 2;
+        case 2: return exp10(i / 3) * 5;
     }
     /*NOTREACHED*/
     return 0;
 }
 
+static int
+_decode_scanpt(int i)
+{
+    switch (i) {
+        case 0: return 2;
+        case 1: return 5;
+        case 2: return 10;
+        case 3: return 25;
+        case 4: return 50;
+        case 5: return 125;
+        case 6: return 250;
+    }
+    return 0;
+}
+
+/* random query to force prior commands to be processed */
 static void
-sr620_restore(int d)
+_debugmarker(gd_t gd, char *msg)
+{
+    int i; 
+    printf("XXX %s\n", msg);
+    gpib_wrtf(gd, "%s", SR620_CLKF_QUERY);
+    gpib_rdf(gd, "%d", &i);
+}
+
+/* Restore instrument state from stdin.
+ */
+static void
+sr620_restore(gd_t gd)
 {
     char buf[MAXCONFBUF];
     int n;     
@@ -191,6 +272,7 @@ sr620_restore(int d)
     int hhscale, hbin, mgvert, jgvert;
     int setup5, setup6, rs232wait, ssetup;
     int ssd1, ssd0, shd2, shd1, shd0;
+    double x;
 
     if ((n = read_all(0, buf, MAXCONFBUF)) < 0) {
         perror("write");
@@ -199,12 +281,12 @@ sr620_restore(int d)
     assert(n < MAXCONFBUF);
     buf[n] = '\0';
     n = sscanf(buf, 
-            "%d,%d,%d,%d,"
-            "%d,%d,%d,%d,"
-            "%d,%d,%d,%d,"
-            "%d,%d,%d,%d,"
-            "%d,%d,%d,%d,"
-            "%d,%d,%d,%d,%d",
+    /*1*/   "%d,%d,%d,%d,"
+    /*5*/   "%d,%d,%d,%d,"
+    /*9*/   "%d,%d,%d,%d,"
+    /*13*/  "%d,%d,%d,%d,"
+    /*17*/  "%d,%d,%d,%d,"
+    /*21*/  "%d,%d,%d,%d,%d",
             &mode, &srce, &armm, &gate,
             &size, &disp, &dgph, &setup1,
             &setup2, &setup3, &setup4, &hvscale,
@@ -215,40 +297,279 @@ sr620_restore(int d)
         fprintf(stderr, "%s: error scanning configuration string\n", prog);
         exit(1);
     }
-    gpib_ibwrtf(d, "%s %d", SR620_MODE, mode);
-    gpib_ibwrtf(d, "%s %d", SR620_SRCE, srce);
-    gpib_ibwrtf(d, "%s %d", SR620_TRIG_ARMMODE, armm);
-    gpib_ibwrtf(d, "%s %.0E", SR620_GATE, _decode125(gate)); // XXX untested
-
-    gpib_ibwrtf(d, "%s %.0E", SR620_SIZE, _decode125(size));
-    // XXX unfinished
+    //_debugmarker(gd, "1");
+    /* 1 - instrument mode - same as MODE command */       
+    gpib_wrtf(gd, "%s %d", SR620_MODE, mode);
+    /* 2 - source - same as SRCE command */       
+    gpib_wrtf(gd, "%s %d", SR620_SRCE, srce);
+    /* 3 - arming mode - same as ARMM mode */       
+    gpib_wrtf(gd, "%s %d", SR620_ARMM, armm);
+    /* 4 - gate multiplier - same as front panel control (0=-1E-4, 1=2E-4...) */
+    //gpib_wrtf(gd, "%s %.0E", SR620_GATE, _decode125(gate));
+    /* 5 - sample size - 0,1,...,18 corresponding to 1,2,5,...,10^6 */
+    gpib_wrtf(gd, "%s %.0E", SR620_SIZE, _decode125(size));
+    /* 6 - display source - same as DISP command */
+    gpib_wrtf(gd, "%s %d", SR620_DISP, disp);
+    /* 7 - graph source - same as DGPH command */       
+    gpib_wrtf(gd, "%s %d", SR620_DGPH, dgph);
+    //_debugmarker(gd, "2");
+    /** 
+     ** 8 - setup byte 1 
+     **/
+    /* 8[0] - auto measure on/off */    
+    gpib_wrtf(gd, "%s %d", SR620_AUTM, setup1 & 1);
+    /* 8[1] - autoprint on/off */    
+    gpib_wrtf(gd, "%s %d", SR620_AUTP, (setup1 >> 1) & 1);
+    //_debugmarker(gd, "3");
+    /* 8[2] - rel on/off */    
+    gpib_wrtf(gd, "%s %d", SR620_DREL, (setup1 >> 2) & 1);
+    /* 8[3] - x1000 on/off */    
+    //gpib_wrtf(gd, "%s %d", SR620_EXPD, (setup1 >> 3) & 1);
+    /* 8[4] - arming parity (+-time) */
+    /* XXX COMP toggles parity but not sure how to set to particular value */
+    /* 8[5] - jitter type (Allan/std dev) */
+    gpib_wrtf(gd, "%s %d", SR620_JTTR, (setup1 >> 5) & 1);
+    /* 8[6] - clock int/ext */
+    gpib_wrtf(gd, "%s %d", SR620_CLCK, (setup1 >> 6) & 1);
+    /* 8[7] - clock freq 10/5 mhz */
+    gpib_wrtf(gd, "%s %d", SR620_CLKF, (setup1 >> 7) & 1);
+    /**
+     ** 9 - setup byte 2 
+     **/
+    /* 9[0] - A autolev on/off */
+    gpib_wrtf(gd, "%s 1,%d", SR620_TMOD, setup2 & 1);
+    /* 9[1] - B autolev on/off */
+    gpib_wrtf(gd, "%s 2,%d", SR620_TMOD, (setup2 >> 1) & 1);
+    /* 9[2:3] - dvm0 gain (auto=0, 20V=1, 2V=2) */
+    gpib_wrtf(gd, "%s 0,%d", SR620_RNGE, (setup2 >> 2) & 3);
+    /* 9[4] - A prescaler enabled */
+    /* XXX redundant with TERM below? */
+    /* 9[5] - B prescaler enabled */
+    /* XXX redundant with TERM below? */
+    /* 9[6:7] - dvm1 gain (auto=0, 20V=1, 2V=2) */
+    gpib_wrtf(gd, "%s 1,%d", SR620_RNGE, (setup2 >> 6) & 3);
+    //_debugmarker(gd, "4");
+    /**
+     ** 10 - setup byte 3
+     **/
+    /* 10[0] - ext terminator */
+    gpib_wrtf(gd, "%s 0,%d", SR620_TERM, setup3 & 1);
+    /* 10[1] - ext slope */
+    gpib_wrtf(gd, "%s 0,%d", SR620_TSLP, (setup3 >> 1) & 1);
+    /* 10[2] - A slope */
+    gpib_wrtf(gd, "%s 1,%d", SR620_TSLP, (setup3 >> 2) & 1);
+    /* 10[3] - A ac/dc */
+    gpib_wrtf(gd, "%s 1,%d", SR620_TCPL, (setup3 >> 3) & 1);
+    /* 10[4] - B slope */
+    gpib_wrtf(gd, "%s 2,%d", SR620_TSLP, (setup3 >> 4) & 1);
+    /* 10[5] - B ac/dc */
+    gpib_wrtf(gd, "%s 2,%d", SR620_TCPL, (setup3 >> 5) & 1);
+    //_debugmarker(gd, "5");
+    /**
+     ** 11 - setup byte 4
+     **/
+    /* 11[0:1] - A terminator */
+    gpib_wrtf(gd, "%s 1,%d", SR620_TERM, setup4 & 0x03);
+    /* 11[2:3] - B terminator */
+    gpib_wrtf(gd, "%s 2,%d", SR620_TERM, (setup4 >> 2) & 0x03);
+    /* 11[4:5] - print port mode */
+    gpib_wrtf(gd, "%s %d", SR620_PRTM, (setup4 >> 4) & 0x03);
+    /* 12 - histogram vert scale - 0,1,... corresponding to 1,2,5,... */
+    //gpib_wrtf(gd, "%s 0,%.0E", SR620_GSCL, _decode125(hvscale));
+    /* 13 - histogram horiz scale - 1,2,5 led display LSD (ps, uHz, etc) */
+    //gpib_wrtf(gd, "%s 1,%.0E", SR620_GSCL, _decode125(hhscale));
+    /* 14 - histogram bin number */
+    //gpib_wrtf(gd, "%s 2,%.0E", SR620_GSCL, _decode125(hbin));
+    /* 15 - mean graph vert scale */
+    //gpib_wrtf(gd, "%s 3,%.0E", SR620_GSCL, _decode125(mgvert));
+    /* 16 - jitter graph vert scale */
+    //gpib_wrtf(gd, "%s 4,%.0E", SR620_GSCL, _decode125(jgvert));
+    //_debugmarker(gd, "6");
+    /**
+     ** 17 - setup byte 5
+     **/
+    /* 17[0:4] - plotter addr */
+    gpib_wrtf(gd, "%s %d", SR620_PLAD, setup5 & 0x1f);
+    /* 17[5] - plot/print */
+    gpib_wrtf(gd, "%s %d", SR620_PDEV, (setup5 >> 5) & 1);
+    /* 17[6] - plot gpib/rs232 */
+    gpib_wrtf(gd, "%s %d", SR620_PLPT, (setup5 >> 6) & 1);
+    //_debugmarker(gd, "7");
+    /**
+     ** 18 - setup byte 6
+     **/
+    /* 18[0-1] - d/a output mode (chart/d/a) */
+    gpib_wrtf(gd, "%s %d", SR620_ANMD, setup6 & 3);
+    /* 18[2] - graph on/off */
+    gpib_wrtf(gd, "%s %d", SR620_GENA, (setup6 >> 2) & 1);
+    /* 18[3:6] - #scan points */
+    gpib_wrtf(gd, "%s %d", SR620_SCPT, _decode_scanpt((setup6 >> 3) & 0xf));
+    /* 18[7] - ref output level */
+    gpib_wrtf(gd, "%s %d", SR620_RLVL, (setup6 >> 7) & 1);
+    /* 19 - rs232 wait - same as WAIT command */
+    gpib_wrtf(gd, "%s %d", SR620_WAIT, rs232wait);
+    //_debugmarker(gd, "8");
+    /**
+     ** 20 - scan setup byte
+     **/
+    /* 20[0:3] - stepsize 1E-6, 2E-6,... */
+    //gpib_wrtf(gd, "%s %.0E", SR620_DSTP, _decode125(ssetup & 0xf)); // XXX?
+    /* 20[4:5]*/ /* delay scan enable */
+    gpib_wrtf(gd, "%s %d", SR620_SCEN, (ssetup >> 4) & 3); // XXX?
+    /* 21,22 - scan starting delay = (256*byte21 + byte22) */
+    gpib_wrtf(gd, "%s %d", SR620_DBEG, 256*ssd1 + ssd0);
+    /* 23,24,25 - scan hold time = (65536*byte23 + 256*byte24 + byte25) */
+    gpib_wrtf(gd, "%s %.0E", SR620_HOLD, 0.01*(65536*shd2 + 256*shd1 + shd0));
+    //_debugmarker(gd, "9");
 }
 
+/* Save instrument state to stdout.
+ */
 static void
-sr620_checkid(int d)
+sr620_save(gd_t gd)
 {
-    char tmpbuf[MAXIDBUF];
+    char buf[MAXCONFBUF];
 
-    gpib_ibwrtf(d, "%s", SR620_ID_QUERY);
+    gpib_wrtf(gd, "%s", SR620_SETUP_QUERY);
+    gpib_rdstr(gd, buf, sizeof(buf));
+    if (write_all(1, buf, strlen(buf)) < 0) {
+        perror("write");
+        exit(1);
+    }
+}
 
-    gpib_ibrdstr(d, tmpbuf, sizeof(tmpbuf));
-    //hp3488_checksrq(d, NULL);
+
+/* Run instrument self-test and report results on stderr.
+ */
+static void
+sr620_test(gd_t gd)
+{
+    int result;
+
+    gpib_wrtf(gd, "%s", SR620_SELFTEST);
+    if (gpib_rdf(gd, "%d", &result) != 1) {
+        fprintf(stderr, "%s: error parsing self test result\n", prog);
+        exit(1);
+    }
+    if (result == 0) {
+        fprintf(stderr, "%s: self test passed\n", prog);
+        return;
+    }
+    fprintf(stderr, "%s: self test failed: %s\n", prog, 
+            finderr(_selftest_errors, result));
+    exit(1);
+}
+
+/* Run instrument autocal procedure.
+ */
+static void
+sr620_autocal(gd_t gd)
+{
+    int result;
+
+    gpib_wrtf(gd, "%s", SR620_AUTOCAL);
+    fprintf(stderr, "%s: running autocal (takes ~3m)...\n", prog);
+    gpib_set_timeout(gd, SR620_AUTOCAL_TIMEOUT);
+    if (gpib_rdf(gd, "%d", &result) != 1) {
+        fprintf(stderr, "%s: error parsing autocal result\n", prog);
+        exit(1);
+    }
+    gpib_set_timeout(gd, SR620_GENERAL_TIMEOUT);
+    if (result == 0) {
+        fprintf(stderr, "%s: autocal complete\n", prog);
+    } else {
+        fprintf(stderr, "%s: autocal: %s\n", prog, 
+            finderr(_autocal_errors, result));
+        exit(1);
+    }
+}
+
+/* Set instrument to default configurations and check identity.
+ */
+static void
+sr620_clear(gd_t gd)
+{
+    char tmpbuf[80];
+
+
+    gpib_clr(gd, 200000);
+    gpib_wrtf(gd, "%s", SR620_RESET);
+
+    /* check id */
+    gpib_wrtf(gd, "%s", SR620_ID_QUERY);
+    gpib_rdstr(gd, tmpbuf, sizeof(tmpbuf));
 
     if (strncmp(tmpbuf, SR620_ID_RESPONSE, strlen(SR620_ID_RESPONSE)) != 0) {
         fprintf(stderr, "%s: unsupported instrument: %s", prog, tmpbuf);
         exit(1);
     }
+
+    /* set up error masks */
+    gpib_wrtf(gd, "%s %d", SR620_ESR_ENABLE,
+            (SR620_ESR_QUERY_ERR | SR620_ESR_EXEC_ERR | SR620_ESR_CMD_ERR));
+    gpib_wrtf(gd, "%s %d", SR620_ERROR_ENABLE,
+            (SR620_ERROR_PRINT | SR620_ERROR_NOCLOCK | 
+             /*SR620_ERROR_AUTOLEV_A | SR620_ERROR_AUTOLEV_B |*/
+             SR620_ERROR_TEST | SR620_ERROR_CAL | SR620_ERROR_OVFLDIV0));
+
+    /* clear status on next power on */
+    gpib_wrtf(gd, "%s 1", SR620_PSC); 
+}
+
+static void
+sr620_graph_histogram(gd_t gd)
+{
+    gpib_wrtf(gd, "%s 0", SR620_DGPH);    /* select histogram display */
+}
+
+static void
+sr620_graph_mean(gd_t gd)
+{
+    gpib_wrtf(gd, "%s 1", SR620_DGPH);    /* select mean schart display */
+}
+
+static void
+sr620_graph_jitter(gd_t gd)
+{
+    gpib_wrtf(gd, "%s 2", SR620_DGPH);    /* select jitter schart display */
+}
+
+static void
+sr620_graph_clear(gd_t gd)
+{
+    gpib_wrtf(gd, "%s", SR620_GCLR);      /* clear graphs */
+}
+
+static void
+sr620_graph_enable(gd_t gd)
+{
+    gpib_wrtf(gd, "%s 1", SR620_GENA);    /* enable graphs */
+}
+
+static void
+sr620_graph_disable(gd_t gd)
+{
+    gpib_wrtf(gd, "%s 0", SR620_GENA);    /* disable graphs */
 }
 
 int
 main(int argc, char *argv[])
 {
     char *instrument = INSTRUMENT;
-    int c, d;
+    int c;
     int clear = 0;
     int local = 0;
     int save = 0;
     int restore = 0;
+    int test = 0;
+    int autocal = 0;
+    int graph_histogram = 0;
+    int graph_mean = 0;
+    int graph_jitter = 0;
+    int graph_clear = 0;
+    int graph_enable = 0;
+    int graph_disable = 0;
+    gd_t gd;
 
     /*
      * Handle options.
@@ -274,39 +595,77 @@ main(int argc, char *argv[])
         case 'r': /* --restore */
             restore = 1;
             break;
+        case 'S': /* --selftest */
+            test = 1;
+            break;
+        case 'a': /* --autocal */
+            autocal = 1;
+            break;
+        case 'p': /* --graph-histogram */
+            graph_histogram = 1;
+            break;
+        case 'P': /* --graph-mean */
+            graph_mean = 1;
+            break;
+        case 'j': /* --graph-jitter */
+            graph_jitter = 1;
+            break;
+        case 'C': /* --graph-clear */
+            graph_clear = 1;
+            break;
+        case 'G': /* --graph-enable */
+            graph_enable = 1;
+            break;
+        case 'g': /* --graph-disable */
+            graph_disable = 1;
+            break;
         default:
             usage();
             break;
         }
     }
 
-    if (!clear && !local && !save && !restore)
+    if (!clear && !local && !save && !restore && !test && !autocal &&
+            !graph_clear && !graph_enable && !graph_disable && 
+            !graph_histogram && !graph_mean && !graph_jitter)
         usage();
 
-    /* find device in /etc/gpib.conf */
-    d = gpib_init(prog, instrument, verbose);
-
-    /* Set instrument to default configurations.
-     * (same as holding down "clr rel" at power on)
-     */
-    if (clear) {
-        gpib_ibclr(d);
-        //sr620_checkerr(d);
-        gpib_ibwrtf(d, "%s", SR620_RESET);
-        sr620_checkid(d);
+    gd = gpib_init(instrument, _interpret_status, 0);
+    if (!gd) {
+        fprintf(stderr, "%s: couldn't find device %s in /etc/gpib.conf\n",                 prog, instrument);
+        exit(1);
     }
+    gpib_set_verbose(gd, verbose);
+    gpib_set_timeout(gd, SR620_GENERAL_TIMEOUT);
 
-    if (save) {
-        sr620_save(d);
-    }
+    if (clear)
+        sr620_clear(gd);
 
-    if (restore) {
-        sr620_restore(d);
-    }
+    if (test)
+        sr620_test(gd);
+    if (autocal)
+        sr620_autocal(gd);
+    if (save)
+        sr620_save(gd);
+    if (restore)
+        sr620_restore(gd);
+    if (graph_enable)
+        sr620_graph_enable(gd);
+    if (graph_clear)
+        sr620_graph_clear(gd);
+    if (graph_histogram)
+        sr620_graph_histogram(gd);
+    if (graph_mean)
+        sr620_graph_mean(gd);
+    if (graph_jitter)
+        sr620_graph_jitter(gd);
+    if (graph_disable)
+        sr620_graph_disable(gd);
 
-    /* return front panel if requested */
     if (local)
-        gpib_ibloc(d); 
+        gpib_loc(gd); 
+
+    gpib_fini(gd);
 
     exit(0);
 }

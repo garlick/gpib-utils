@@ -37,7 +37,7 @@
 #define INSTRUMENT "hp3457" /* the /etc/gpib.conf entry */
 #define BOARD       0       /* minor board number in /etc/gpib.conf */
 
-static char *prog = "";
+char *prog = "";
 static int verbose = 0;
 
 #define OPTIONS "n:f:r:t:m:H:s:T:d:vclaS"
@@ -100,13 +100,13 @@ _sleep_sec(double sec)
 }
 
 static unsigned long 
-_checkauxerr(int d)
+_checkauxerr(gd_t gd)
 {
     char tmpbuf[64];
     uint16_t err;
 
-    gpib_ibwrtstr(d, HP3457_AUXERR_QUERY);
-    gpib_ibrdstr(d, tmpbuf, sizeof(tmpbuf));
+    gpib_wrtstr(gd, HP3457_AUXERR_QUERY);
+    gpib_rdstr(gd, tmpbuf, sizeof(tmpbuf));
 
     err = (uint16_t)strtoul(tmpbuf, NULL, 10);
 
@@ -147,19 +147,19 @@ _checkauxerr(int d)
 }
 
 static unsigned long 
-_checkerr(int d)
+_checkerr(gd_t gd)
 {
     char tmpbuf[64];
     uint16_t err;
 
-    gpib_ibwrtstr(d, HP3457_ERR_QUERY);
-    gpib_ibrdstr(d, tmpbuf, sizeof(tmpbuf));
+    gpib_wrtstr(gd, HP3457_ERR_QUERY);
+    gpib_rdstr(gd, tmpbuf, sizeof(tmpbuf));
 
     err = (uint16_t)strtoul(tmpbuf, NULL, 10);
 
     if (err & HP3457_ERR_HARDWARE) {
         fprintf(stderr, "%s: error: hardware (consult aux err reg)\n", prog);
-        _checkauxerr(d);
+        _checkauxerr(gd);
     }
     if (err & HP3457_ERR_CAL_ACAL)
         fprintf(stderr, "%s: error: CAL or ACAL process\n", prog);
@@ -185,45 +185,46 @@ _checkerr(int d)
     return err;
 }
 
-static void 
-hp3457_checksrq(int d)
+/* Interpet serial poll results (status byte)
+    *   Return: 0=non-fatal/no error, >0=fatal, -1=retry.
+     */
+static int
+_interpret_status(gd_t gd, unsigned char status, char *msg)
 {
-    char status;
+    int err = 0;
 
-    gpib_ibrsp(d, &status);
-    if (status & HP3457_STAT_READY) {
-        /* do nothing */
-    }
     if (status & HP3457_STAT_SRQ_BUTTON) {
         fprintf(stderr, "%s: srq: front panel SRQ key pressed\n", prog);
-        gpib_ibwrtstr(d, HP3457_CSB);
+        gpib_wrtstr(gd, HP3457_CSB);
     }
     if (status & HP3457_STAT_SRQ_POWER) {
         fprintf(stderr, "%s: srq: power-on SRQ occurred\n", prog);
-        gpib_ibwrtstr(d, HP3457_CSB);
+        gpib_wrtstr(gd, HP3457_CSB);
     }
     if (status & HP3457_STAT_HILO_LIMIT) {
         fprintf(stderr, "%s: srq: hi or lo limit exceeded\n", prog);
-        gpib_ibwrtstr(d, HP3457_CSB);
-        exit(1);
+        gpib_wrtstr(gd, HP3457_CSB);
+        err = 1;
     }
     if (status & HP3457_STAT_ERROR) {
         fprintf(stderr, "%s: srq: error (consult error register)\n", prog);
-        _checkerr(d);
-        gpib_ibwrtstr(d, HP3457_CSB);
-        exit(1);
+        _checkerr(gd);
+        gpib_wrtstr(gd, HP3457_CSB);
+        err = 1;
     }
+    if (status & HP3457_STAT_READY) {
+        /* do nothing */
+    }
+    return err;
 }
 
 static void 
-hp3457_checkid(int d)
+hp3457_checkid(gd_t gd)
 {
     char tmpbuf[64];
 
-    gpib_ibwrtf(d, HP3457_ID_QUERY);
-    hp3457_checksrq(d);
-    gpib_ibrdstr(d, tmpbuf, sizeof(tmpbuf));
-    hp3457_checksrq(d);
+    gpib_wrtf(gd, HP3457_ID_QUERY);
+    gpib_rdstr(gd, tmpbuf, sizeof(tmpbuf));
     if (strncmp(tmpbuf, HP3457_ID_RESPONSE, strlen(HP3457_ID_RESPONSE)) != 0) {
         fprintf(stderr, "%s: device id %s != %s\n", prog, tmpbuf,
                 HP3457_ID_RESPONSE);
@@ -232,14 +233,12 @@ hp3457_checkid(int d)
 }
 
 static void 
-hp3457_checkrange(int d)
+hp3457_checkrange(gd_t gd)
 {
     char tmpbuf[64];
 
-    gpib_ibwrtf(d, "%s", HP3457_RANGE_QUERY);
-    hp3457_checksrq(d);
-    gpib_ibrdstr(d, tmpbuf, sizeof(tmpbuf));
-    hp3457_checksrq(d);
+    gpib_wrtf(gd, "%s", HP3457_RANGE_QUERY);
+    gpib_rdstr(gd, tmpbuf, sizeof(tmpbuf));
     /* FIXME: more digits need to be displayed here (how many - chk manual) */
     fprintf(stderr, "%s: range is %.1lf\n", prog, strtod(tmpbuf, NULL));
 }
@@ -248,7 +247,8 @@ int
 main(int argc, char *argv[])
 {
     char *instrument = INSTRUMENT;
-    int d, c;
+    gd_t gd;
+    int c;
     char *funstr = NULL;
     char *rangestr = NULL;
     char *trigstr = NULL;
@@ -369,68 +369,64 @@ main(int argc, char *argv[])
         usage();
 
     /* find device in /etc/gpib.conf */
-    d = gpib_init(prog, instrument, verbose);
+    gd = gpib_init(instrument, _interpret_status, 0);
+    if (!gd) {
+        fprintf(stderr, "%s: couldn't find device %s in /etc/gpib.conf\n",                 prog, instrument);
+        exit(1);
+    }
+    gpib_set_verbose(gd, verbose);
 
     /* Clear dmm state, verify that model is HP3457A, and
      * select remote defaults.
      */
     if (clear) {
-        gpib_ibclr(d);
-        sleep(1); /* found  this by trial and error */
-        hp3457_checksrq(d);
-        hp3457_checkid(d);
-        gpib_ibwrtf(d, HP3457_PRESET);
-        hp3457_checksrq(d);
+        gpib_clr(gd, 1000000);
+        hp3457_checkid(gd);
+        gpib_wrtf(gd, HP3457_PRESET);
     }
 
     /* Perform autocalibration.
      */
     if (autocal) {
-        gpib_ibwrtf(d, HP3457_ACAL_BOTH);
+        gpib_wrtf(gd, HP3457_ACAL_BOTH);
         fprintf(stderr, "%s: waiting 35 sec for AC+ohms autocal\n", prog);
         fprintf(stderr, "%s: inputs should be disconnected\n", prog);
         sleep(35); 
-        hp3457_checksrq(d); /* report any errors */
         fprintf(stderr, "%s: autocal complete\n", prog);
     }
 
     /* Perform selftest.
      */
     if (selftest) {
-        gpib_ibwrtf(d, HP3457_TEST);
+        gpib_wrtf(gd, HP3457_TEST);
         fprintf(stderr, "%s: waiting 7 sec for self-test\n", prog);
         sleep(7); 
-        hp3457_checksrq(d); /* report any errors */
         fprintf(stderr, "%s: self-test complete\n", prog);
     }
 
     /* Select function.
      */
     if (funstr) {
-        gpib_ibwrtf(d, funstr);
-        hp3457_checksrq(d);
+        gpib_wrtf(gd, funstr);
     }
 
     /* Select range.
      */
     if (rangestr) {
-        gpib_ibwrtf(d, "%s %.1lf", rangestr, range);
-        hp3457_checksrq(d);
-        hp3457_checkrange(d);
+        gpib_wrtf(gd, "%s %.1lf", rangestr, range);
+        hp3457_checkrange(gd);
     }
 
     /* Select trigger mode.
      */
     if (trigstr) {
-        gpib_ibwrtf(d, trigstr);
-        hp3457_checksrq(d);
+        gpib_wrtf(gd, trigstr);
     }
 
     /* Select display digits.
      */
     if (digstr) {
-        gpib_ibwrtf(d, digstr);
-        hp3457_checksrq(d);
+        gpib_wrtf(gd, digstr);
     }
 
     if (samples > 0) {
@@ -445,8 +441,7 @@ main(int argc, char *argv[])
             t1 = _gettime();
             if (t0 == 0)
                 t0 = t1;
-            gpib_ibrdstr(d, buf, sizeof(buf));
-            hp3457_checksrq(d);
+            gpib_rdstr(gd, buf, sizeof(buf));
             t2 = _gettime();
 
             /* Output suitable for gnuplot:
@@ -454,9 +449,9 @@ main(int argc, char *argv[])
              * sample already has a crlf terminator
              */
             if (showtime)
-                printf("%-3.3lf\t%s", (t1-t0), buf); 
+                printf("%-3.3lf\t%s\n", (t1-t0), buf); 
             else
-                printf("%s", buf); 
+                printf("%s\n", buf); 
 
             if (samples > 0 && period > 0)
                 _sleep_sec(period - (t2-t1));
@@ -465,11 +460,11 @@ main(int argc, char *argv[])
 
     /* give back the front panel and set defaults for local operation */
     if (local) {
-        gpib_ibwrtf(d, HP3457_RESET);
-        hp3457_checksrq(d);
-        gpib_ibloc(d); 
-        hp3457_checksrq(d);
+        gpib_wrtf(gd, HP3457_RESET);
+        gpib_loc(gd); 
     }
+
+    gpib_fini(gd);
 
     exit(0);
 }

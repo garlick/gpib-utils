@@ -82,16 +82,16 @@
 #define HP3488_STATUS_SRQ_POWER     0x04    /* power on SRQ asserted */
 #define HP3488_STATUS_SRQ_BUTTON    0x08    /* front panel SRQ asserted */
 #define HP3488_STATUS_READY         0x10    /* ready for instructions */
-#define HP3488_STATUS_ERROR         0x20    /* ready for instructions */
+#define HP3488_STATUS_ERROR         0x20    /* an error has occurred */
 #define HP3488_STATUS_RQS           0x40    /* rqs */
 
 /* Error byte values
  */
-#define HP3488_ERROR_SYNTAX         0x1/* syntax error */
-#define HP3488_ERROR_EXEC           0x2/* exection error */
-#define HP3488_ERROR_TOOFAST        0x4/* hardware trigger too fast */
-#define HP3488_ERROR_LOGIC          0x8/* logic failure */
-#define HP3488_ERROR_POWER          0x10/* power supply failure */
+#define HP3488_ERROR_SYNTAX         0x1     /* syntax error */
+#define HP3488_ERROR_EXEC           0x2     /* exection error */
+#define HP3488_ERROR_TOOFAST        0x4     /* hardware trigger too fast */
+#define HP3488_ERROR_LOGIC          0x8     /* logic failure */
+#define HP3488_ERROR_POWER          0x10    /* power supply failure */
 
 /* Valid channel addresses:
  */

@@ -34,7 +34,7 @@
 #include "util.h"
 #include "hpcrc.h"
 
-static char *prog;
+char *prog;
 
 /* value of status byte 4 */
 static errstr_t _sb4_errors[] = SB4_ERRORS;
@@ -84,19 +84,21 @@ usage(void)
     exit(1);
 }
 
-static void 
-hp1630_checksrq(int d)
+/* Interpet serial poll results (status byte)
+ *   Return: 0=non-fatal/no error, >0=fatal, -1=retry.
+ */
+static int
+_interpret_status(gd_t gd, unsigned char status, char *msg)
 {
-    char status;
-
-    gpib_ibrsp(d, &status); /* NOTE: modifies ibcnt */
+    int err = 0;
 
     if ((status & HP1630_STAT_SRQ)) {
         if (status & HP1630_STAT_ERROR_LAST_CMD) {
             fprintf(stderr, "%s: srq: problem with last command\n", prog);
-            exit(1);
+            err = 1;
         }
     }
+    return err;
 }
 
 /* Return true if buffer begins with HP graphics magic.
@@ -111,18 +113,16 @@ _hpgraphics(uint8_t *buf, int len)
  * it may be text with hp escape sequences to indicate bold, etc...
  */
 static void
-hp1630_printscreen(int d, int allflag)
+hp1630_printscreen(gd_t gd, int allflag)
 {
     uint8_t buf[MAXPRINTBUF];
     int count;
 
     if (allflag)
-        gpib_ibwrtf(d, "%s\r\n", HP1630_KEY_PRINT_ALL);
+        gpib_wrtf(gd, "%s\r\n", HP1630_KEY_PRINT_ALL);
     else
-        gpib_ibwrtf(d, "%s\r\n", HP1630_KEY_PRINT);
-    hp1630_checksrq(d);
-    count = gpib_ibrd(d, buf, sizeof(buf));
-    hp1630_checksrq(d);
+        gpib_wrtf(gd, "%s\r\n", HP1630_KEY_PRINT);
+    count = gpib_rd(gd, buf, sizeof(buf));
     fprintf(stderr, "%s: Print %s: %d bytes (%s format)\n", prog,
             allflag ? "all" : "screen", count,
             _hpgraphics(buf, count) ? "HP graphics" : "HP text");
@@ -130,7 +130,6 @@ hp1630_printscreen(int d, int allflag)
         perror("write");
         exit(1);
     }
-    hp1630_checksrq(d);
 }
 
 static void
@@ -162,7 +161,7 @@ _getdate(int *month, char *datestr, int len)
 /* Set the date on the analyzer to match the UNIX date.
  */
 static void
-hp1630_setdate(int d)
+hp1630_setdate(gd_t gd)
 {
     char datestr[64];
     int month;
@@ -173,20 +172,16 @@ hp1630_setdate(int d)
 	/* Position cursor on month, clear entry to reset month to Jan,
      * then hit 'next' enough times to advance to the desired month.
 	 */
-	gpib_ibwrtf(d, "%s;%s;%s;%s\r\n", HP1630_KEY_SYSTEM_MENU, HP1630_KEY_NEXT,
+	gpib_wrtf(gd, "%s;%s;%s;%s\r\n", HP1630_KEY_SYSTEM_MENU, HP1630_KEY_NEXT,
                     HP1630_KEY_CURSOR_DOWN, HP1630_KEY_CLEAR_ENTRY);
-    hp1630_checksrq(d);
-	for (i = 1; i < month; i++) {     /* 1 = jan, 2 = feb, etc. */
-		gpib_ibwrtf(d, "%s\r\n", HP1630_KEY_NEXT);
-        hp1630_checksrq(d);
-    }
+	for (i = 1; i < month; i++)       /* 1 = jan, 2 = feb, etc. */
+		gpib_wrtf(gd, "%s\r\n", HP1630_KEY_NEXT);
 	/* position over day and spew forth the remaining digits */
-    gpib_ibwrtf(d, "%s;\"%s\"\r\n", HP1630_KEY_CURSOR_RIGHT, datestr);
-    hp1630_checksrq(d);
+    gpib_wrtf(gd, "%s;\"%s\"\r\n", HP1630_KEY_CURSOR_RIGHT, datestr);
 }
 
 static void
-hp1630_verify_model(int d)
+hp1630_verify_model(gd_t gd)
 {
     char *supported[] = { "HP1630A", "HP1630D", "HP1630G",
                           "HP1631A", "HP1631D", NULL };
@@ -194,10 +189,8 @@ hp1630_verify_model(int d)
     int found = 0;
     int i;
 
-	gpib_ibwrtf(d, "%s\r\n", HP1630_CMD_SEND_IDENT);
-    hp1630_checksrq(d);
-	gpib_ibrdstr(d, buf, sizeof(buf));
-    hp1630_checksrq(d);
+	gpib_wrtf(gd, "%s\r\n", HP1630_CMD_SEND_IDENT);
+	gpib_rdstr(gd, buf, sizeof(buf));
     for (i = 0; supported[i] != NULL; i++)
         if (!strncmp(buf, supported[i], strlen(supported[i])))
             found = 1;
@@ -266,7 +259,7 @@ _ls_parse(uint8_t *ls, int rawlen)
 }
 
 static void
-hp1630_restore(int d)
+hp1630_restore(gd_t gd)
 {
     int len, i;
     uint8_t buf[MAXCONFBUF];
@@ -289,20 +282,17 @@ hp1630_restore(int d)
         lslen = _ls_parse(buf + i, len - i);
 
         /* write the learn string command */
-        gpib_ibwrt(d, buf + i, lslen);
+        gpib_wrt(gd, buf + i, lslen);
         /* XXX The following string is written after each learn string
          * to work around a possible HP1630D firmware bug identified by
          * Adam Goldman where the analyzer seems to be inappropriately 
          * waiting for more data in some cases.
          */
-        gpib_ibwrtf(d,"\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n");
-        hp1630_checksrq(d);
+        gpib_wrtf(gd,"\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n");
 
         /* get status byte 4 and check for error */
-        gpib_ibwrtf(d, "%s 4\r\n", HP1630_CMD_STATUS_BYTE);
-        hp1630_checksrq(d);
-        count = gpib_ibrd(d, &status, 1);
-        hp1630_checksrq(d);
+        gpib_wrtf(gd, "%s 4\r\n", HP1630_CMD_STATUS_BYTE);
+        count = gpib_rd(gd, &status, 1);
         if (count != 1) {
             fprintf(stderr, "%s: error reading status byte 4\n", prog);
             exit(1);
@@ -318,17 +308,15 @@ hp1630_restore(int d)
  * on a 1631), save all and save state will return 'unrecognized command'.
  */
 static void
-hp1630_save(int d, char *cmd)
+hp1630_save(gd_t gd, char *cmd)
 {
     uint8_t buf[MAXCONFBUF];
     int count, len;
     uint8_t status;
     int i;
 
-    gpib_ibwrtf(d, "%s\r\n", cmd);
-    hp1630_checksrq(d);
-    len = gpib_ibrd(d, buf, sizeof(buf));
-    hp1630_checksrq(d);
+    gpib_wrtf(gd, "%s\r\n", cmd);
+    len = gpib_rd(gd, buf, sizeof(buf));
 
     if (write_all(1, buf, len) < 0) {
         perror("write");
@@ -336,10 +324,8 @@ hp1630_save(int d, char *cmd)
     }
 
     /* get status byte 4 and check for error */
-    gpib_ibwrtf(d, "%s 4\r\n", HP1630_CMD_STATUS_BYTE);
-    hp1630_checksrq(d);
-    count = gpib_ibrd(d, &status, 1);
-    hp1630_checksrq(d);
+    gpib_wrtf(gd, "%s 4\r\n", HP1630_CMD_STATUS_BYTE);
+    count = gpib_rd(gd, &status, 1);
     if (count != 1) {
         fprintf(stderr, "%s: error reading status byte 4\n", prog);
         exit(1);
@@ -358,7 +344,8 @@ int
 main(int argc, char *argv[])
 {
     char *instrument = INSTRUMENT;
-    int d, c;
+    gd_t gd;
+    int c;
     int local = 0;
     int clear = 0;
     int verbose = 0;
@@ -427,44 +414,48 @@ main(int argc, char *argv[])
     if (save + save_all + restore + print_screen + print_all > 1)
         usage();
 
-    d = gpib_init(prog, instrument, verbose);
+    gd = gpib_init(instrument, _interpret_status, 0);
+    if (!gd) {
+        fprintf(stderr, "%s: couldn't find device %s in /etc/gpib.conf\n",                 prog, instrument);
+        exit(1);
+    }
+    gpib_set_verbose(gd, verbose);
 
     if (clear) {
-        gpib_ibclr(d);
-        sleep(1);
-        gpib_ibwrtf(d, "%s\r\n", HP1630_CMD_POWER_UP);
-        hp1630_checksrq(d);
-        hp1630_verify_model(d);
+        gpib_clr(gd, 1000000);
+        gpib_wrtf(gd, "%s\r\n", HP1630_CMD_POWER_UP);
+        hp1630_verify_model(gd);
         /* set the errors _checksrq() will see */
-        gpib_ibwrtf(d, "%s %d\r\n", HP1630_CMD_SET_SRQ_MASK, 
+        gpib_wrtf(gd, "%s %d\r\n", HP1630_CMD_SET_SRQ_MASK, 
                 HP1630_STAT_ERROR_LAST_CMD);
-        hp1630_checksrq(d);
-        hp1630_setdate(d);
+        hp1630_setdate(gd);
     }
 
     if (print_screen) {
-        hp1630_printscreen(d, 0);
+        hp1630_printscreen(gd, 0);
     } else if (print_all) {
-        hp1630_printscreen(d, 1);
+        hp1630_printscreen(gd, 1);
     } else if (restore) {
-        hp1630_restore(d);
+        hp1630_restore(gd);
     } else if (save_all) {
-        hp1630_save(d, HP1630_CMD_TRANSMIT_ALL);
+        hp1630_save(gd, HP1630_CMD_TRANSMIT_ALL);
     } else if (save) {
         /* Learn strings can be concatenated and restored as a unit.
          */
         if (save_config)
-            hp1630_save(d, HP1630_CMD_TRANSMIT_CONFIG);
+            hp1630_save(gd, HP1630_CMD_TRANSMIT_CONFIG);
         if (save_state)
-            hp1630_save(d, HP1630_CMD_TRANSMIT_STATE);
+            hp1630_save(gd, HP1630_CMD_TRANSMIT_STATE);
         if (save_timing)
-            hp1630_save(d, HP1630_CMD_TRANSMIT_TIMING);
+            hp1630_save(gd, HP1630_CMD_TRANSMIT_TIMING);
         if (save_analog)
-            hp1630_save(d, HP1630_CMD_TRANSMIT_ANALOG);
+            hp1630_save(gd, HP1630_CMD_TRANSMIT_ANALOG);
     }
 
     if (local)
-        gpib_ibloc(d);
+        gpib_loc(gd);
+
+    gpib_fini(gd);
 
     exit(0);
 }
