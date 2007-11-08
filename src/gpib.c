@@ -30,8 +30,8 @@ struct gpib_device {
     int             eos;       /* end of string character */
     int             reos;      /* flag: terminate receive on eos */
     int             xeos;      /* flag: automatically append eos */
-    int             eot;       /* flag: */
-    int             bin;       /* flag: */
+    int             eot;       /* flag: assert EOT on last char of write */
+    int             bin;       /* flag: use 8 bits to match eos */
     int             ms_timeout;/* timeout in milliseconds */
     CLIENT         *vxi_cli;   /* vxi client handle */
     Device_Link     vxi_lid;   /* vxi logical device handle */
@@ -111,7 +111,7 @@ _vxird(gd_t gd, void *buf, int len)
     drp.requestSize = len;
     drp.io_timeout = gd->ms_timeout;
     drp.lock_timeout = gd->ms_timeout;
-    drp.flags = 0;
+    drp.flags = gd->reos ? VXI_TERMCHRSET : 0;
     drp.termChar = gd->eos;
     drr = device_read_1(&drp, gd->vxi_cli);
     if (drr == NULL) {
@@ -237,7 +237,7 @@ _vxiwrt(gd_t gd, void *buf, int len)
     dwp.lid = gd->vxi_lid;
     dwp.io_timeout = gd->ms_timeout;
     dwp.lock_timeout = gd->ms_timeout;
-    dwp.flags = 0;
+    dwp.flags = gd->eot ? VXI_ENDW : 0;
     dwp.data.data_val = buf;
     dwp.data.data_len = len;
     dwr = device_write_1(&dwp, gd->vxi_cli);
@@ -916,6 +916,12 @@ _new_gpib(void)
     new->vxi_cli = NULL;
     new->vxi_lid = -1;
     new->vxi_abort_port = -1;
+    new->ms_timeout = 30000; /* 30s */
+    new->eot = 1;
+    new->bin = 0;
+    new->reos = 0;
+    new->xeos = 0;
+    new->eos = 0xa;
 
     return new;
 }
@@ -960,7 +966,7 @@ error:
 }
 
 gd_t
-gpib_init_vxi(char *ipaddr, char *device, spollfun_t sf, unsigned long retry)
+gpib_init_vxi(char *host, char *device, spollfun_t sf, unsigned long retry)
 {
     gd_t new = _new_gpib();
     Create_LinkParms clp;
@@ -968,7 +974,7 @@ gpib_init_vxi(char *ipaddr, char *device, spollfun_t sf, unsigned long retry)
 
     new->sf_fun = sf;
     new->sf_retry = retry;
-    new->vxi_cli = clnt_create(ipaddr, DEVICE_CORE, DEVICE_CORE_VERSION, "tcp");
+    new->vxi_cli = clnt_create(host, DEVICE_CORE, DEVICE_CORE_VERSION, "tcp");
     if (new->vxi_cli == NULL) {
         fprintf(stderr, "%s: clnt_create() returned NULL\n", prog);
         clnt_pcreateerror("gpib_init_vxi");
@@ -993,7 +999,7 @@ gpib_init_vxi(char *ipaddr, char *device, spollfun_t sf, unsigned long retry)
 gd_t
 gpib_init(char *name, spollfun_t sf, unsigned long retry)
 {
-    char *cpy = strdup(name);
+    char *cpy = xstrdup(name);
     char *p = strchr(cpy, ':');
     gd_t res;
 

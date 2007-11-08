@@ -36,18 +36,25 @@
 #include "gpib.h"
 
 #define INSTRUMENT "dg535"  /* the /etc/gpib.conf entry */
-#define BOARD       0       /* minor board number in /etc/gpib.conf */
 
 char *prog = "";
 static int verbose = 0;
 
-#define OPTIONS "n:clvt:"
+#define OPTIONS "n:clvo:m:a:O:p:T:t:M:D:"
 static struct option longopts[] = {
     {"name",            required_argument, 0, 'n'},
     {"clear",           no_argument,       0, 'c'},
     {"local",           no_argument,       0, 'l'},
     {"verbose",         no_argument,       0, 'v'},
-    {"trigfreq",        required_argument, 0, 't'},
+    {"output-chan",     required_argument, 0, 'o'},
+    {"output-mode",     required_argument, 0, 'm'},
+    {"output-ampl",     required_argument, 0, 'a'},
+    {"output-offset",   required_argument, 0, 'O'},
+    {"output-polarity", required_argument, 0, 'p'},
+    {"output-z",        required_argument, 0, 'T'},
+    {"trigger-rate",    required_argument, 0, 't'},
+    {"trigger-mode",    required_argument, 0, 'M'},
+    {"display-string",  required_argument, 0, 'D'},
     {0, 0, 0, 0},
 };
 
@@ -56,17 +63,29 @@ usage(void)
 {
     fprintf(stderr, 
 "Usage: %s [--options]\n"
-"  -n,--name name                instrument name [%s]\n"
-"  -c,--clear                    initialize instrument to default values\n"
-"  -l,--local                    return instrument to local operation on exit\n"
-"  -v,--verbose                  show protocol on stderr\n"
-"  -t,--trigfreq                 set trigger freq (0.001hz - 1.000mhz)\n"
+"  -n,--name name              instrument name [%s]\n"
+"  -c,--clear                  initialize instrument to default values\n"
+"  -l,--local                  return instrument to local operation on exit\n"
+"  -v,--verbose                show protocol on stderr\n"
+"  -o,--output-chan            output channel (t0|a|b|ab|c|d|cd)\n"
+"  -m,--output-mode            output mode (ttl|nim|ecl|var)\n"
+"  -a,--output-ampl            output amplitude (-4:-0.1, +0.1:+4) in volts\n"
+"  -O,--output-offset          output offset (-4:+4) in volts\n"
+"  -p,--output-polarity        output polarity (+|-)\n"
+"  -T,--output-z               output impedence (hi|lo)\n"
+"  -d,--delay                  output delay (chan,secs)\n"
+"  -M,--trigger-mode           trigger mode (int|ext|ss|burst)\n"
+"  -t,--trigger-rate           trigger rate (0.001hz:1.000mhz)\n"
+"  -s,--trigger-slope          trigger slope (up|down)\n"
+"  -b,--trigger-count          trigger burst count (2:32766)\n"
+"  -z,--trigger-z              trigger input impedence (hi|lo)\n"
+"  -D,--display-string         display string (1-20 chars), empty to clear\n"
            , prog, INSTRUMENT);
     exit(1);
 }
 
 static void
-_checkerr(gd_t gd)
+_check_err(gd_t gd)
 {
     char buf[16];
     int status;
@@ -97,20 +116,10 @@ _checkerr(gd_t gd)
         exit(1);
 }
 
-static void
-_checkinst(gd_t gd)
+static int
+_interpret_status(gd_t gd, unsigned char status, char *msg)
 {
-    char buf[16];
-    int status;
-
-    /* check instrument status */
-    gpib_wrtf(gd, "%s", DG535_INSTR_STATUS);
-    gpib_rdstr(gd, buf, sizeof(buf));
-    if (*buf < '0' || *buf > '9') {
-        fprintf(stderr, "%s: error reading instrument status byte\n", prog);
-        exit(1);
-    }
-    status = strtoul(buf, NULL, 10);
+    int err = 0;
 
     if (status & DG535_STAT_BADMEM)
         fprintf(stderr, "%s: memory contents corrupted\n", prog);
@@ -125,34 +134,47 @@ _checkinst(gd_t gd)
     if (status & DG535_STAT_BUSY)
         fprintf(stderr, "%s: busy with timing cycle\n", prog);
     if (status & DG535_STAT_CMDERR)
-        fprintf(stderr, "%s: command error detected\n", prog);
+        _check_err(gd);
 
     if (status != 0)
-        exit(1);
+        err = 1;
+    return err;
 }
 
-static void
-dg535_checkerr(gd_t gd)
+int
+_outchan2int(char *str)
 {
-    _checkerr(gd);
-    _checkinst(gd);
+    if (!strcasecmp(str, "t0"))
+        return DG535_DO_T0;
+    else if (!strcasecmp(str, "a"))
+        return DG535_DO_A;
+    else if (!strcasecmp(str, "b"))
+        return DG535_DO_B;
+    else if (!strcasecmp(str, "ab"))
+        return DG535_DO_AB;
+    else if (!strcasecmp(str, "c"))
+        return DG535_DO_C;
+    else if (!strcasecmp(str, "d"))
+        return DG535_DO_D;
+    else if (!strcasecmp(str, "cd"))
+        return DG535_DO_CD;
+    return -1;
 }
 
-/* --output-chan trig|t0|a|b|ab|c|d|cd
- *   --output-mode ttl|nim|ecl|var
- *   --output-ampl N
- *   --output-offset N
- *   --output-polarity +|-
- *   --output-delay N,N
- * --trigger-mode int|ext|ss|bur
- * --trigger-rate-int N
- * --trigger-rate-burst N
- * --trigger-slope up|dn
- * --trigger-z lo|hi
- * --trigger-single
- * --burst-count N
- * --burst-period N
- */
+int
+_outmode2int(char *str)
+{
+    if (!strcasecmp(str, "ttl"))
+        return 0;
+    else if (!strcasecmp(str, "nim"))
+        return 1;
+    else if (!strcasecmp(str, "ecl"))
+        return 2;
+    else if (!strcasecmp(str, "var"))
+        return 3;
+    return -1;
+}
+
 
 int
 main(int argc, char *argv[])
@@ -163,6 +185,13 @@ main(int argc, char *argv[])
     int local = 0;
     double trigfreq = 0.0;
     gd_t gd;
+    char *string = NULL;
+    int out_chan = -1;
+    int out_mode = -1;
+    double out_ampl = HUGE_VALF;
+    double out_offset = HUGE_VALF;
+    int out_polarity = -1;
+    int out_z = -1;
 
     /*
      * Handle options.
@@ -182,7 +211,42 @@ main(int argc, char *argv[])
         case 'v': /* --verbose */
             verbose = 1;
             break;
-        case 't': /* --trigfreq */
+        case 'D': /* --display-string */
+            string = optarg;
+            break;
+        case 'o': /* --output-chan */
+            out_chan = _outchan2int(optarg);
+            if (out_chan == -1)
+                usage();
+            break;
+        case 'm': /* --output-mode */
+            out_mode = _outmode2int(optarg);
+            if (out_mode == -1)
+                usage();
+            break;
+        case 'a': /* --output-ampl */
+            out_ampl = strtod(optarg, NULL);
+            break;
+        case 'O': /* --output-offset */
+            out_offset = strtod(optarg, NULL);
+            break;
+        case 'p': /* --output-polarity */
+            if (!strcasecmp(optarg, "-"))
+                out_polarity = 0;
+            else if (!strcasecmp(optarg, "+"))
+                out_polarity = 1;
+            else
+                usage();
+            break;
+        case 'T': /* --output-z */
+            if (!strcasecmp(optarg, "lo"))
+                out_z = 0;
+            else if (!strcasecmp(optarg, "hi"))
+                out_z = 1;
+            else
+                usage();
+            break;
+        case 't': /* --triger-rate */
             if (freqstr(optarg, &trigfreq) < 0) {
                 fprintf(stderr, "%s: error converting trigger freq\n", prog);
                 fprintf(stderr, "%s: use freq units: %s\n", prog, FREQ_UNITS);
@@ -196,12 +260,34 @@ main(int argc, char *argv[])
             break;
         }
     }
-
-    if (!clear && !local && trigfreq == 0.0)
+    if (!clear && !local && trigfreq == 0.0 && !string && out_mode == -1 
+            && out_ampl == HUGE_VALF && out_offset == HUGE_VALF
+            && out_polarity == -1 && out_z == -1) {
         usage();
+    }
+    if (out_chan == -1 && out_mode != -1) {
+        fprintf(stderr, "%s: --output-mode requires --output-chan\n", prog);
+        exit(1);
+    }
+    if (out_chan == -1 && out_ampl != HUGE_VALF) {
+        fprintf(stderr, "%s: --output-ampl requires --output-chan\n", prog);
+        exit(1);
+    }
+    if (out_chan == -1 && out_offset != HUGE_VALF) {
+        fprintf(stderr, "%s: --output-offset requires --output-chan\n", prog);
+        exit(1);
+    }
+    if (out_chan == -1 && out_polarity != -1) {
+        fprintf(stderr, "%s: --output-polarity requires --output-chan\n", prog);
+        exit(1);
+    }
+    if (out_chan == -1 && out_z != -1) {
+        fprintf(stderr, "%s: --output-z requires --output-chan\n", prog);
+        exit(1);
+    }
 
     /* find device in /etc/gpib.conf */
-    gd = gpib_init(instrument, NULL, 0);
+    gd = gpib_init(instrument, _interpret_status, 0);
     if (!gd) {
         fprintf(stderr, "%s: couldn't find device %s in /etc/gpib.conf\n", 
                 prog, instrument);
@@ -213,13 +299,27 @@ main(int argc, char *argv[])
     if (clear) {
         gpib_clr(gd, 0);
         gpib_wrtf(gd, "%s", DG535_CLEAR);
-        dg535_checkerr(gd);
     }
+
+    /* display string */
+    if (string)
+        gpib_wrtf(gd, "%s %s", DG535_DISPLAY_STRING, string);
+
+    /* output configuration */
+    if (out_mode != -1)
+        gpib_wrtf(gd, "%s %d,%d", DG535_OUT_MODE, out_chan, out_mode);
+    if (out_ampl != HUGE_VALF)
+        gpib_wrtf(gd, "%s %d,%lf", DG535_OUT_AMPL, out_chan, out_ampl);
+    if (out_offset != HUGE_VALF)
+        gpib_wrtf(gd, "%s %d,%lf", DG535_OUT_OFFSET, out_chan, out_offset);
+    if (out_polarity != -1)
+        gpib_wrtf(gd, "%s %d,%d", DG535_OUT_POLARITY, out_chan, out_polarity);
+    if (out_z != -1)
+        gpib_wrtf(gd, "%s %d,%d", DG535_TERM_Z, out_chan, out_z);
 
     /* set internal trigger rate */
     if (trigfreq != 0.0) {
         gpib_wrtf(gd, "%s %d,%lf", DG535_TRIG_RATE, 0, trigfreq);
-        dg535_checkerr(gd);
     }
 
     /* return front panel if requested */

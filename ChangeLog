@@ -1,3 +1,14 @@
+2007-11-07 Jim Garlick <garlick.jim@gmail.com>
+
+	* src/vxi11.x : Added VXI_WAITLOCK, VXI_ENDW, and VXI_TERMCHRSET
+	flag definitions per VXI-11 spec.
+
+	* src/gpib.c : Set defaults for various ib flags and use them
+	to set VXI-11 flags as appropriate.
+
+	* src/dg535.c : Implement _interpret_status() callback.
+	Add output control functions.
+
 2007-11-06 Jim Garlick <garlick.jim@gmail.com>
 
 	* src/vxi11.x : New from http://www.agilent.com/find/linux.
