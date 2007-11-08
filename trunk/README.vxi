@@ -17,8 +17,9 @@ gpib.c wrappers during initialization.  If it contains a colon, it is
 interpreted to be a VXI-11 hostname:logical_device.  Instrument names 
 without colons are passed to linux-gpib to be looked up in /etc/gpib.conf 
 as before.  For example, a native VXI-11 instrument might be called 
-"192.168.1.25:inst0", while an instrument behind an Ethernet-to-GPIB 
-controller such as the ICS 8065 might be addressed as "192.168.1.40:gpib0,9"
+"meter:inst0", an instrument at GPIB address 9 behind an Ethernet-to-GPIB 
+controller such as the ICS 8065 might be addressed as "icsgw:gpib0,9",
+and a direct attachd GPIB meter might be called "meter".
 
 Since gpib-utils is rather unsophisticated in its use of GPIB facilities,
 only the core VXI-11 channel was used.  The abort and intr (SRQ) channels
@@ -30,4 +31,17 @@ Simply define -DHAVE_GPIB=0 in CFLAGS and remove -lgpib from LDADD.
 
 Special thanks to ICS Electronics (iscelect.com) for providing their
 model 8065 Ethernet-to-GPIB controller as the development platform for
-adding VXI-11 support to gpib-utils.
+adding VXI-11 support to gpib-utils.  They also publish application
+notes that were helpful during the process:
+
+* Frequently Asked Questions (FAQ) For The ICS Model 8065 
+  Ethernet-To-GPIB Controller (AB80-1)
+* VXI-11 RPC Programming Guide for the 8065: An Introduction to
+  RPC Programming (AB80-3)
+* SRQ Handling With a VXI-11 Interrupt Channel On ICS's Model 8065 
+  Ethernet-To-GPIB Controller (AB80-4)
+
+Other references used:
+
+* VMEbus Extensions for Instrumentation: TCP/IP Instrument Protocol
+  Specification VXI-11, Revision 1.0, July 17, 1995.

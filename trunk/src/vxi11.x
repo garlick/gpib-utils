@@ -1,6 +1,11 @@
 /* VXI-11 RPCL definitions. Taken from appendix C of the VXI-11 specfication. */
 /* See http://www.vxi.org */
 
+/* Flags */
+%#define VXI_WAITLOCK 0x01
+%#define VXI_ENDW     0x08
+%#define VXI_TERMCHRSET 0x80
+
 /* Types */
 typedef long Device_Link;
 enum Device_AddrFamily { /* used by interrupts */
