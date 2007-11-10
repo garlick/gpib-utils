@@ -1,21 +1,18 @@
 /* ICS 8000 series RCPL from appendix A3 of "8065 Instruction Manual" rev 2 */
 
-/* Manual errata:
+/* Rev 2 manual errata:
  * - procedure names must be lower case for RPCGEN (c.24, c.25)
  * - procedures with empty "Parms" arg really take void arg (c.24, c.25)
  * - change length+char[] to opaque (c.24)
  * - use procedure names in table B-1 (c.16. c.24, c.25)
- * - fw_revision (proc #24) is in table B-1 but missing from spec
+ * - fw_revision (proc #24) is not implemented (table B-1)
  * - drop length member from interface_name and hostname structs (c.1, c.7)
- * - opaque data length does not include trailing NULL for strings (b.1)
- * - fw_revision procedure is not defined (table B-1)
+ * - opaque data.len does not include trailing NULL for strings (b.1)
  */
 
 /* Action parameter values */
 %#define ICS_READ           0
 %#define ICS_WRITE          1
-
-/* NOTE: strings are NULL-terminated, length parm does not count NULL. */
 
 /* The interface_name procedure is used to read/modify the current VXI-11
  * logical interface name.
@@ -205,7 +202,7 @@ struct Ren_Resp {
    unsigned int ren;
 };
 
-/* The eos_8bit_mode procedure is used to read/modify the 8-bit EOS
+/* The eos_8_bit_mode procedure is used to read/modify the 8-bit EOS
  * compare mode.  If the 8-bit compare mode is TRUE, then EOS compare
  * will be 8-bits.  If 8-bit compare mode is FALSE, then EOS compare
  * will be 7-bits.
@@ -334,7 +331,6 @@ program ICSCONFIG {
       Reload_Factory_Resp reload_factory (void) = 21;
       Commit_Config_Resp commit_config (void) = 22;
       Reboot_Resp reboot (void) = 23;
-      /* fw_revision (void) = 24; */
       Idn_Resp idn_string (void) = 25;
       Error_Log_Resp error_logger (void) = 26;
    } = 1;

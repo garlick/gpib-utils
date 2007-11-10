@@ -5,6 +5,8 @@
 	* src/ics8065.c, src/ics.[ch] : Add idn_string, reboot, commit_config,
 	reload_factory, reload_config, get_interface_name, set_interface_name.
 
+	* src/ics8065.c, src/ics.[ch] : Add comm_timeout, ren_mode.
+
 2007-11-09 Jim Garlick <garlick.jim@gmail.com>
 
 	* src/ics8000.x : Added ICSCONFIG RPCL from 8065 manual.
