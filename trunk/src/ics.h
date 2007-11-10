@@ -32,7 +32,42 @@ int     ics_set_interface_name(ics_t ics, char *str);
 int     ics_get_comm_timeout(ics_t ics, unsigned int *timeoutp);
 int     ics_set_comm_timeout(ics_t ics, unsigned int timeout);
 
-/* Get/set REN active at booot.
+/* Get/set static IP mode.
+ */
+int     ics_get_static_ip_mode(ics_t ics, int *flagp);
+int     ics_set_static_ip_mode(ics_t ics, int flag);
+
+/* Get/set network IP number.
+ */
+int     ics_get_ip_number(ics_t ics, char **ipstrp);
+int     ics_set_ip_number(ics_t ics, char *ipstr);
+
+/* Get/set network mask.
+ */
+int     ics_get_netmask(ics_t ics, char **ipstrp);
+int     ics_set_netmask(ics_t ics, char *ipstr);
+
+/* Get/set network gateway
+ */
+int     ics_get_gateway(ics_t ics, char **ipstrp);
+int     ics_set_gateway(ics_t ics, char *ipstr);
+
+/* Get/set keepalive time (in seconds)
+ */
+int     ics_get_keepalive(ics_t ics, unsigned int *timep);
+int     ics_set_keepalive(ics_t ics, unsigned int time);
+
+/* Get/set gpib address.
+ */
+int     ics_get_gpib_address(ics_t ics, unsigned int *addrp);
+int     ics_set_gpib_address(ics_t ics, unsigned int addr);
+
+/* Get/set system controller mode.
+ */
+int     ics_get_system_controller(ics_t ics, int *flagp);
+int     ics_set_system_controller(ics_t ics, int flag);
+
+/* Get/set REN active at boot.
  */
 int     ics_get_ren_mode(ics_t ics, int *flagp);
 int     ics_set_ren_mode(ics_t ics, int flag);
