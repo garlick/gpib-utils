@@ -1,3 +1,22 @@
+/* This file is part of gpib-utils.
+   For details, see http://sourceforge.net/projects/gpib-utils.
+
+   Copyright (C) 2007 Jim Garlick <garlick@speakeasy.net>
+
+   gpib-utils is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+
+   gpib-utils is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with gpib-utils; if not, write to the Free Software Foundation, 
+   Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
+
 typedef struct ics_struct *ics_t;
 
 /* Get/set the current VXI-11 logical interface name.
@@ -5,6 +24,18 @@ typedef struct ics_struct *ics_t;
  */
 int     ics_get_interface_name(ics_t ics, char **strp);
 int     ics_set_interface_name(ics_t ics, char *str);
+
+/* Get/set TCP timeout value.  An inactive TCP channel will be left
+ * open this length of time before being closed.  A value of zero
+ * means no timeout checking.
+ */
+int     ics_get_comm_timeout(ics_t ics, unsigned int *timeoutp);
+int     ics_set_comm_timeout(ics_t ics, unsigned int timeout);
+
+/* Get/set REN active at booot.
+ */
+int     ics_get_ren_mode(ics_t ics, int *flagp);
+int     ics_set_ren_mode(ics_t ics, int flag);
 
 /* Force reload of default config.
  */

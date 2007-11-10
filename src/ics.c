@@ -1,3 +1,22 @@
+/* This file is part of gpib-utils.
+   For details, see http://sourceforge.net/projects/gpib-utils.
+
+   Copyright (C) 2007 Jim Garlick <garlick@speakeasy.net>
+
+   gpib-utils is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+
+   gpib-utils is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with gpib-utils; if not, write to the Free Software Foundation, 
+   Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
+
 #include <getopt.h>
 #include <libgen.h>
 #include <stdio.h>
@@ -74,6 +93,94 @@ ics_set_interface_name(ics_t ics, char *str)
     }
     if (r->error) {
         fprintf(stderr, "%s: interface_name: %s\n", prog, 
+                finderr(errtab, r->error));
+        return r->error;
+    }
+    return 0;
+}
+
+int
+ics_get_comm_timeout(ics_t ics, unsigned int *timeoutp)
+{
+    Comm_Timeout_Parms p;
+    Comm_Timeout_Resp *r;
+
+    assert(ics->ics_magic == ICS_MAGIC);
+    p.action = ICS_READ;
+    r = comm_timeout_1(&p, ics->ics_clnt);
+    if (r == NULL) {
+        clnt_perror(ics->ics_clnt, prog);
+        exit(1);
+    }
+    if (r->error) {
+        fprintf(stderr, "%s: comm_timeout: %s\n", prog, 
+                finderr(errtab, r->error));
+        return r->error;
+    }
+    *timeoutp = r->timeout;
+    return 0;
+}
+
+int
+ics_set_comm_timeout(ics_t ics, unsigned int timeout)
+{
+    Comm_Timeout_Parms p;
+    Comm_Timeout_Resp *r;
+
+    assert(ics->ics_magic == ICS_MAGIC);
+    p.action = ICS_WRITE;
+    p.timeout = timeout;
+    r = comm_timeout_1(&p, ics->ics_clnt);
+    if (r == NULL) {
+        clnt_perror(ics->ics_clnt, prog);
+        exit(1);
+    }
+    if (r->error) {
+        fprintf(stderr, "%s: comm_timeout: %s\n", prog, 
+                finderr(errtab, r->error));
+        return r->error;
+    }
+    return 0;
+}
+
+int     
+ics_get_ren_mode(ics_t ics, int *flagp)
+{
+    Ren_Parms p;
+    Ren_Resp *r;
+
+    assert(ics->ics_magic == ICS_MAGIC);
+    p.action = ICS_READ;
+    r = ren_mode_1(&p, ics->ics_clnt);
+    if (r == NULL) {
+        clnt_perror(ics->ics_clnt, prog);
+        exit(1);
+    }
+    if (r->error) {
+        fprintf(stderr, "%s: ren_mode: %s\n", prog, 
+                finderr(errtab, r->error));
+        return r->error;
+    }
+    *flagp = r->ren;
+    return 0;
+}
+
+int     
+ics_set_ren_mode(ics_t ics, int flag)
+{
+    Ren_Parms p;
+    Ren_Resp *r;
+
+    assert(ics->ics_magic == ICS_MAGIC);
+    p.action = ICS_WRITE;
+    p.ren = flag;
+    r = ren_mode_1(&p, ics->ics_clnt);
+    if (r == NULL) {
+        clnt_perror(ics->ics_clnt, prog);
+        exit(1);
+    }
+    if (r->error) {
+        fprintf(stderr, "%s: ren_mode: %s\n", prog, 
                 finderr(errtab, r->error));
         return r->error;
     }
@@ -222,12 +329,9 @@ ics_init (char *host)
         ics_fini(new);
         new = NULL;
     }
-
     return new;
 }
-
 
 /*
  * vi:tabstop=4 shiftwidth=4 expandtab
  */
-

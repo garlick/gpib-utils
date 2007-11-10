@@ -1,3 +1,22 @@
+/* This file is part of gpib-utils.
+   For details, see http://sourceforge.net/projects/gpib-utils.
+
+   Copyright (C) 2007 Jim Garlick <garlick@speakeasy.net>
+
+   gpib-utils is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+
+   gpib-utils is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with gpib-utils; if not, write to the Free Software Foundation, 
+   Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
+
 #include <getopt.h>
 #include <libgen.h>
 #include <stdio.h>
@@ -7,13 +26,15 @@
 #include "errstr.h"
 #include "ics.h"
 
-
-
-#define OPTIONS "n:resgiIj:cfC"
+#define OPTIONS "n:resgiIj:cfCtT:mM:"
 static struct option longopts[] = {
         {"name",                required_argument,  0, 'n'},
         {"get-interface-name",  no_argument,        0, 'I'},
         {"set-interface-name",  required_argument,  0, 'j'},
+        {"get-comm-timeout",    no_argument,        0, 't'},
+        {"set-comm-timeout",    required_argument,  0, 'T'},
+        {"get-ren-mode",        no_argument,        0, 'm'},
+        {"set-ren-mode",        required_argument,  0, 'M'},
         {"reload-config",       no_argument,        0, 'C'},
         {"reload-factory",      no_argument,        0, 'f'},
         {"commit-config",       no_argument,        0, 'c'},
@@ -24,7 +45,6 @@ static struct option longopts[] = {
 };
 
 static errstr_t errtab[] = ICS_ERRLOG;
-
 char *prog;
 
 void
@@ -35,6 +55,10 @@ usage(void)
   "  -n,--name                 instrument hostname (default: gpibgw)\n"
   "  -I,--get-interface-name   get VXI-11 logical name (e.g. gpib0)\n"
   "  -j,--set-interface-name   set VXI-11 logical name\n"
+  "  -t,--get-comm-timeout     get TCP timeout (in seconds)\n"
+  "  -T,--set-comm-timeout     set TCP timeout\n"
+  "  -m,--get-ren-mode         get REN active at boot (0=FALSE, 1=TRUE)\n"
+  "  -M,--set-ren-mode         set REN active at boot\n"
   "  -C,--reload-config        force reload of default config\n"
   "  -f,--reload-factory       reload factory config settings\n"
   "  -c,--commit-config        commit (write) current config\n"
@@ -54,6 +78,10 @@ main(int argc, char *argv[])
     char *name = "gpibgw";
     int get_interface_name = 0;
     char *set_interface_name = NULL;
+    int get_comm_timeout = 0;
+    int set_comm_timeout = -1;
+    int get_ren_mode = 0;
+    int set_ren_mode = -1;
     int reload_config = 0;
     int reload_factory = 0;
     int commit_config = 0;
@@ -73,6 +101,18 @@ main(int argc, char *argv[])
                 break;
             case 'j' :  /* --set-interface-name */
                 set_interface_name = optarg;
+                break;
+            case 't' :  /* --get-comm-timeout */
+                get_comm_timeout = 1;
+                break;
+            case 'T' :  /* --set-comm-timeout */
+                set_comm_timeout = strtoul(optarg, NULL, 0);
+                break;
+            case 'm' :  /* --get-ren-mode */
+                get_ren_mode = 1;
+                break;
+            case 'M' :  /* --set-ren-mode */
+                set_ren_mode = strtoul(optarg, NULL, 0);
                 break;
             case 'C':   /* --reload-config */
                 reload_config = 1;
@@ -102,7 +142,9 @@ main(int argc, char *argv[])
 
     if(!get_errlog && !get_idn && !reboot 
             && !commit_config && !reload_factory && !reload_config
-            && !get_interface_name && !set_interface_name)
+            && !get_interface_name && !set_interface_name
+            && !get_ren_mode && set_ren_mode == -1
+            && !get_comm_timeout && set_comm_timeout == -1)
         usage();
 
     ics = ics_init(name);
@@ -126,6 +168,28 @@ main(int argc, char *argv[])
     }
     if (set_interface_name) {
         if (ics_set_interface_name(ics, set_interface_name) != 0)
+            goto done;
+    }
+    if (get_comm_timeout) {
+        unsigned int timeout;
+
+        if (ics_get_comm_timeout(ics, &timeout) != 0)
+            goto done;
+        fprintf(stderr, "%s: %u\n", prog, timeout);
+    }
+    if (set_comm_timeout != -1) {
+        if (ics_set_comm_timeout(ics, set_comm_timeout) != 0)
+            goto done;
+    }
+    if (get_ren_mode) {
+        int flag;
+
+        if (ics_get_ren_mode(ics, &flag) != 0)
+            goto done;
+        fprintf(stderr, "%s: %u\n", prog, flag);
+    }
+    if (set_ren_mode != -1) {
+        if (ics_set_ren_mode(ics, set_ren_mode) != 0)
             goto done;
     }
     if (reload_factory) {
@@ -164,7 +228,6 @@ done:
     ics_fini(ics);
     exit(0);
 }
-
 
 /*
  * vi:tabstop=4 shiftwidth=4 expandtab
