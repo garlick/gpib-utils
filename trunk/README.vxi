@@ -29,10 +29,12 @@ Note it is possible for gpib-utils to be compiled standalone without
 linux-gpib if only VXI-11 protocol is used to access instruments.
 Simply define -DHAVE_GPIB=0 in CFLAGS and remove -lgpib from LDADD.
 
-Special thanks to ICS Electronics (iscelect.com) for providing their
-model 8065 Ethernet-to-GPIB controller as the development platform for
-adding VXI-11 support to gpib-utils.  They also publish application
-notes that were helpful during the process:
+Special thanks to Jerry Mercola of ICS Electronics (iscelect.com) for 
+providing a model 8065 Ethernet-to-GPIB controller as the development 
+platform for adding VXI-11 support to gpib-utils, and to Jay Berg for
+technical advice along the way, especially with the ICSCONFIG RCPL used
+to implement the ics8065 utility.  ICS also publish application notes that 
+were helpful during the process:
 
 * Frequently Asked Questions (FAQ) For The ICS Model 8065 
   Ethernet-To-GPIB Controller (AB80-1).
