@@ -26,13 +26,19 @@
 #include "errstr.h"
 #include "ics.h"
 
-#define OPTIONS "n:resgiIj:cfCtT:mM:"
+#define OPTIONS "n:resgiIj:cfCtT:mM:sS:zZ:kK:"
 static struct option longopts[] = {
         {"name",                required_argument,  0, 'n'},
         {"get-interface-name",  no_argument,        0, 'I'},
         {"set-interface-name",  required_argument,  0, 'j'},
         {"get-comm-timeout",    no_argument,        0, 't'},
         {"set-comm-timeout",    required_argument,  0, 'T'},
+        {"get-static-ip-mode",  no_argument,        0, 's'},
+        {"set-static-ip-mode",  required_argument,  0, 'S'},
+        {"get-ip-number",       no_argument,        0, 'z'},
+        {"set-ip-number",       required_argument,  0, 'Z'},
+        {"get-netmask",         no_argument,        0, 'k'},
+        {"set-netmask",         required_argument,  0, 'K'},
         {"get-ren-mode",        no_argument,        0, 'm'},
         {"set-ren-mode",        required_argument,  0, 'M'},
         {"reload-config",       no_argument,        0, 'C'},
@@ -54,11 +60,17 @@ usage(void)
   "Usage: %s [--options]\n"
   "  -n,--name                 instrument hostname (default: gpibgw)\n"
   "  -I,--get-interface-name   get VXI-11 logical name (e.g. gpib0)\n"
-  "  -j,--set-interface-name   set VXI-11 logical name\n"
+  "  -j,--set-interface-name   set VXI-11 logical name (e.g. gpib0)\n"
   "  -t,--get-comm-timeout     get TCP timeout (in seconds)\n"
-  "  -T,--set-comm-timeout     set TCP timeout\n"
-  "  -m,--get-ren-mode         get REN active at boot (0=FALSE, 1=TRUE)\n"
-  "  -M,--set-ren-mode         set REN active at boot\n"
+  "  -T,--set-comm-timeout     set TCP timeout (in seconds)\n"
+  "  -s,--get-static-ip-mode   get static IP mode (0=disabled, 1=enabled)\n"
+  "  -S,--set-static-ip-mode   set static IP mode (0=disabled, 1=enabled)\n"
+  "  -z,--get-ip-number        get IP number (a.b.c.d)\n"
+  "  -Z,--set-ip-number        set IP number (a.b.c.d)\n"
+  "  -k,--get-netmask          get netmask (a.b.c.d)\n"
+  "  -K,--set-netmask          set netmask (a.b.c.d)\n"
+  "  -m,--get-ren-mode         get REN active at boot (0=false, 1=true)\n"
+  "  -M,--set-ren-mode         set REN active at boot (0=false, 1=true)\n"
   "  -C,--reload-config        force reload of default config\n"
   "  -f,--reload-factory       reload factory config settings\n"
   "  -c,--commit-config        commit (write) current config\n"
@@ -80,6 +92,12 @@ main(int argc, char *argv[])
     char *set_interface_name = NULL;
     int get_comm_timeout = 0;
     int set_comm_timeout = -1;
+    int get_static_ip_mode = 0;
+    int set_static_ip_mode = -1;
+    int get_ip_number = 0;
+    char *set_ip_number = NULL;
+    int get_netmask = 0;
+    char *set_netmask = NULL;
     int get_ren_mode = 0;
     int set_ren_mode = -1;
     int reload_config = 0;
@@ -107,6 +125,24 @@ main(int argc, char *argv[])
                 break;
             case 'T' :  /* --set-comm-timeout */
                 set_comm_timeout = strtoul(optarg, NULL, 0);
+                break;
+            case 's' :  /* --get-static-ip-mode */
+                get_static_ip_mode = 1;
+                break;
+            case 'S' :  /* --set-static-ip-mode */
+                set_static_ip_mode = strtoul(optarg, NULL, 0);
+                break;
+            case 'z' :  /* --get-ip-number */
+                get_ip_number = 1;
+                break;
+            case 'Z' :  /* --set-ip-number */
+                set_ip_number = optarg;
+                break;
+            case 'k' :  /* --get-netmask */
+                get_ip_number = 1;
+                break;
+            case 'K' :  /* --set-netmask */
+                set_netmask = optarg;
                 break;
             case 'm' :  /* --get-ren-mode */
                 get_ren_mode = 1;
@@ -143,6 +179,9 @@ main(int argc, char *argv[])
     if(!get_errlog && !get_idn && !reboot 
             && !commit_config && !reload_factory && !reload_config
             && !get_interface_name && !set_interface_name
+            && !get_static_ip_mode && set_static_ip_mode == -1
+            && !get_ip_number && !set_ip_number
+            && !get_netmask && !set_netmask
             && !get_ren_mode && set_ren_mode == -1
             && !get_comm_timeout && set_comm_timeout == -1)
         usage();
@@ -179,6 +218,41 @@ main(int argc, char *argv[])
     }
     if (set_comm_timeout != -1) {
         if (ics_set_comm_timeout(ics, set_comm_timeout) != 0)
+            goto done;
+    }
+    if (get_static_ip_mode) {
+        int flag;
+
+        if (ics_get_static_ip_mode(ics, &flag) != 0)
+            goto done;
+        fprintf(stderr, "%s: %u\n", prog, flag);
+    }
+    if (set_static_ip_mode != -1) {
+        if (ics_set_static_ip_mode(ics, set_static_ip_mode) != 0)
+            goto done;
+    }
+    if (get_ip_number) {
+        char *tmpstr;
+
+        if (ics_get_ip_number(ics, &tmpstr) != 0)
+            goto done;
+        fprintf(stderr, "%s: %s\n", prog, tmpstr);
+        free(tmpstr);
+    }
+    if (set_ip_number) {
+        if (ics_set_ip_number(ics, set_ip_number) != 0)
+            goto done;
+    }
+    if (get_netmask) {
+        char *tmpstr;
+
+        if (ics_get_netmask(ics, &tmpstr) != 0)
+            goto done;
+        fprintf(stderr, "%s: %s\n", prog, tmpstr);
+        free(tmpstr);
+    }
+    if (set_netmask) {
+        if (ics_set_netmask(ics, set_netmask) != 0)
             goto done;
     }
     if (get_ren_mode) {

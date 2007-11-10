@@ -44,6 +44,25 @@ static errstr_t errtab[] = {
 };
 
 static char *
+_ip2str(unsigned char *ip)
+{
+    char tmpstr[64];
+
+    snprintf(tmpstr, sizeof(tmpstr), "%u.%u.%u.%u", ip[0], ip[1], ip[2], ip[3]);
+
+    return xstrdup(tmpstr);
+}
+
+static int
+_str2ip(char *str, unsigned char *ip)
+{
+    if (sscanf(str, "%hhu.%hhu.%hhu.%hhu", &ip[0], &ip[1], &ip[2], &ip[3]) != 4)
+        return 1;
+    return 0;
+}
+
+
+static char *
 _mkstr(char *data, u_int len)
 {
     char *new = xmalloc(len + 1);
@@ -137,6 +156,323 @@ ics_set_comm_timeout(ics_t ics, unsigned int timeout)
     }
     if (r->error) {
         fprintf(stderr, "%s: comm_timeout: %s\n", prog, 
+                finderr(errtab, r->error));
+        return r->error;
+    }
+    return 0;
+}
+
+int
+ics_get_static_ip_mode(ics_t ics, int *flagp)
+{
+    Static_IP_Parms p;
+    Static_IP_Resp *r;
+
+    assert(ics->ics_magic == ICS_MAGIC);
+    p.action = ICS_READ;
+    r = static_ip_mode_1(&p, ics->ics_clnt);
+    if (r == NULL) {
+        clnt_perror(ics->ics_clnt, prog);
+        exit(1);
+    }
+    if (r->error) {
+        fprintf(stderr, "%s: static_ip_mode: %s\n", prog, 
+                finderr(errtab, r->error));
+        return r->error;
+    }
+    *flagp = r->mode;
+    return 0;
+}
+
+int
+ics_set_static_ip_mode(ics_t ics, int flag)
+{
+    Static_IP_Parms p;
+    Static_IP_Resp *r;
+
+    assert(ics->ics_magic == ICS_MAGIC);
+    p.action = ICS_WRITE;
+    p.mode = flag;
+    r = static_ip_mode_1(&p, ics->ics_clnt);
+    if (r == NULL) {
+        clnt_perror(ics->ics_clnt, prog);
+        exit(1);
+    }
+    if (r->error) {
+        fprintf(stderr, "%s: static_ip_mode: %s\n", prog, 
+                finderr(errtab, r->error));
+        return r->error;
+    }
+    return 0;
+}
+
+int
+ics_get_ip_number(ics_t ics, char **ipstrp)
+{
+    IP_Number_Parms p;
+    IP_Number_Resp *r;
+
+    assert(ics->ics_magic == ICS_MAGIC);
+    p.action = ICS_READ;
+    r = ip_number_1(&p, ics->ics_clnt);
+    if (r == NULL) {
+        clnt_perror(ics->ics_clnt, prog);
+        exit(1);
+    }
+    if (r->error) {
+        fprintf(stderr, "%s: ip_number: %s\n", prog, 
+                finderr(errtab, r->error));
+        return r->error;
+    }
+    *ipstrp = _ip2str(r->ip);
+    return 0;
+}
+
+int
+ics_set_ip_number(ics_t ics, char *ipstr)
+{
+    IP_Number_Parms p;
+    IP_Number_Resp *r;
+
+    assert(ics->ics_magic == ICS_MAGIC);
+    p.action = ICS_WRITE;
+    if (_str2ip(ipstr, &p.ip[0]) != 0) {
+        fprintf(stderr, "%s: error converting string to IP address\n", prog);
+        return 1;
+    }
+    r = ip_number_1(&p, ics->ics_clnt);
+    if (r == NULL) {
+        clnt_perror(ics->ics_clnt, prog);
+        exit(1);
+    }
+    if (r->error) {
+        fprintf(stderr, "%s: static_ip_mode: %s\n", prog, 
+                finderr(errtab, r->error));
+        return r->error;
+    }
+    return 0;
+}
+
+int
+ics_get_netmask(ics_t ics, char **ipstrp)
+{
+    Netmask_Parms p;
+    Netmask_Resp *r;
+
+    assert(ics->ics_magic == ICS_MAGIC);
+    p.action = ICS_READ;
+    r = netmask_1(&p, ics->ics_clnt);
+    if (r == NULL) {
+        clnt_perror(ics->ics_clnt, prog);
+        exit(1);
+    }
+    if (r->error) {
+        fprintf(stderr, "%s: netmask: %s\n", prog, 
+                finderr(errtab, r->error));
+        return r->error;
+    }
+    *ipstrp = _ip2str(r->ip);
+    return 0;
+}
+
+int
+ics_set_netmask(ics_t ics, char *ipstr)
+{
+    Netmask_Parms p;
+    Netmask_Resp *r;
+
+    assert(ics->ics_magic == ICS_MAGIC);
+    p.action = ICS_WRITE;
+    if (_str2ip(ipstr, &p.ip[0]) != 0) {
+        fprintf(stderr, "%s: error converting string to IP address\n", prog);
+        return 1;
+    }
+    r = netmask_1(&p, ics->ics_clnt);
+    if (r == NULL) {
+        clnt_perror(ics->ics_clnt, prog);
+        exit(1);
+    }
+    if (r->error) {
+        fprintf(stderr, "%s: netmask: %s\n", prog, 
+                finderr(errtab, r->error));
+        return r->error;
+    }
+    return 0;
+}
+
+int
+ics_get_gateway(ics_t ics, char **ipstrp)
+{
+    Gateway_Parms p;
+    Gateway_Resp *r;
+
+    assert(ics->ics_magic == ICS_MAGIC);
+    p.action = ICS_READ;
+    r = gateway_1(&p, ics->ics_clnt);
+    if (r == NULL) {
+        clnt_perror(ics->ics_clnt, prog);
+        exit(1);
+    }
+    if (r->error) {
+        fprintf(stderr, "%s: gateway: %s\n", prog, 
+                finderr(errtab, r->error));
+        return r->error;
+    }
+    *ipstrp = _ip2str(r->ip);
+    return 0;
+}
+
+int
+ics_set_gateway(ics_t ics, char *ipstr)
+{
+    Gateway_Parms p;
+    Gateway_Resp *r;
+
+    assert(ics->ics_magic == ICS_MAGIC);
+    p.action = ICS_WRITE;
+    if (_str2ip(ipstr, &p.ip[0]) != 0) {
+        fprintf(stderr, "%s: error converting string to IP address\n", prog);
+        return 1;
+    }
+    r = gateway_1(&p, ics->ics_clnt);
+    if (r == NULL) {
+        clnt_perror(ics->ics_clnt, prog);
+        exit(1);
+    }
+    if (r->error) {
+        fprintf(stderr, "%s: gateway: %s\n", prog, 
+                finderr(errtab, r->error));
+        return r->error;
+    }
+    return 0;
+}
+
+int
+ics_get_keepalive(ics_t ics, unsigned int *timep)
+{
+    Keepalive_Parms p;
+    Keepalive_Resp *r;
+
+    assert(ics->ics_magic == ICS_MAGIC);
+    p.action = ICS_READ;
+    r = keepalive_1(&p, ics->ics_clnt);
+    if (r == NULL) {
+        clnt_perror(ics->ics_clnt, prog);
+        exit(1);
+    }
+    if (r->error) {
+        fprintf(stderr, "%s: keepalive: %s\n", prog, 
+                finderr(errtab, r->error));
+        return r->error;
+    }
+    *timep = r->time;
+    return 0;
+}
+
+int
+ics_set_keepalive(ics_t ics, unsigned int time)
+{
+    Keepalive_Parms p;
+    Keepalive_Resp *r;
+
+    assert(ics->ics_magic == ICS_MAGIC);
+    p.action = ICS_WRITE;
+    p.time = time;
+    r = keepalive_1(&p, ics->ics_clnt);
+    if (r == NULL) {
+        clnt_perror(ics->ics_clnt, prog);
+        exit(1);
+    }
+    if (r->error) {
+        fprintf(stderr, "%s: keepalive: %s\n", prog, 
+                finderr(errtab, r->error));
+        return r->error;
+    }
+    return 0;
+}
+
+int
+ics_get_gpib_address(ics_t ics, unsigned int *addrp)
+{
+    Gpib_Addr_Parms p;
+    Gpib_Addr_Resp *r;
+
+    assert(ics->ics_magic == ICS_MAGIC);
+    p.action = ICS_READ;
+    r = gpib_address_1(&p, ics->ics_clnt);
+    if (r == NULL) {
+        clnt_perror(ics->ics_clnt, prog);
+        exit(1);
+    }
+    if (r->error) {
+        fprintf(stderr, "%s: gpib_address: %s\n", prog, 
+                finderr(errtab, r->error));
+        return r->error;
+    }
+    *addrp = r->address;
+    return 0;
+}
+
+int
+ics_set_gpib_address(ics_t ics, unsigned int addr)
+{
+    Gpib_Addr_Parms p;
+    Gpib_Addr_Resp *r;
+
+    assert(ics->ics_magic == ICS_MAGIC);
+    p.action = ICS_WRITE;
+    p.address = addr;
+    r = gpib_address_1(&p, ics->ics_clnt);
+    if (r == NULL) {
+        clnt_perror(ics->ics_clnt, prog);
+        exit(1);
+    }
+    if (r->error) {
+        fprintf(stderr, "%s: gpib_address: %s\n", prog, 
+                finderr(errtab, r->error));
+        return r->error;
+    }
+    return 0;
+}
+
+int     
+ics_get_system_controller(ics_t ics, int *flagp)
+{
+    Sys_Control_Parms p;
+    Sys_Control_Resp *r;
+
+    assert(ics->ics_magic == ICS_MAGIC);
+    p.action = ICS_READ;
+    r = system_controller_1(&p, ics->ics_clnt);
+    if (r == NULL) {
+        clnt_perror(ics->ics_clnt, prog);
+        exit(1);
+    }
+    if (r->error) {
+        fprintf(stderr, "%s: system_controller: %s\n", prog, 
+                finderr(errtab, r->error));
+        return r->error;
+    }
+    *flagp = r->controller;
+    return 0;
+}
+
+int     
+ics_set_system_controller(ics_t ics, int flag)
+{
+    Sys_Control_Parms p;
+    Sys_Control_Resp *r;
+
+    assert(ics->ics_magic == ICS_MAGIC);
+    p.action = ICS_WRITE;
+    p.controller = flag;
+    r = system_controller_1(&p, ics->ics_clnt);
+    if (r == NULL) {
+        clnt_perror(ics->ics_clnt, prog);
+        exit(1);
+    }
+    if (r->error) {
+        fprintf(stderr, "%s: system_controller: %s\n", prog, 
                 finderr(errtab, r->error));
         return r->error;
     }
