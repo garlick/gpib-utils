@@ -3,8 +3,9 @@ CFLAGS=-Wall -Wno-unused -g -DHAVE_GPIB=0
 LDADD=-lrpcsvc -lm
 
 PROGS=hp1630 hptopbm hptodino r5005 hp3455 hp3457 hp8656 dg535 \
-      hp3488 sr620 hp603x gpsh
+      hp3488 sr620 hp603x gpsh ics8065
 LIBOBJS=util.o gpib.o units.o errstr.o vxi11_xdr.o vxi11_clnt.o
+ICSLIBOBJS=ics.o ics8000_clnt.o ics8000_xdr.o util.o errstr.o
 TESTPROGS=testfreq testampl
 
 all: $(PROGS) $(TESTPROGS)
@@ -34,19 +35,29 @@ hp603x: hp603x.o $(LIBOBJS)
 	$(CC) -o $@ hp603x.o $(LIBOBJS) $(LDADD)
 gpsh: gpsh.o $(LIBOBJS)
 	$(CC) -o $@ gpsh.o $(LIBOBJS) $(LDADD) -lreadline -ltermcap
-
-gpib.o: vxi11.h
+ics8065: ics8065.o $(ICSLIBOBJS)
+	$(CC) -o $@ ics8065.o $(ICSLIBOBJS) -lrpcsvc
+ics.o: ics8000.h
 
 # VXI-11 support
-vxi11: vxi11.h vxi11_xdr.c vxi11_clnt.c
+gpib.o: vxi11.h
 vxi11.h: vxi11.x
-	rpcgen -o $@ -h vxi11.x
+	rm -f $@; rpcgen -o $@ -h vxi11.x
 vxi11_xdr.c: vxi11.x vxi11.h
-	rpcgen -o $@ -c vxi11.x
+	rm -f $@; rpcgen -o $@ -c vxi11.x
 vxi11_clnt.c: vxi11.x vxi11.h
-	rpcgen -o $@ -l vxi11.x
+	rm -f $@; rpcgen -o $@ -l vxi11.x
 vxi11_svc.c:  vxi11.x vxi11.h
-	rpcgen -o $@ -m vxi11.x
+	rm -f $@; rpcgen -o $@ -m vxi11.x
+# VXI-11 extension for ICS 8000 series
+ics8000.h: ics8000.x
+	rm -f $@; rpcgen -o $@ -h ics8000.x
+ics8000_xdr.c: ics8000.x ics8000.h
+	rm -f $@; rpcgen -o $@ -c ics8000.x
+ics8000_clnt.c: ics8000.x ics8000.h
+	rm -f $@; rpcgen -o $@ -l ics8000.x
+ics8000_svc.c:  ics8000.x ics8000.h
+	rm -f $@; rpcgen -o $@ -m ics8000.x
 
 # test programs
 testampl: units.c
@@ -64,4 +75,5 @@ clean:
 	rm -f *.o $(PROGS)
 	rm -f $(TESTPROGS)
 	rm -f vxi11.h vxi11_xdr.c vxi11_clnt.c vxi11_svc.c
+	rm -f ics8000.h ics8000_xdr.c ics8000_clnt.c ics8000_svc.c
 

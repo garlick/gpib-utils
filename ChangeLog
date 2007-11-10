@@ -1,3 +1,11 @@
+2007-11-09 Jim Garlick <garlick.jim@gmail.com>
+
+	* src/ics8000.x : Added ICSCONFIG RPCL from 8065 manual.
+
+	* src/ics.[ch] : Wrappers for ICSCONFIG RPC.
+
+	* src/ics8065.c : New utility for accessing ICS 8065 error log.
+
 2007-11-07 Jim Garlick <garlick.jim@gmail.com>
 
 	* src/vxi11.x : Added VXI_WAITLOCK, VXI_ENDW, and VXI_TERMCHRSET
@@ -11,7 +19,7 @@
 
 2007-11-06 Jim Garlick <garlick.jim@gmail.com>
 
-	* src/vxi11.x : New from http://www.agilent.com/find/linux.
+	* src/vxi11.x : New VIX-11 RPCL from http://www.agilent.com/find/linux.
 
 	* Makefile : Build vxi11 support with rpcgen.
 
