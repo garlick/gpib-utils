@@ -1,4 +1,15 @@
-/* ICS 8000 series RCPL appendix A3 of 8065 Instruction Manual revision 2 */
+/* ICS 8000 series RCPL from appendix A3 of "8065 Instruction Manual" rev 2 */
+
+/* Manual errata:
+ * - procedure names must be lower case for RPCGEN (c.24, c.25)
+ * - procedures with empty "Parms" arg really take void arg (c.24, c.25)
+ * - change length+char[] to opaque (c.24)
+ * - use procedure names in table B-1 (c.16. c.24, c.25)
+ * - fw_revision (proc #24) is in table B-1 but missing from spec
+ * - drop length member from interface_name and hostname structs (c.1, c.7)
+ * - opaque data length does not include trailing NULL for strings (b.1)
+ * - fw_revision procedure is not defined (table B-1)
+ */
 
 /* Action parameter values */
 %#define ICS_READ           0
@@ -11,12 +22,10 @@
  */
 struct Int_Name_Parms {
    unsigned int action;
-   unsigned int length;
    opaque name<>;
 };
 struct Int_Name_Resp {
    unsigned int error;
-   unsigned int length;
    opaque name<>;
 };
 
@@ -87,12 +96,10 @@ struct Comm_Timeout_Resp {
  */
 struct Hostname_Parms {
    unsigned int action;
-   unsigned int length;
    opaque name<>;
 };
 struct Hostname_Resp {
    unsigned int error;
-   unsigned int length;
    opaque name<>;
 };
 
@@ -284,17 +291,16 @@ struct Reboot_Resp {
    unsigned int error;
 };
 
-/* The idnreply procedure is used to obtain a response similar to the GPIB
+/* The idn_string procedure is used to obtain a response similar to the GPIB
  * *IDN? string.  It contains the FW revision, the ICS product model number,
  * and ohter miscellaneous information.
  */
 struct Idn_Resp {
    unsigned int error;
-   unsigned int length;
-   unsigned char reply[128];
+   opaque idn<>;
 };
 
-/* The errorLogger procedure is used to obtain the current contents of the
+/* The error_logger procedure is used to obtain the current contents of the
  * error log.
  */
 struct Error_Log_Resp {
@@ -320,16 +326,17 @@ program ICSCONFIG {
       Gpib_Addr_Resp gpib_address (Gpib_Addr_Parms) = 13;
       Sys_Control_Resp system_controller (Sys_Control_Parms) = 14;
       Ren_Resp ren_mode (Ren_Parms) = 15;
-      Eos_8bit_Resp eos_8bit_mode (Eos_8bit_Parms) = 16;
+      Eos_8bit_Resp eos_8_bit_mode (Eos_8bit_Parms) = 16;
       Auto_Eos_Resp auto_eos_mode (Auto_Eos_Parms) = 17;
-      Eos_Active_Resp eos_active_mode (Eos_Active_Parms) = 18;
+      Eos_Active_Resp eos_active (Eos_Active_Parms) = 18;
       Eos_Char_Resp eos_char (Eos_Char_Parms) = 19;
       Reload_Config_Resp reload_config (void) = 20;
       Reload_Factory_Resp reload_factory (void) = 21;
       Commit_Config_Resp commit_config (void) = 22;
       Reboot_Resp reboot (void) = 23;
-      Idn_Resp idnreply (void) = 25;
-      Error_Log_Resp errorlogger (void) = 26;
+      /* fw_revision (void) = 24; */
+      Idn_Resp idn_string (void) = 25;
+      Error_Log_Resp error_logger (void) = 26;
    } = 1;
 } = 1515151515;
 

@@ -24,24 +24,117 @@ static errstr_t errtab[] = {
     { 0,    NULL },
 };
 
-int
-ics_errorlogger(ics_t ics, unsigned int *errs, int len, int *count)
+static char *
+_mkstr(char *data, u_int len)
 {
-    Error_Log_Resp *r;
+    char *new = xmalloc(len + 1);
+
+    memcpy(new, data, len);
+    new[len] = '\0';
+    return new;
+}
+
+int
+ics_get_interface_name(ics_t ics, char **strp)
+{
+    Int_Name_Parms p;
+    Int_Name_Resp *r;
 
     assert(ics->ics_magic == ICS_MAGIC);
-    r = errorlogger_1(NULL, ics->ics_clnt);
+    p.action = ICS_READ;
+    p.name.name_len = 0;
+    r = interface_name_1(&p, ics->ics_clnt);
     if (r == NULL) {
         clnt_perror(ics->ics_clnt, prog);
         exit(1);
     }
-    if (r->error)
-        fprintf(stderr, "%s: errorlogger: %s\n", prog, 
+    if (r->error) {
+        fprintf(stderr, "%s: interface_name: %s\n", prog, 
                 finderr(errtab, r->error));
-    else
-        for (*count = 0; *count < r->count && *count < len; (*count)++)
-            errs[*count] = r->errors[*count];
-    return r->error;
+        return r->error;
+    }
+    *strp = _mkstr(r->name.name_val, r->name.name_len);
+    return 0;
+}
+
+int
+ics_set_interface_name(ics_t ics, char *str)
+{
+    Int_Name_Parms p;
+    Int_Name_Resp *r;
+
+    assert(ics->ics_magic == ICS_MAGIC);
+    p.action = ICS_WRITE;
+    p.name.name_val = str;
+    p.name.name_len = strlen(str);
+    r = interface_name_1(&p, ics->ics_clnt);
+    if (r == NULL) {
+        clnt_perror(ics->ics_clnt, prog);
+        exit(1);
+    }
+    if (r->error) {
+        fprintf(stderr, "%s: interface_name: %s\n", prog, 
+                finderr(errtab, r->error));
+        return r->error;
+    }
+    return 0;
+}
+
+int
+ics_reload_config(ics_t ics)
+{
+    Reload_Config_Resp *r;
+
+    assert(ics->ics_magic == ICS_MAGIC);
+    r = reload_config_1(NULL, ics->ics_clnt);
+    if (r == NULL) {
+        clnt_perror(ics->ics_clnt, prog);
+        exit(1);
+    }
+    if (r->error) {
+        fprintf(stderr, "%s: reload_config: %s\n", 
+                prog, finderr(errtab, r->error));
+        return r->error;
+    }
+    return 0;
+}
+
+int
+ics_reload_factory(ics_t ics)
+{
+    Reload_Factory_Resp *r;
+
+    assert(ics->ics_magic == ICS_MAGIC);
+    r = reload_factory_1(NULL, ics->ics_clnt);
+    if (r == NULL) {
+        clnt_perror(ics->ics_clnt, prog);
+        exit(1);
+    }
+    if (r->error) {
+        fprintf(stderr, "%s: reload_factory: %s\n", 
+                prog, finderr(errtab, r->error));
+        return r->error;
+    }
+    return 0;
+}
+
+int
+ics_commit_config(ics_t ics)
+{
+    Commit_Config_Resp *r;
+
+    assert(ics->ics_magic == ICS_MAGIC);
+    r = commit_config_1(NULL, ics->ics_clnt);
+    if (r == NULL) {
+        clnt_perror(ics->ics_clnt, prog);
+        exit(1);
+    }
+    if (r->error) {
+        fprintf(stderr, "%s: commit_config: %s\n", 
+                prog, finderr(errtab, r->error));
+        return r->error;
+    }
+    return 0;
 }
 
 int
@@ -55,29 +148,55 @@ ics_reboot(ics_t ics)
         clnt_perror(ics->ics_clnt, prog);
         exit(1);
     }
-    if (r->error)
-        fprintf(stderr, "%s: reboot: %s\n", prog, finderr(errtab, r->error));
-    return r->error;
+    if (r->error) {
+        fprintf(stderr, "%s: reboot: %s\n", 
+                prog, finderr(errtab, r->error));
+        return r->error;
+    }
+    return 0;
 }
 
 int
-ics_idnreply(ics_t ics, char *str, int len)
+ics_idn_string(ics_t ics, char **strp)
 {
     Idn_Resp *r;
 
     assert(ics->ics_magic == ICS_MAGIC);
-    r = idnreply_1(NULL, ics->ics_clnt);
+    r = idn_string_1(NULL, ics->ics_clnt);
     if (r == NULL) {
         clnt_perror(ics->ics_clnt, prog);
         exit(1);
     }
-    if (r->error)
-        fprintf(stderr, "%s: idnreply: %s\n", prog, finderr(errtab, r->error));
-    else
-        memcpy(str, r->reply, len > r->length ? r->length : len);
-    return r->error;
+    if (r->error) {
+        fprintf(stderr, "%s: idn_string: %s\n", 
+                prog, finderr(errtab, r->error));
+        return r->error;
+    }
+    *strp = _mkstr(r->idn.idn_val, r->idn.idn_len);
+    return 0;
 }
 
+int
+ics_error_logger(ics_t ics, unsigned int **errp, int *countp)
+{
+    Error_Log_Resp *r;
+
+    assert(ics->ics_magic == ICS_MAGIC);
+    r = error_logger_1(NULL, ics->ics_clnt);
+    if (r == NULL) {
+        clnt_perror(ics->ics_clnt, prog);
+        exit(1);
+    }
+    if (r->error) {
+        fprintf(stderr, "%s: error_logger: %s\n", prog, 
+                finderr(errtab, r->error));
+        return r->error;
+    }
+    *errp = xmalloc(r->count * sizeof(unsigned int));
+    memcpy(*errp, r->errors, r->count * sizeof(unsigned int));
+    *countp = r->count;
+    return 0;
+}
 
 void
 ics_fini(ics_t ics)
