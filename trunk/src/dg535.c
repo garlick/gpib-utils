@@ -35,7 +35,8 @@
 #include "units.h"
 #include "gpib.h"
 
-#define INSTRUMENT "dg535"  /* the /etc/gpib.conf entry */
+/*#define INSTRUMENT "dg535"*/  /* default instrument name */
+#define INSTRUMENT "gpibgw:gpib0,15"
 
 char *prog = "";
 static int verbose = 0;
@@ -73,13 +74,13 @@ usage(void)
 "  -O,--output-offset          output offset (-4:+4) in volts\n"
 "  -p,--output-polarity        output polarity (+|-)\n"
 "  -T,--output-z               output impedence (hi|lo)\n"
-"  -d,--delay                  output delay (chan,secs)\n"
 "  -M,--trigger-mode           trigger mode (int|ext|ss|burst)\n"
 "  -t,--trigger-rate           trigger rate (0.001hz:1.000mhz)\n"
 "  -s,--trigger-slope          trigger slope (up|down)\n"
 "  -b,--trigger-count          trigger burst count (2:32766)\n"
 "  -z,--trigger-z              trigger input impedence (hi|lo)\n"
 "  -D,--display-string         display string (1-20 chars), empty to clear\n"
+"  -d,--delay                  output delay (chan,secs)\n"
            , prog, INSTRUMENT);
     exit(1);
 }

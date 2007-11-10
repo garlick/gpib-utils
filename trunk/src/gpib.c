@@ -104,24 +104,23 @@ _ibrd(gd_t gd, void *buf, int len)
 static int
 _vxird(gd_t gd, void *buf, int len)
 {
-    Device_ReadParms drp;
-    Device_ReadResp *drr;
+    Device_ReadParms p;
+    Device_ReadResp *r;
 
-    drp.lid = gd->vxi_lid;
-    drp.requestSize = len;
-    drp.io_timeout = gd->ms_timeout;
-    drp.lock_timeout = gd->ms_timeout;
-    drp.flags = gd->reos ? VXI_TERMCHRSET : 0;
-    drp.termChar = gd->eos;
-    drr = device_read_1(&drp, gd->vxi_cli);
-    if (drr == NULL) {
-        fprintf(stderr, "%s: device_read returned NULL\n", prog);
-        clnt_perror(gd->vxi_cli, "_vxird");
+    p.lid = gd->vxi_lid;
+    p.requestSize = len;
+    p.io_timeout = gd->ms_timeout;
+    p.lock_timeout = gd->ms_timeout;
+    p.flags = gd->reos ? VXI_TERMCHRSET : 0;
+    p.termChar = gd->eos;
+    r = device_read_1(&p, gd->vxi_cli);
+    if (r == NULL) {
+        clnt_perror(gd->vxi_cli, prog);
         exit(1);
     }
-    memcpy(buf, drr->data.data_val, drr->data.data_len);
+    memcpy(buf, r->data.data_val, r->data.data_len);
 
-    return drr->data.data_len;
+    return r->data.data_len;
 }
 
 int
@@ -231,19 +230,18 @@ _ibwrt(gd_t gd, void *buf, int len)
 static void 
 _vxiwrt(gd_t gd, void *buf, int len)
 {
-    Device_WriteParms dwp;
-    Device_WriteResp *dwr;
+    Device_WriteParms p;
+    Device_WriteResp *r;
 
-    dwp.lid = gd->vxi_lid;
-    dwp.io_timeout = gd->ms_timeout;
-    dwp.lock_timeout = gd->ms_timeout;
-    dwp.flags = gd->eot ? VXI_ENDW : 0;
-    dwp.data.data_val = buf;
-    dwp.data.data_len = len;
-    dwr = device_write_1(&dwp, gd->vxi_cli);
-    if (dwr == NULL) {
-        fprintf(stderr, "%s: device_write returned NULL\n", prog);
-        clnt_perror(gd->vxi_cli, "_vxiwrt");
+    p.lid = gd->vxi_lid;
+    p.io_timeout = gd->ms_timeout;
+    p.lock_timeout = gd->ms_timeout;
+    p.flags = gd->eot ? VXI_ENDW : 0;
+    p.data.data_val = buf;
+    p.data.data_len = len;
+    r = device_write_1(&p, gd->vxi_cli);
+    if (r == NULL) {
+        clnt_perror(gd->vxi_cli, prog);
         exit(1);
     }
 }
@@ -330,15 +328,14 @@ _ibloc(gd_t gd)
 static void
 _vxiloc(gd_t gd)
 {
-    Device_GenericParms dgp;
+    Device_GenericParms p;
 
-    dgp.lid = gd->vxi_lid;
-    dgp.flags = 0;
-    dgp.io_timeout = gd->ms_timeout;
-    dgp.lock_timeout = gd->ms_timeout;
-    if (device_local_1(&dgp, gd->vxi_cli) == NULL) {
-        fprintf(stderr, "%s: device_local returned NULL\n", prog);
-        clnt_perror(gd->vxi_cli, "_vxiloc");
+    p.lid = gd->vxi_lid;
+    p.flags = 0;
+    p.io_timeout = gd->ms_timeout;
+    p.lock_timeout = gd->ms_timeout;
+    if (device_local_1(&p, gd->vxi_cli) == NULL) {
+        clnt_perror(gd->vxi_cli, prog);
         exit(1);
     }
 }
@@ -377,15 +374,14 @@ _ibclr(gd_t gd, unsigned long usec)
 static void 
 _vxiclr(gd_t gd, unsigned long usec)
 {
-    Device_GenericParms dgp;
+    Device_GenericParms p;
 
-    dgp.lid = gd->vxi_lid;
-    dgp.flags = 0;
-    dgp.io_timeout = gd->ms_timeout;
-    dgp.lock_timeout = gd->ms_timeout;
-    if (device_clear_1(&dgp, gd->vxi_cli) == NULL) {
-        fprintf(stderr, "%s: device_clear returned NULL\n", prog);
-        clnt_perror(gd->vxi_cli, "_vxiclr");
+    p.lid = gd->vxi_lid;
+    p.flags = 0;
+    p.io_timeout = gd->ms_timeout;
+    p.lock_timeout = gd->ms_timeout;
+    if (device_clear_1(&p, gd->vxi_cli) == NULL) {
+        clnt_perror(gd->vxi_cli, prog);
         exit(1);
     }
 }
@@ -421,15 +417,14 @@ _ibtrg(gd_t gd)
 static void
 _vxitrg(gd_t gd)
 {
-    Device_GenericParms dgp;
+    Device_GenericParms p;
 
-    dgp.lid = gd->vxi_lid;
-    dgp.flags = 0;
-    dgp.io_timeout = gd->ms_timeout;
-    dgp.lock_timeout = gd->ms_timeout;
-    if (device_trigger_1(&dgp, gd->vxi_cli) == NULL) {
-        fprintf(stderr, "%s: device_trigger returned NULL\n", prog);
-        clnt_perror(gd->vxi_cli, "_vxitrg");
+    p.lid = gd->vxi_lid;
+    p.flags = 0;
+    p.io_timeout = gd->ms_timeout;
+    p.lock_timeout = gd->ms_timeout;
+    if (device_trigger_1(&p, gd->vxi_cli) == NULL) {
+        clnt_perror(gd->vxi_cli, prog);
         exit(1);
     }
 }
@@ -466,21 +461,20 @@ _ibrsp(gd_t gd, unsigned char *status)
 static int
 _vxirsp(gd_t gd, unsigned char *status)
 {
-    Device_GenericParms dgp;
-    Device_ReadStbResp *rsr;
+    Device_GenericParms p;
+    Device_ReadStbResp *r;
 
-    dgp.lid = gd->vxi_lid;
-    dgp.flags = 0;
-    dgp.lock_timeout = gd->ms_timeout;
-    dgp.io_timeout = gd->ms_timeout;
-    rsr = device_readstb_1(&dgp, gd->vxi_cli);
-    if (rsr == NULL) {
-        fprintf(stderr, "%s: device_readstb returned NULL\n", prog);
-        clnt_perror(gd->vxi_cli, "_vxirsp");
+    p.lid = gd->vxi_lid;
+    p.flags = 0;
+    p.lock_timeout = gd->ms_timeout;
+    p.io_timeout = gd->ms_timeout;
+    r = device_readstb_1(&p, gd->vxi_cli);
+    if (r == NULL) {
+        clnt_perror(gd->vxi_cli, prog);
         exit(1);
     }
     if (status)
-        *status = rsr->stb;
+        *status = r->stb;
     return 0;
 }
 
@@ -969,8 +963,8 @@ gd_t
 gpib_init_vxi(char *host, char *device, spollfun_t sf, unsigned long retry)
 {
     gd_t new = _new_gpib();
-    Create_LinkParms clp;
-    Create_LinkResp *clr;
+    Create_LinkParms p;
+    Create_LinkResp *r;
 
     new->sf_fun = sf;
     new->sf_retry = retry;
@@ -980,18 +974,17 @@ gpib_init_vxi(char *host, char *device, spollfun_t sf, unsigned long retry)
         clnt_pcreateerror("gpib_init_vxi");
         exit(1);
     }
-    clp.clientId = 0;
-    clp.lockDevice = 0;
-    clp.lock_timeout = 10000; /* not used */
-    clp.device = device;
-    clr = create_link_1(&clp, new->vxi_cli);
-    if (clr == NULL) {
-        fprintf(stderr, "%s: VXI-11 function create_link returned NULL\n", prog);
-        clnt_perror(new->vxi_cli, "gpib_init_vxi");
+    p.clientId = 0;
+    p.lockDevice = 0;
+    p.lock_timeout = 10000; /* not used */
+    p.device = device;
+    r = create_link_1(&p, new->vxi_cli);
+    if (r == NULL) {
+        clnt_perror(new->vxi_cli, prog);
         exit(1);
     }
-    new->vxi_lid = clr->lid;
-    new->vxi_abort_port = clr->abortPort;
+    new->vxi_lid = r->lid;
+    new->vxi_abort_port = r->abortPort;
       
     return new;
 }
