@@ -1,3 +1,10 @@
+2007-11-10 Jim Garlick <garlick.jim@gmail.com>
+
+	* src/ics8000.x : Corrected several errors [Jay Berg]
+
+	* src/ics8065.c, src/ics.[ch] : Add idn_string, reboot, commit_config,
+	reload_factory, reload_config, get_interface_name, set_interface_name.
+
 2007-11-09 Jim Garlick <garlick.jim@gmail.com>
 
 	* src/ics8000.x : Added ICSCONFIG RPCL from 8065 manual.
@@ -19,11 +26,11 @@
 
 2007-11-06 Jim Garlick <garlick.jim@gmail.com>
 
-	* src/vxi11.x : New VIX-11 RPCL from http://www.agilent.com/find/linux.
+	* src/vxi11.x : New VXI-11 RPCL from http://www.agilent.com/find/linux.
 
-	* Makefile : Build vxi11 support with rpcgen.
+	* Makefile : Build VXI-11 support with rpcgen.
 
-	* src/gpib.c : Add vxi11 support.
+	* src/gpib.c : Add VXI-11 support.
 
 	* : Rename local wrapper functions from gpib_ib* to gpib_*.
 
