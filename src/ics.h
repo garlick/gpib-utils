@@ -1,12 +1,44 @@
 typedef struct ics_struct *ics_t;
 
-ics_t       ics_init (char *host);
-void        ics_fini(ics_t ics);
+/* Get/set the current VXI-11 logical interface name.
+ * Caller must free the string returned by the get function.
+ */
+int     ics_get_interface_name(ics_t ics, char **strp);
+int     ics_set_interface_name(ics_t ics, char *str);
 
-int         ics_reboot(ics_t ics);
-int         ics_errorlogger(ics_t ics, unsigned int *errs, int size, int *len);
-int         ics_idnreply(ics_t ics, char *str, int len);
+/* Force reload of default config.
+ */
+int     ics_reload_config(ics_t ics);
 
+/* Reload factory config settings.
+ */
+int     ics_reload_factory(ics_t ics);
+
+/* Commit (write) current config.
+ */
+int     ics_commit_config(ics_t ics);
+
+/* Reboot the ics device.
+ */
+int     ics_reboot(ics_t ics);
+
+/* Obtain the device identity string, which contains the FW revision, 
+ * ICS product model number, etc. Caller must free the identity string.
+ */
+int     ics_idn_string(ics_t ics, char **strp);
+
+/* Get the current contents of the error log.  Put a copy of the array
+ * in 'errp' and its length in 'countp'.  Caller must free the error log.
+ */
+int     ics_error_logger(ics_t ics, unsigned int **errp, int *countp);
+
+/* Initialize/finalize the ics module.
+ */
+ics_t   ics_init (char *host);
+void    ics_fini(ics_t ics);
+
+/* Mapping of error numbers (from the error log) to descriptive text.
+ */
 #define ICS_ERRLOG { \
     { 1,    "VXI-11 syntax error" }, \
     { 3,    "GPIB device not accessible" }, \
@@ -33,8 +65,6 @@ int         ics_idnreply(ics_t ics, char *str, int len);
     {0,     NULL}, \
 }
 
-
 /*
  * vi:tabstop=4 shiftwidth=4 expandtab
  */
-
