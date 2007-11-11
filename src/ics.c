@@ -17,10 +17,14 @@
    along with gpib-utils; if not, write to the Free Software Foundation, 
    Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
 
+#include <sys/socket.h>
+#include <netinet/in.h>
 #include <getopt.h>
 #include <libgen.h>
 #include <stdio.h>
 #include <rpc/rpc.h>
+#include <arpa/inet.h>
+
 #include <assert.h>
 
 #include "ics8000.h"
@@ -44,25 +48,6 @@ static errstr_t errtab[] = {
 };
 
 static char *
-_ip2str(unsigned char *ip)
-{
-    char tmpstr[64];
-
-    snprintf(tmpstr, sizeof(tmpstr), "%u.%u.%u.%u", ip[0], ip[1], ip[2], ip[3]);
-
-    return xstrdup(tmpstr);
-}
-
-static int
-_str2ip(char *str, unsigned char *ip)
-{
-    if (sscanf(str, "%hhu.%hhu.%hhu.%hhu", &ip[0], &ip[1], &ip[2], &ip[3]) != 4)
-        return 1;
-    return 0;
-}
-
-
-static char *
 _mkstr(char *data, u_int len)
 {
     char *new = xmalloc(len + 1);
@@ -70,6 +55,35 @@ _mkstr(char *data, u_int len)
     memcpy(new, data, len);
     new[len] = '\0';
     return new;
+}
+
+static unsigned int
+_reverse(unsigned int i)
+{ 
+    return (((i & 0xff000000) >> 24) | ((i & 0x00ff0000) >>  8) | 
+            ((i & 0x0000ff00) <<  8) | ((i & 0x000000ff) << 24));
+}
+
+static char *
+_ip2str(unsigned int ip)
+{
+    struct in_addr in;
+
+    in.s_addr = _reverse(htonl(ip));
+    return xstrdup(inet_ntoa(in));
+}
+
+static int
+_str2ip(char *str, unsigned int *ipp)
+{
+    struct in_addr in;
+
+    if (inet_aton(str, &in) == 0) {
+        fprintf(stderr, "%s: invalid ip number\n", prog);
+        return 1;
+    }
+    *ipp = ntohl(_reverse(in.s_addr));
+    return 0;
 }
 
 int
@@ -236,17 +250,15 @@ ics_set_ip_number(ics_t ics, char *ipstr)
 
     assert(ics->ics_magic == ICS_MAGIC);
     p.action = ICS_WRITE;
-    if (_str2ip(ipstr, &p.ip[0]) != 0) {
-        fprintf(stderr, "%s: error converting string to IP address\n", prog);
+    if (_str2ip(ipstr, &p.ip))
         return 1;
-    }
     r = ip_number_1(&p, ics->ics_clnt);
     if (r == NULL) {
         clnt_perror(ics->ics_clnt, prog);
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "%s: static_ip_mode: %s\n", prog, 
+        fprintf(stderr, "%s: ip_number: %s\n", prog, 
                 finderr(errtab, r->error));
         return r->error;
     }
@@ -283,10 +295,8 @@ ics_set_netmask(ics_t ics, char *ipstr)
 
     assert(ics->ics_magic == ICS_MAGIC);
     p.action = ICS_WRITE;
-    if (_str2ip(ipstr, &p.ip[0]) != 0) {
-        fprintf(stderr, "%s: error converting string to IP address\n", prog);
+    if (_str2ip(ipstr, &p.ip))
         return 1;
-    }
     r = netmask_1(&p, ics->ics_clnt);
     if (r == NULL) {
         clnt_perror(ics->ics_clnt, prog);
@@ -330,10 +340,8 @@ ics_set_gateway(ics_t ics, char *ipstr)
 
     assert(ics->ics_magic == ICS_MAGIC);
     p.action = ICS_WRITE;
-    if (_str2ip(ipstr, &p.ip[0]) != 0) {
-        fprintf(stderr, "%s: error converting string to IP address\n", prog);
+    if (_str2ip(ipstr, &p.ip))
         return 1;
-    }
     r = gateway_1(&p, ics->ics_clnt);
     if (r == NULL) {
         clnt_perror(ics->ics_clnt, prog);

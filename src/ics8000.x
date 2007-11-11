@@ -8,6 +8,11 @@
  * - fw_revision (proc #24) is not implemented (table B-1)
  * - drop length member from interface_name and hostname structs (c.1, c.7)
  * - opaque data.len does not include trailing NULL for strings (b.1)
+ * - ip's are unsigned int, not unsigned char[4] (c.9, c.10, c.11)
+ */
+
+/* IP-note: 4-byte IP's are packed into a 32 bit unsigned integer in
+ * reverse network byte order.  XDR integers are in host byte order.
  */
 
 /* Action parameter values */
@@ -119,11 +124,11 @@ struct Static_IP_Resp {
  */
 struct IP_Number_Parms {
    unsigned int action;
-   unsigned char ip[4];
+   unsigned int ip; /* see IP-note above */
 };
 struct IP_Number_Resp {
    unsigned int error;
-   unsigned char ip[4];
+   unsigned int ip; /* see IP-note above */
 };
 
 /* The netmask procedure is used to read/modify the netmask.  
@@ -132,11 +137,11 @@ struct IP_Number_Resp {
  */
 struct Netmask_Parms {
    unsigned int action;
-   unsigned char ip[4];
+   unsigned int ip; /* see IP-note above */
 };
 struct Netmask_Resp {
    unsigned int error;
-   unsigned char ip[4];
+   unsigned int ip; /* see IP-note above */
 };
 
 /* The gateway procedure is used to read/modify the gateway IP.  
@@ -145,11 +150,11 @@ struct Netmask_Resp {
  */
 struct Gateway_Parms {
    unsigned int action;
-   unsigned char ip[4];
+   unsigned int ip; /* see IP-note above */
 };
 struct Gateway_Resp {
    unsigned int error;
-   unsigned char ip[4];
+   unsigned int ip; /* see IP-note above */
 };
 
 /* The keepalive procedure is used to read/modify the keepalive value.
