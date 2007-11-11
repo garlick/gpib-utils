@@ -1,7 +1,7 @@
 /* This file is part of gpib-utils.
    For details, see http://sourceforge.net/projects/gpib-utils.
 
-   Copyright (C) 2007 Jim Garlick <garlick@speakeasy.net>
+   Copyright (C) 2007 Jim Garlick <garlick.jim@gmail.com>
 
    gpib-utils is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -60,6 +60,7 @@ _mkstr(char *data, u_int len)
 static unsigned int
 _reverse(unsigned int i)
 { 
+    assert(sizeof(unsigned int) == 4);
     return (((i & 0xff000000) >> 24) | ((i & 0x00ff0000) >>  8) | 
             ((i & 0x0000ff00) <<  8) | ((i & 0x000000ff) << 24));
 }
