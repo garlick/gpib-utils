@@ -66,6 +66,7 @@ _serial_poll(gd_t gd, char *str)
                 case 0:     /* no error */
                     break;
                 default:    /* fatal error */
+                    gpib_fini(gd);
                     exit(err);
             }
         } while (more || err == -1);
@@ -80,10 +81,12 @@ _ibrd(gd_t gd, void *buf, int len)
     ibrd(gd->d, buf, len);
     if (ibsta & TIMO) {
         fprintf(stderr, "%s: ibrd timeout\n", prog);
+        gpib_fini(gd);
         exit(1);
     }
     if (ibsta & ERR) {
         fprintf(stderr, "%s: ibrd error %d\n", prog, iberr);
+        gpib_fini(gd);
         exit(1);
     }
 
@@ -116,6 +119,7 @@ _vxird(gd_t gd, void *buf, int len)
     r = device_read_1(&p, gd->vxi_cli);
     if (r == NULL) {
         clnt_perror(gd->vxi_cli, prog);
+        gpib_fini(gd);
         exit(1);
     }
     memcpy(buf, r->data.data_val, r->data.data_len);
@@ -217,10 +221,12 @@ _ibwrt(gd_t gd, void *buf, int len)
     ibwrt(gd->d, buf, len);
     if (ibsta & TIMO) {
         fprintf(stderr, "%s: ibwrt timeout\n", prog);
+        gpib_fini(gd);
         exit(1);
     }
     if (ibsta & ERR) {
         fprintf(stderr, "%s: ibwrt error %d\n", prog, iberr);
+        gpib_fini(gd);
         exit(1);
     }
     assert(ibcnt == len);
@@ -242,6 +248,7 @@ _vxiwrt(gd_t gd, void *buf, int len)
     r = device_write_1(&p, gd->vxi_cli);
     if (r == NULL) {
         clnt_perror(gd->vxi_cli, prog);
+        gpib_fini(gd);
         exit(1);
     }
 }
@@ -293,6 +300,7 @@ gpib_wrtf(gd_t gd, char *fmt, ...)
     va_end(ap);
     if (n == -1) {
         fprintf(stderr, "%s: out of memory\n", prog);
+        gpib_fini(gd);
         exit(1);
     }
 #if HAVE_GPIB
@@ -320,6 +328,7 @@ _ibloc(gd_t gd)
     ibloc(gd->d);
     if (ibsta & ERR) {
         fprintf(stderr, "%s: ibloc error %d\n", prog, iberr);
+        gpib_fini(gd);
         exit(1);
     }
 }
@@ -336,6 +345,7 @@ _vxiloc(gd_t gd)
     p.lock_timeout = gd->ms_timeout;
     if (device_local_1(&p, gd->vxi_cli) == NULL) {
         clnt_perror(gd->vxi_cli, prog);
+        gpib_fini(gd);
         exit(1);
     }
 }
@@ -362,10 +372,12 @@ _ibclr(gd_t gd, unsigned long usec)
     ibclr(gd->d);
     if (ibsta & TIMO) {
         fprintf(stderr, "%s: ibclr timeout\n", prog);
+        gpib_fini(gd);
         exit(1);
     }
     if (ibsta & ERR) {
         fprintf(stderr, "%s: ibclr error %d\n", prog, iberr);
+        gpib_fini(gd);
         exit(1);
     }
 }
@@ -382,6 +394,7 @@ _vxiclr(gd_t gd, unsigned long usec)
     p.lock_timeout = gd->ms_timeout;
     if (device_clear_1(&p, gd->vxi_cli) == NULL) {
         clnt_perror(gd->vxi_cli, prog);
+        gpib_fini(gd);
         exit(1);
     }
 }
@@ -409,6 +422,7 @@ _ibtrg(gd_t gd)
     ibtrg(gd->d);
     if (ibsta & ERR) {
         fprintf(stderr, "%s: ibtrg error %d\n", prog, iberr);
+        gpib_fini(gd);
         exit(1);
     }
 }
@@ -425,6 +439,7 @@ _vxitrg(gd_t gd)
     p.lock_timeout = gd->ms_timeout;
     if (device_trigger_1(&p, gd->vxi_cli) == NULL) {
         clnt_perror(gd->vxi_cli, prog);
+        gpib_fini(gd);
         exit(1);
     }
 }
@@ -451,6 +466,7 @@ _ibrsp(gd_t gd, unsigned char *status)
     ibrsp(gd->d, (char *)status); /* NOTE: modifies ibcnt */
     if (ibsta & ERR) {
         fprintf(stderr, "%s: ibrsp error %d\n", prog, iberr);
+        gpib_fini(gd);
         exit(1);
     }
     /* nonzero means call gpib_rsp again to obtain more status info */
@@ -471,6 +487,7 @@ _vxirsp(gd_t gd, unsigned char *status)
     r = device_readstb_1(&p, gd->vxi_cli);
     if (r == NULL) {
         clnt_perror(gd->vxi_cli, prog);
+        gpib_fini(gd);
         exit(1);
     }
     if (status)
@@ -504,6 +521,7 @@ _ibgetreos(gd_t gd)
     ibask(gd->d, IbaEOSrd, &flag);
     if ((ibsta & ERR)) {
         fprintf(stderr, "%s: ibask IbaEOSrd failed: %d\n", prog, iberr);
+        gpib_fini(gd);
         exit(1);
     }
 
@@ -529,6 +547,7 @@ _ibsetreos(gd_t gd, int flag)
     ibconfig(gd->d, IbcEOSrd, flag ? REOS : 0);
     if ((ibsta & ERR)) {
         fprintf(stderr, "%s: ibconfig IbcEOSrd failed: %d\n", prog, iberr);
+        gpib_fini(gd);
         exit(1);
     }
 }
@@ -554,6 +573,7 @@ _ibgetxeos(gd_t gd)
     ibask(gd->d, IbaEOSwrt, &flag);
     if ((ibsta & ERR)) {
         fprintf(stderr, "%s: ibask IbaEOSwrt failed: %d\n", prog, iberr);
+        gpib_fini(gd);
         exit(1);
     }
 
@@ -581,6 +601,7 @@ _ibsetxeos(gd_t gd, int flag)
     ibconfig(gd->d, IbcEOSwrt, flag ? XEOS : 0);
     if ((ibsta & ERR)) {
         fprintf(stderr, "%s: ibconfig IbcEOSwrt failed: %d\n", prog, iberr);
+        gpib_fini(gd);
         exit(1);
     }
 }
@@ -606,6 +627,7 @@ _ibgetbin(gd_t gd)
     ibask(gd->d, IbaEOScmp, &flag);
     if ((ibsta & ERR)) {
         fprintf(stderr, "%s: ibask IbaEOScmp failed: %d\n", prog, iberr);
+        gpib_fini(gd);
         exit(1);
     }
 
@@ -632,6 +654,7 @@ _ibsetbin(gd_t gd, int flag)
     ibconfig(gd->d, IbcEOScmp, flag ? BIN : 0);
     if ((ibsta & ERR)) {
         fprintf(stderr, "%s: ibconfig IbcEOScmp failed: %d\n", prog, iberr);
+        gpib_fini(gd);
         exit(1);
     }
 }
@@ -657,6 +680,7 @@ _ibgeteot(gd_t gd)
     ibask(gd->d, IbaEOT, &flag);
     if ((ibsta & ERR)) {
         fprintf(stderr, "%s: ibask IbaEOT failed: %d\n", prog, iberr);
+        gpib_fini(gd);
         exit(1);
     }
 
@@ -682,6 +706,7 @@ _ibseteot(gd_t gd, int flag)
     ibconfig(gd->d, IbcEOT, flag);
     if ((ibsta & ERR)) {
         fprintf(stderr, "%s: ibconfig IbcEOT failed: %d\n", prog, iberr);
+        gpib_fini(gd);
         exit(1);
     }
 }
@@ -707,6 +732,7 @@ _ibgeteos(gd_t gd)
     ibask(gd->d, IbaEOSchar, &c);
     if ((ibsta & ERR)) {
         fprintf(stderr, "%s: ibask IbaEOSchar failed: %d\n", prog, iberr);
+        gpib_fini(gd);
         exit(1);
     }
 
@@ -732,6 +758,7 @@ _ibseteos(gd_t gd, int c)
     ibconfig(gd->d, IbcEOSchar, c);
     if ((ibsta & ERR)) {
         fprintf(stderr, "%s: ibconfig IbcEOSchar failed: %d\n", prog, iberr);
+        gpib_fini(gd);
         exit(1);
     }
 }
@@ -758,6 +785,7 @@ _ibgettmo(gd_t gd)
     ibask(gd->d, IbaTMO, &result);
     if ((ibsta & ERR)) {
         fprintf(stderr, "%s: ibask failed: %d\n", prog, iberr);
+        gpib_fini(gd);
         exit(1);
     }
     switch (result) {
@@ -804,6 +832,7 @@ _ibtmo(gd_t gd, double sec)
 
     if (sec < 0 || sec > 1000) {
         fprintf(stderr, "%s: gpib_set_timeout: timeout out of range\n", prog);
+        gpib_fini(gd);
         exit(1);
     } 
     if (sec == 0) {
@@ -846,6 +875,7 @@ _ibtmo(gd_t gd, double sec)
     ibtmo(gd->d, val);
     if ((ibsta & ERR)) {
         fprintf(stderr, "%s: ibtmo failed: %d\n", prog, iberr);
+        gpib_fini(gd);
         exit(1);
     }
 }
@@ -881,7 +911,7 @@ void
 _free_gpib(gd_t gd)
 {
     assert(gd->magic == GPIB_DEVICE_MAGIC);
-    assert(gd->sf_level == 0);
+    /*assert(gd->sf_level == 0);*/
     gd->magic = 0;
     free(gd);
 }
@@ -981,6 +1011,7 @@ gpib_init_vxi(char *host, char *device, spollfun_t sf, unsigned long retry)
     r = create_link_1(&p, new->vxi_cli);
     if (r == NULL) {
         clnt_perror(new->vxi_cli, prog);
+        gpib_fini(new);
         exit(1);
     }
     new->vxi_lid = r->lid;

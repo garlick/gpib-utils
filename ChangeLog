@@ -1,3 +1,7 @@
+2007-11-11 Jim Garlick <garlick.jim@gmail.com>
+
+	* src/dg535.c : Added trigger control functions.
+
 2007-11-10 Jim Garlick <garlick.jim@gmail.com>
 
 	* src/ics8000.x : Corrected several errors [Jay Berg]

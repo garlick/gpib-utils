@@ -26,11 +26,11 @@
 #include "errstr.h"
 #include "ics.h"
 
-#define OPTIONS "n:reiIj:cfCtT:mM:sS:zZ:kK:gG:vV:qQ:wW:"
+#define OPTIONS "n:cfCriejJ:tT:mM:sS:zZ:kK:gG:vV:qQ:wW:"
 static struct option longopts[] = {
         {"name",                required_argument,  0, 'n'},
-        {"get-interface-name",  no_argument,        0, 'I'},
-        {"set-interface-name",  required_argument,  0, 'j'},
+        {"get-interface-name",  no_argument,        0, 'j'},
+        {"set-interface-name",  required_argument,  0, 'J'},
         {"get-comm-timeout",    no_argument,        0, 't'},
         {"set-comm-timeout",    required_argument,  0, 'T'},
         {"get-static-ip-mode",  no_argument,        0, 's'},
@@ -67,8 +67,8 @@ usage(void)
     fprintf(stderr, 
   "Usage: %s [--options]\n"
   "  -n,--name                 instrument hostname (default: gpibgw)\n"
-  "  -I,--get-interface-name   get VXI-11 logical name (e.g. gpib0)\n"
-  "  -j,--set-interface-name   set VXI-11 logical name (e.g. gpib0)\n"
+  "  -j,--get-interface-name   get VXI-11 logical name (e.g. gpib0)\n"
+  "  -J,--set-interface-name   set VXI-11 logical name (e.g. gpib0)\n"
   "  -t,--get-comm-timeout     get TCP timeout (in seconds)\n"
   "  -T,--set-comm-timeout     set TCP timeout (in seconds)\n"
   "  -s,--get-static-ip-mode   get static IP mode (0=disabled, 1=enabled)\n"
@@ -138,10 +138,10 @@ main(int argc, char *argv[])
             case 'n' :  /* --name */
                 name = optarg;
                 break;
-            case 'I' :  /* --get-interface-name */
+            case 'j' :  /* --get-interface-name */
                 get_interface_name = 1;
                 break;
-            case 'j' :  /* --set-interface-name */
+            case 'J' :  /* --set-interface-name */
                 set_interface_name = optarg;
                 break;
             case 't' :  /* --get-comm-timeout */
