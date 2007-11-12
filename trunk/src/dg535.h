@@ -141,7 +141,7 @@
 
 /* Single shot trigger if trigger mode = 2.
  */
-#define DG535_SINGLE_SHOT               "TS"       /* TS */
+#define DG535_SINGLE_SHOT               "SS"       /* SS */
 
 /* Set burst count of i (2 thru 32766) pulses per burst.
  */
@@ -174,6 +174,20 @@
 #define DG535_DO_C                      5       /* C output */
 #define DG535_DO_D                      6       /* D output */
 #define DG535_DO_CD                     7       /* CD and -CD output */
+
+/* Output modes.
+ */
+#define DG535_OUT_TTL                   0
+#define DG535_OUT_NIM                   1
+#define DG535_OUT_ECL                   2
+#define DG535_OUT_VAR                   3
+
+/* Trigger modes.
+ */
+#define DG535_TRIG_INT                  0
+#define DG535_TRIG_EXT                  1
+#define DG535_TRIG_SS                   2
+#define DG535_TRIG_BUR                  3
 
 /* Error status byte values.
  */
