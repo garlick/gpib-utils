@@ -23,8 +23,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "errstr.h"
 #include "ics.h"
+#include "util.h"
 
 #define OPTIONS "n:cfCriejJ:tT:mM:sS:zZ:kK:gG:vV:qQ:wW:"
 static struct option longopts[] = {
@@ -58,7 +58,7 @@ static struct option longopts[] = {
         {0, 0, 0, 0}
 };
 
-static errstr_t errtab[] = ICS_ERRLOG;
+static strtab_t errtab[] = ICS_ERRLOG;
 char *prog;
 
 void
@@ -415,7 +415,7 @@ main(int argc, char *argv[])
         if (ics_error_logger(ics, &tmperr, &tmpcount) != 0)
             goto done;            
         for (i = 0; i < tmpcount ; i++)
-            fprintf(stderr, "%s: %s\n", prog, finderr(errtab, tmperr[i]));
+            fprintf(stderr, "%s: %s\n", prog, findstr(errtab, tmperr[i]));
         free(tmperr);
     }
 

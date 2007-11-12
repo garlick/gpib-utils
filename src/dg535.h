@@ -161,7 +161,7 @@
 #define DG535_RECALL                    "RC"       /* RC {i} */
 
 /**
- ** Bit encodings.
+ ** Bit encodings, etc.
  **/
 
 /* Delay and output codes.
@@ -175,6 +175,17 @@
 #define DG535_DO_D                      6       /* D output */
 #define DG535_DO_CD                     7       /* CD and -CD output */
 
+#define DG535_OUT_NAMES { \
+    { DG535_DO_T0, "t0" }, \
+    { DG535_DO_A,  "a" }, \
+    { DG535_DO_B,  "b" }, \
+    { DG535_DO_AB, "ab" }, \
+    { DG535_DO_C,  "c" }, \
+    { DG535_DO_D,  "d" }, \
+    { DG535_DO_CD, "cd" }, \
+    { 0, NULL } \
+}
+
 /* Output modes.
  */
 #define DG535_OUT_TTL                   0
@@ -182,12 +193,28 @@
 #define DG535_OUT_ECL                   2
 #define DG535_OUT_VAR                   3
 
+#define DG535_OUT_MODES { \
+    { DG535_OUT_TTL, "ttl" }, \
+    { DG535_OUT_NIM, "nim" }, \
+    { DG535_OUT_ECL, "ecl" }, \
+    { DG535_OUT_VAR, "var" }, \
+    { 0, NULL } \
+}
+
 /* Trigger modes.
  */
 #define DG535_TRIG_INT                  0
 #define DG535_TRIG_EXT                  1
 #define DG535_TRIG_SS                   2
 #define DG535_TRIG_BUR                  3
+
+#define DG535_TRIG_MODES { \
+    { DG535_TRIG_INT, "int" }, \
+    { DG535_TRIG_EXT, "ext" }, \
+    { DG535_TRIG_SS,  "ss" }, \
+    { DG535_TRIG_BUR, "bur" }, \
+    { 0, NULL } \
+}
 
 /* Error status byte values.
  */

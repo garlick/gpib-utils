@@ -1,14 +1,17 @@
 2007-11-12 Jim Garlick <garlick.jim@gmail.com>
 
-	* src/hp1630.c : Swallow InvAsm with XX learn string [Rudolf Reuter].
-
-	* src/hp1630.c : Add -d option to set the date [Rudolf Reuter].
+	* src/hp1630.c : Swallow InvAsm with XX learn string.
+	Add -d option to set the date [Rudolf Reuter].
 	
 	* htdocs/index.html : Correct print screen example [Rudolf Reuter]
 
 	* htdocs/filer.gif : Regenerate with mono colors [Rudolf Reuter].
 
 	* htdocs/dinotrace.gif : Restore corrupted image.
+
+	* src/errstr.[ch] : Folded in with util.[ch], renamed errtab to
+	strtab, finderr to findstr, added rfindstr, changed "unknown error %d"
+	to "unknown code %d".
 
 2007-11-11 Jim Garlick <garlick.jim@gmail.com>
 

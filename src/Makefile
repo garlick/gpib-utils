@@ -1,11 +1,14 @@
-CFLAGS=-Wall -Wno-unused -g -DHAVE_GPIB=0
-#LDADD=-lgpib -lm
+CFLAGS=-Wall -Wno-unused -g 
 LDADD=-lrpcsvc -lm
+
+# Uncomment to build with linux-gpib
+#CFLAGS+=-DHAVE_GPIB=1
+#LDADD+=-lgpib
 
 PROGS=hp1630 hptopbm hptodino r5005 hp3455 hp3457 hp8656 dg535 \
       hp3488 sr620 hp603x gpsh ics8065
-LIBOBJS=util.o gpib.o units.o errstr.o vxi11_xdr.o vxi11_clnt.o
-ICSLIBOBJS=ics.o ics8000_clnt.o ics8000_xdr.o util.o errstr.o
+LIBOBJS=util.o gpib.o units.o vxi11_xdr.o vxi11_clnt.o
+ICSLIBOBJS=ics.o ics8000_clnt.o ics8000_xdr.o util.o
 TESTPROGS=testfreq testampl
 
 all: $(PROGS) $(TESTPROGS)

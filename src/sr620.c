@@ -35,7 +35,6 @@
 #include "units.h"
 #include "gpib.h"
 #include "util.h"
-#include "errstr.h"
 
 #define INSTRUMENT "sr620"  /* the /etc/gpib.conf entry */
 #define BOARD       0       /* minor board number in /etc/gpib.conf */
@@ -49,8 +48,8 @@
 char *prog = "";
 static int verbose = 0;
 
-static errstr_t _selftest_errors[] = SR620_TEST_ERRORS;
-static errstr_t _autocal_errors[] = SR620_AUTOCAL_ERRORS;
+static strtab_t _selftest_errors[] = SR620_TEST_ERRORS;
+static strtab_t _autocal_errors[] = SR620_AUTOCAL_ERRORS;
 
 #define OPTIONS "n:clvsrSapPjCgG"
 static struct option longopts[] = {
@@ -456,7 +455,7 @@ sr620_test(gd_t gd)
         return;
     }
     fprintf(stderr, "%s: self test failed: %s\n", prog, 
-            finderr(_selftest_errors, result));
+            findstr(_selftest_errors, result));
     exit(1);
 }
 
@@ -479,7 +478,7 @@ sr620_autocal(gd_t gd)
         fprintf(stderr, "%s: autocal complete\n", prog);
     } else {
         fprintf(stderr, "%s: autocal: %s\n", prog, 
-            finderr(_autocal_errors, result));
+            findstr(_autocal_errors, result));
         exit(1);
     }
 }

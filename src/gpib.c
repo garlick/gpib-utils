@@ -27,12 +27,12 @@ struct gpib_device {
     spollfun_t      sf_fun;    /* app-specific serial poll function */
     int             sf_level;  /* serial poll recursion detection */
     unsigned long   sf_retry;  /* backoff factor for serial poll retry (uS) */
-    int             eos;       /* end of string character */
-    int             reos;      /* flag: terminate receive on eos */
-    int             xeos;      /* flag: automatically append eos */
-    int             eot;       /* flag: assert EOT on last char of write */
-    int             bin;       /* flag: use 8 bits to match eos */
-    int             ms_timeout;/* timeout in milliseconds */
+    int             vxi_eos;   /* end of string character */
+    int             vxi_reos;  /* flag: terminate receive on eos */
+    int             vxi_xeos;  /* flag: automatically append eos */
+    int             vxi_eot;   /* flag: assert EOT on last char of write */
+    int             vxi_bin;   /* flag: use 8 bits to match eos */
+    int             vxi_timeout;/* timeout in milliseconds */
     CLIENT         *vxi_cli;   /* vxi client handle */
     Device_Link     vxi_lid;   /* vxi logical device handle */
     unsigned short  vxi_abort_port; /* vxi abort socket */
@@ -112,10 +112,10 @@ _vxird(gd_t gd, void *buf, int len)
 
     p.lid = gd->vxi_lid;
     p.requestSize = len;
-    p.io_timeout = gd->ms_timeout;
-    p.lock_timeout = gd->ms_timeout;
-    p.flags = gd->reos ? VXI_TERMCHRSET : 0;
-    p.termChar = gd->eos;
+    p.io_timeout = gd->vxi_timeout;
+    p.lock_timeout = gd->vxi_timeout;
+    p.flags = gd->vxi_reos ? VXI_TERMCHRSET : 0;
+    p.termChar = gd->vxi_eos;
     r = device_read_1(&p, gd->vxi_cli);
     if (r == NULL) {
         clnt_perror(gd->vxi_cli, prog);
@@ -240,9 +240,9 @@ _vxiwrt(gd_t gd, void *buf, int len)
     Device_WriteResp *r;
 
     p.lid = gd->vxi_lid;
-    p.io_timeout = gd->ms_timeout;
-    p.lock_timeout = gd->ms_timeout;
-    p.flags = gd->eot ? VXI_ENDW : 0;
+    p.io_timeout = gd->vxi_timeout;
+    p.lock_timeout = gd->vxi_timeout;
+    p.flags = gd->vxi_eot ? VXI_ENDW : 0;
     p.data.data_val = buf;
     p.data.data_len = len;
     r = device_write_1(&p, gd->vxi_cli);
@@ -341,8 +341,8 @@ _vxiloc(gd_t gd)
 
     p.lid = gd->vxi_lid;
     p.flags = 0;
-    p.io_timeout = gd->ms_timeout;
-    p.lock_timeout = gd->ms_timeout;
+    p.io_timeout = gd->vxi_timeout;
+    p.lock_timeout = gd->vxi_timeout;
     if (device_local_1(&p, gd->vxi_cli) == NULL) {
         clnt_perror(gd->vxi_cli, prog);
         gpib_fini(gd);
@@ -390,8 +390,8 @@ _vxiclr(gd_t gd, unsigned long usec)
 
     p.lid = gd->vxi_lid;
     p.flags = 0;
-    p.io_timeout = gd->ms_timeout;
-    p.lock_timeout = gd->ms_timeout;
+    p.io_timeout = gd->vxi_timeout;
+    p.lock_timeout = gd->vxi_timeout;
     if (device_clear_1(&p, gd->vxi_cli) == NULL) {
         clnt_perror(gd->vxi_cli, prog);
         gpib_fini(gd);
@@ -435,8 +435,8 @@ _vxitrg(gd_t gd)
 
     p.lid = gd->vxi_lid;
     p.flags = 0;
-    p.io_timeout = gd->ms_timeout;
-    p.lock_timeout = gd->ms_timeout;
+    p.io_timeout = gd->vxi_timeout;
+    p.lock_timeout = gd->vxi_timeout;
     if (device_trigger_1(&p, gd->vxi_cli) == NULL) {
         clnt_perror(gd->vxi_cli, prog);
         gpib_fini(gd);
@@ -482,8 +482,8 @@ _vxirsp(gd_t gd, unsigned char *status)
 
     p.lid = gd->vxi_lid;
     p.flags = 0;
-    p.lock_timeout = gd->ms_timeout;
-    p.io_timeout = gd->ms_timeout;
+    p.lock_timeout = gd->vxi_timeout;
+    p.io_timeout = gd->vxi_timeout;
     r = device_readstb_1(&p, gd->vxi_cli);
     if (r == NULL) {
         clnt_perror(gd->vxi_cli, prog);
@@ -537,7 +537,7 @@ gpib_get_reos(gd_t gd)
     if (gd->vxi_cli == NULL)
         return _ibgetreos(gd);
 #endif
-    return gd->reos;
+    return gd->vxi_reos;
 }
 
 #if HAVE_GPIB
@@ -561,7 +561,7 @@ gpib_set_reos(gd_t gd, int flag)
     if (gd->vxi_cli == NULL)
         _ibsetreos(gd, flag);
 #endif
-    gd->reos = flag;
+    gd->vxi_reos = flag;
 }
 
 #if HAVE_GPIB
@@ -589,7 +589,7 @@ gpib_get_xeos(gd_t gd)
     if (gd->vxi_cli == NULL)
         return _ibgetxeos(gd);
 #endif
-    return gd->xeos;
+    return gd->vxi_xeos;
 
     return 0;
 }
@@ -615,7 +615,7 @@ gpib_set_xeos(gd_t gd, int flag)
     if (gd->vxi_cli == NULL)
         _ibsetxeos(gd, flag);
 #endif
-    gd->xeos = flag;
+    gd->vxi_xeos = flag;
 }
 
 #if HAVE_GPIB
@@ -643,7 +643,7 @@ gpib_get_bin(gd_t gd)
     if (gd->vxi_cli == NULL)
         return _ibgetbin(gd);
 #endif
-    return gd->bin;
+    return gd->vxi_bin;
     return 0;
 }
 
@@ -668,7 +668,7 @@ gpib_set_bin(gd_t gd, int flag)
     if (gd->vxi_cli == NULL)
         _ibsetbin(gd, flag);
 #endif
-    gd->bin = flag;        
+    gd->vxi_bin = flag;        
 }
 
 #if HAVE_GPIB
@@ -696,7 +696,7 @@ gpib_get_eot(gd_t gd)
     if (gd->vxi_cli == NULL)
         return _ibgeteot(gd);
 #endif
-    return gd->eot;
+    return gd->vxi_eot;
 }
 
 #if HAVE_GPIB
@@ -720,7 +720,7 @@ gpib_set_eot(gd_t gd, int flag)
     if (gd->vxi_cli == NULL)
         _ibseteot(gd, flag);
 #endif
-    gd->eot = flag;
+    gd->vxi_eot = flag;
 }
 
 #if HAVE_GPIB
@@ -748,7 +748,7 @@ gpib_get_eos(gd_t gd)
     if (gd->vxi_cli == NULL)
         return _ibgeteos(gd);
 #endif
-    return gd->eos;
+    return gd->vxi_eos;
 }
 
 #if HAVE_GPIB
@@ -772,7 +772,7 @@ gpib_set_eos(gd_t gd, int c)
     if (gd->vxi_cli == NULL)
         _ibseteos(gd, c);
 #endif
-    gd->eos = c;
+    gd->vxi_eos = c;
 }
 
 #if HAVE_GPIB
@@ -820,7 +820,7 @@ gpib_get_timeout(gd_t gd)
     if (gd->vxi_cli == NULL)
         return _ibgettmo(gd);
 #endif
-    return 1000.0*gd->ms_timeout;
+    return 1000.0*gd->vxi_timeout;
 }
 
 #if HAVE_GPIB
@@ -889,7 +889,7 @@ gpib_set_timeout(gd_t gd, double sec)
     if (gd->vxi_cli == NULL)
         _ibtmo(gd, sec);
 #endif
-    gd->ms_timeout = sec / 1000.0;
+    gd->vxi_timeout = sec / 1000.0;
 }
 
 void
@@ -940,12 +940,12 @@ _new_gpib(void)
     new->vxi_cli = NULL;
     new->vxi_lid = -1;
     new->vxi_abort_port = -1;
-    new->ms_timeout = 30000; /* 30s */
-    new->eot = 1;
-    new->bin = 0;
-    new->reos = 0;
-    new->xeos = 0;
-    new->eos = 0xa;
+    new->vxi_timeout = 30000; /* 30s */
+    new->vxi_eot = 1;
+    new->vxi_bin = 0;
+    new->vxi_reos = 0;
+    new->vxi_xeos = 0;
+    new->vxi_eos = 0xa;
 
     return new;
 }
