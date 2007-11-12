@@ -1,6 +1,6 @@
 #set terminal postscript color
 #set output 'filter.ps'
-set terminal pbm color
+set terminal pbm mono
 set output 'filter.ppm'
 
 set xlabel "frequency (khz)"

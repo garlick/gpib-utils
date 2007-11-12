@@ -46,7 +46,7 @@ static errstr_t _sb4_errors[] = SB4_ERRORS;
 #define MAXPRINTBUF (128*1024)
 #define MAXMODELBUF (16)
 
-#define OPTIONS "n:clvpPsCAtar"
+#define OPTIONS "n:clvpPsCAtard"
 static struct option longopts[] = {
     {"name",            required_argument, 0, 'n'},
     {"clear",           no_argument, 0, 'c'},
@@ -60,6 +60,7 @@ static struct option longopts[] = {
     {"save-timing",     no_argument, 0, 't'},
     {"save-analog",     no_argument, 0, 'a'},
     {"restore",         no_argument, 0, 'r'},
+    {"date",            no_argument, 0, 'd'},
     {0, 0, 0, 0},
 };
 
@@ -80,6 +81,7 @@ usage(void)
 "  -t,--save-timing   save timing acquisition data to stdout\n"
 "  -a,--save-analog   save analog data to stdout (1631 only)\n"
 "  -r,--restore       restore analyzer state (partial or complete) from stdin\n"
+"  -d,--date          set date\n"
            , prog, INSTRUMENT);
     exit(1);
 }
@@ -212,7 +214,18 @@ _ls_cmd(uint8_t *ls)
         return "Timing";
     else if (!strncmp((char *)&ls[0], "RA", 2))
         return "Analog";
+    else if (!strncmp((char *)&ls[0], "XX", 2))
+        return "InvAsm";
     return NULL;
+}
+
+static int
+_ls_ignorecrc(uint8_t *ls)
+{
+    /* 10342B inverse assembler files have uninitialized(?) crc */
+    if (!strncmp((char *)&ls[0], "XX", 2))
+        return 1;
+    return 0;
 }
 
 /* Return the learn string length.
@@ -248,7 +261,7 @@ _ls_parse(uint8_t *ls, int rawlen)
         fprintf(stderr, "%s: corrupt learn string header\n", prog);
         exit(1);
     }
-    if (_ls_crc(ls) != hpcrc(ls+4, len-2)) {
+    if (!_ls_ignorecrc(ls) && _ls_crc(ls) != hpcrc(ls+4, len-2)) {
         fprintf(stderr, "%s: learn string CRC does not match\n", prog);
         exit(1);
     }
@@ -358,6 +371,7 @@ main(int argc, char *argv[])
     int save_config = 0;
     int save_analog = 0;
     int restore = 0;
+    int date = 0;
 
     /*
      * Handle options.
@@ -405,6 +419,9 @@ main(int argc, char *argv[])
         case 'r':   /* --restore */
             restore = 1;
             break;
+        case 'd':   /* --date */
+            date = 1;
+            break;
         }
     }
 
@@ -428,8 +445,9 @@ main(int argc, char *argv[])
         /* set the errors _checksrq() will see */
         gpib_wrtf(gd, "%s %d\r\n", HP1630_CMD_SET_SRQ_MASK, 
                 HP1630_STAT_ERROR_LAST_CMD);
-        hp1630_setdate(gd);
     }
+    if (clear || date)
+        hp1630_setdate(gd);
 
     if (print_screen) {
         hp1630_printscreen(gd, 0);
