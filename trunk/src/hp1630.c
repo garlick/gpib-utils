@@ -28,7 +28,6 @@
 #include <stdarg.h>
 #include <stdint.h>
 
-#include "errstr.h"
 #include "gpib.h"
 #include "hp1630.h"
 #include "util.h"
@@ -37,7 +36,7 @@
 char *prog;
 
 /* value of status byte 4 */
-static errstr_t _sb4_errors[] = SB4_ERRORS;
+static strtab_t _sb4_errors[] = SB4_ERRORS;
 
 #define INSTRUMENT "hp1630" /* the /etc/gpib.conf entry */
 #define PATH_DATE  "/bin/date"
@@ -222,7 +221,7 @@ _ls_cmd(uint8_t *ls)
 static int
 _ls_ignorecrc(uint8_t *ls)
 {
-    /* 10342B inverse assembler files have uninitialized(?) crc */
+    /* HP 10391B inverse assembler files have uninitialized(?) CRC */
     if (!strncmp((char *)&ls[0], "XX", 2))
         return 1;
     return 0;
@@ -311,7 +310,7 @@ hp1630_restore(gd_t gd)
             exit(1);
         }
         if (status != 0)
-            fprintf(stderr, "%s: %s\n", prog, finderr(_sb4_errors, status) );
+            fprintf(stderr, "%s: %s\n", prog, findstr(_sb4_errors, status) );
 
         i += lslen;
     }
@@ -344,7 +343,7 @@ hp1630_save(gd_t gd, char *cmd)
         exit(1);
     }
     if (status != 0)
-        fprintf(stderr, "%s: %s\n", prog, finderr(_sb4_errors, status) );
+        fprintf(stderr, "%s: %s\n", prog, findstr(_sb4_errors, status) );
 
     /* parse what was read */
     i = 0;

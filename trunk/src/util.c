@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include "util.h"
 
 extern char *prog;
 
@@ -149,6 +150,37 @@ xstrcpyunprint(char *str)
     return cpy;
 }
 
+char *
+findstr(strtab_t *tab, int num)
+{
+    strtab_t *tp;
+    static char tmpbuf[64];
+    char *res = tmpbuf;
+
+    (void)sprintf(tmpbuf, "unknown code %d", num);
+    for (tp = &tab[0]; tp->str; tp++) {
+        if (tp->num == num) {
+            res = tp->str;
+            break;
+        }
+    }
+    return res;
+}
+
+int
+rfindstr(strtab_t *tab, char *str)
+{
+    strtab_t *tp;
+    int res = -1;
+
+    for (tp = &tab[0]; tp->str; tp++) {
+        if (!strcasecmp(tp->str, str)) {
+            res = tp->num;
+            break;
+        }
+    }
+    return res;
+}
 
 /*
  * vi:tabstop=4 shiftwidth=4 expandtab

@@ -34,12 +34,16 @@
 #include "dg535.h"
 #include "units.h"
 #include "gpib.h"
+#include "util.h"
 
 /*#define INSTRUMENT "dg535"*/  /* default instrument name */
 #define INSTRUMENT "gpibgw:gpib0,15"
 
 char *prog = "";
 static int verbose = 0;
+static strtab_t out_names[] = DG535_OUT_NAMES;
+static strtab_t out_modes[] = DG535_OUT_MODES;
+static strtab_t trig_modes[] = DG535_TRIG_MODES;
 
 #define OPTIONS "n:clvo:qQ:aA:fF:pP:yY:tT:mM:sS:bB:zZ:D:x"
 static struct option longopts[] = {
@@ -241,21 +245,8 @@ main(int argc, char *argv[])
             single_shot = 1;
             break;
         case 'o': /* --out-chan */
-            if (!strcasecmp(optarg, "t0"))
-                out_chan = DG535_DO_T0;
-            else if (!strcasecmp(optarg, "a"))
-                out_chan = DG535_DO_A;
-            else if (!strcasecmp(optarg, "b"))
-                out_chan = DG535_DO_B;
-            else if (!strcasecmp(optarg, "ab"))
-                out_chan = DG535_DO_AB;
-            else if (!strcasecmp(optarg, "c"))
-                out_chan = DG535_DO_C;
-            else if (!strcasecmp(optarg, "d"))
-                out_chan = DG535_DO_D;
-            else if (!strcasecmp(optarg, "cd"))
-                out_chan = DG535_DO_CD;
-            else {
+            out_chan = rfindstr(out_names, optarg);
+            if (out_chan == -1) {
                 fprintf(stderr, "%s: bad --out-chan optarg\n", prog);
                 exit(1);
             }
@@ -264,15 +255,8 @@ main(int argc, char *argv[])
             get_out_mode = 1;
             break;
         case 'Q': /* --set-out-mode */
-            if (!strcasecmp(optarg, "ttl"))
-                set_out_mode = DG535_OUT_TTL;
-            else if (!strcasecmp(optarg, "nim"))
-                set_out_mode = DG535_OUT_NIM;
-            else if (!strcasecmp(optarg, "ecl"))
-                set_out_mode = DG535_OUT_ECL;
-            else if (!strcasecmp(optarg, "var"))
-                set_out_mode = DG535_OUT_VAR;
-            else {
+            set_out_mode = rfindstr(out_modes, optarg);
+            if (set_out_mode == -1) {
                 fprintf(stderr, "%s: bad --out-mode optarg\n", prog);
                 exit(1);
             }
@@ -315,15 +299,8 @@ main(int argc, char *argv[])
             get_trig_mode = 1;
             break;
         case 'M' : /* --set-trig-mode */
-            if (!strcasecmp(optarg, "int"))
-                set_trig_mode = DG535_TRIG_INT;
-            else if (!strcasecmp(optarg, "ext"))
-                set_trig_mode = DG535_TRIG_EXT;
-            else if (!strcasecmp(optarg, "ss"))
-                set_trig_mode = DG535_TRIG_SS;
-            else if (!strcasecmp(optarg, "bur"))
-                set_trig_mode = DG535_TRIG_BUR;
-            else {
+            set_trig_mode = rfindstr(trig_modes, optarg);
+            if (set_trig_mode == -1) {
                 fprintf(stderr, "%s: bad --trig-mode optarg\n", prog);
                 exit(1);
             }

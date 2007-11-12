@@ -29,17 +29,17 @@
 #include <assert.h>
 #include <sys/time.h>
 
-#include "errstr.h"
 #include "r5005.h"
 #include "units.h"
 #include "gpib.h"
+#include "util.h"
 
 #define INSTRUMENT "r5005" /* the /etc/gpib.conf entry */
 #define BOARD       0       /* minor board number in /etc/gpib.conf */
 
 #define IGNORE_43   (0)     /* suppress 'error 43' - XXX do we see this now? */
 
-static errstr_t _y_errors[] = Y_ERRORS;
+static strtab_t _y_errors[] = Y_ERRORS;
 
 char *prog = "";
 
@@ -115,7 +115,7 @@ r5005_checksrq(gd_t gd)
             }
             if ((IGNORE_43) && error != 43) { /* error 43 seems innocuous... */
                 fprintf(stderr, "%s: srq: error %d: %s\n", 
-                        prog, error, finderr(_y_errors, error));
+                        prog, error, findstr(_y_errors, error));
                 exit(1);
             }
         }

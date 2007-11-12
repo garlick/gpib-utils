@@ -25,8 +25,15 @@ char *xstrdup(char *str);
 void *xrealloc(void *ptr, int size);
 
 char *xstrcpyprint(char *str);
-char *xstrcpyunprint(char *str);
+char *xstrcpyunprint(char *str); 
 
+typedef struct {
+   int     num;
+   char   *str;
+} strtab_t;
+
+char *findstr(strtab_t *tab, int num);
+int rfindstr(strtab_t *tab, char *str);
 
 /*
  * vi:tabstop=4 shiftwidth=4 expandtab

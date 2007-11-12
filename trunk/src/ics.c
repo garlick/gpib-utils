@@ -30,7 +30,6 @@
 #include "ics8000.h"
 #include "ics.h"
 #include "util.h"
-#include "errstr.h"
 
 extern char *prog;
 
@@ -40,7 +39,7 @@ struct ics_struct {
     CLIENT     *ics_clnt;
 };
 
-static errstr_t errtab[] = {
+static strtab_t errtab[] = {
     { 0,    "success" },
     { 1,    "syntax error" },
     { 5,    "parameter error" },
@@ -103,7 +102,7 @@ ics_get_interface_name(ics_t ics, char **strp)
     }
     if (r->error) {
         fprintf(stderr, "%s: interface_name: %s\n", prog, 
-                finderr(errtab, r->error));
+                findstr(errtab, r->error));
         return r->error;
     }
     *strp = _mkstr(r->name.name_val, r->name.name_len);
@@ -127,7 +126,7 @@ ics_set_interface_name(ics_t ics, char *str)
     }
     if (r->error) {
         fprintf(stderr, "%s: interface_name: %s\n", prog, 
-                finderr(errtab, r->error));
+                findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -148,7 +147,7 @@ ics_get_comm_timeout(ics_t ics, unsigned int *timeoutp)
     }
     if (r->error) {
         fprintf(stderr, "%s: comm_timeout: %s\n", prog, 
-                finderr(errtab, r->error));
+                findstr(errtab, r->error));
         return r->error;
     }
     *timeoutp = r->timeout;
@@ -171,7 +170,7 @@ ics_set_comm_timeout(ics_t ics, unsigned int timeout)
     }
     if (r->error) {
         fprintf(stderr, "%s: comm_timeout: %s\n", prog, 
-                finderr(errtab, r->error));
+                findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -192,7 +191,7 @@ ics_get_static_ip_mode(ics_t ics, int *flagp)
     }
     if (r->error) {
         fprintf(stderr, "%s: static_ip_mode: %s\n", prog, 
-                finderr(errtab, r->error));
+                findstr(errtab, r->error));
         return r->error;
     }
     *flagp = r->mode;
@@ -215,7 +214,7 @@ ics_set_static_ip_mode(ics_t ics, int flag)
     }
     if (r->error) {
         fprintf(stderr, "%s: static_ip_mode: %s\n", prog, 
-                finderr(errtab, r->error));
+                findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -236,7 +235,7 @@ ics_get_ip_number(ics_t ics, char **ipstrp)
     }
     if (r->error) {
         fprintf(stderr, "%s: ip_number: %s\n", prog, 
-                finderr(errtab, r->error));
+                findstr(errtab, r->error));
         return r->error;
     }
     *ipstrp = _ip2str(r->ip);
@@ -260,7 +259,7 @@ ics_set_ip_number(ics_t ics, char *ipstr)
     }
     if (r->error) {
         fprintf(stderr, "%s: ip_number: %s\n", prog, 
-                finderr(errtab, r->error));
+                findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -281,7 +280,7 @@ ics_get_netmask(ics_t ics, char **ipstrp)
     }
     if (r->error) {
         fprintf(stderr, "%s: netmask: %s\n", prog, 
-                finderr(errtab, r->error));
+                findstr(errtab, r->error));
         return r->error;
     }
     *ipstrp = _ip2str(r->ip);
@@ -305,7 +304,7 @@ ics_set_netmask(ics_t ics, char *ipstr)
     }
     if (r->error) {
         fprintf(stderr, "%s: netmask: %s\n", prog, 
-                finderr(errtab, r->error));
+                findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -326,7 +325,7 @@ ics_get_gateway(ics_t ics, char **ipstrp)
     }
     if (r->error) {
         fprintf(stderr, "%s: gateway: %s\n", prog, 
-                finderr(errtab, r->error));
+                findstr(errtab, r->error));
         return r->error;
     }
     *ipstrp = _ip2str(r->ip);
@@ -350,7 +349,7 @@ ics_set_gateway(ics_t ics, char *ipstr)
     }
     if (r->error) {
         fprintf(stderr, "%s: gateway: %s\n", prog, 
-                finderr(errtab, r->error));
+                findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -371,7 +370,7 @@ ics_get_keepalive(ics_t ics, unsigned int *timep)
     }
     if (r->error) {
         fprintf(stderr, "%s: keepalive: %s\n", prog, 
-                finderr(errtab, r->error));
+                findstr(errtab, r->error));
         return r->error;
     }
     *timep = r->time;
@@ -394,7 +393,7 @@ ics_set_keepalive(ics_t ics, unsigned int time)
     }
     if (r->error) {
         fprintf(stderr, "%s: keepalive: %s\n", prog, 
-                finderr(errtab, r->error));
+                findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -415,7 +414,7 @@ ics_get_gpib_address(ics_t ics, unsigned int *addrp)
     }
     if (r->error) {
         fprintf(stderr, "%s: gpib_address: %s\n", prog, 
-                finderr(errtab, r->error));
+                findstr(errtab, r->error));
         return r->error;
     }
     *addrp = r->address;
@@ -438,7 +437,7 @@ ics_set_gpib_address(ics_t ics, unsigned int addr)
     }
     if (r->error) {
         fprintf(stderr, "%s: gpib_address: %s\n", prog, 
-                finderr(errtab, r->error));
+                findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -459,7 +458,7 @@ ics_get_system_controller(ics_t ics, int *flagp)
     }
     if (r->error) {
         fprintf(stderr, "%s: system_controller: %s\n", prog, 
-                finderr(errtab, r->error));
+                findstr(errtab, r->error));
         return r->error;
     }
     *flagp = r->controller;
@@ -482,7 +481,7 @@ ics_set_system_controller(ics_t ics, int flag)
     }
     if (r->error) {
         fprintf(stderr, "%s: system_controller: %s\n", prog, 
-                finderr(errtab, r->error));
+                findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -503,7 +502,7 @@ ics_get_ren_mode(ics_t ics, int *flagp)
     }
     if (r->error) {
         fprintf(stderr, "%s: ren_mode: %s\n", prog, 
-                finderr(errtab, r->error));
+                findstr(errtab, r->error));
         return r->error;
     }
     *flagp = r->ren;
@@ -526,7 +525,7 @@ ics_set_ren_mode(ics_t ics, int flag)
     }
     if (r->error) {
         fprintf(stderr, "%s: ren_mode: %s\n", prog, 
-                finderr(errtab, r->error));
+                findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -545,7 +544,7 @@ ics_reload_config(ics_t ics)
     }
     if (r->error) {
         fprintf(stderr, "%s: reload_config: %s\n", 
-                prog, finderr(errtab, r->error));
+                prog, findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -564,7 +563,7 @@ ics_reload_factory(ics_t ics)
     }
     if (r->error) {
         fprintf(stderr, "%s: reload_factory: %s\n", 
-                prog, finderr(errtab, r->error));
+                prog, findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -583,7 +582,7 @@ ics_commit_config(ics_t ics)
     }
     if (r->error) {
         fprintf(stderr, "%s: commit_config: %s\n", 
-                prog, finderr(errtab, r->error));
+                prog, findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -602,7 +601,7 @@ ics_reboot(ics_t ics)
     }
     if (r->error) {
         fprintf(stderr, "%s: reboot: %s\n", 
-                prog, finderr(errtab, r->error));
+                prog, findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -621,7 +620,7 @@ ics_idn_string(ics_t ics, char **strp)
     }
     if (r->error) {
         fprintf(stderr, "%s: idn_string: %s\n", 
-                prog, finderr(errtab, r->error));
+                prog, findstr(errtab, r->error));
         return r->error;
     }
     *strp = _mkstr(r->idn.idn_val, r->idn.idn_len);
@@ -641,7 +640,7 @@ ics_error_logger(ics_t ics, unsigned int **errp, int *countp)
     }
     if (r->error) {
         fprintf(stderr, "%s: error_logger: %s\n", prog, 
-                finderr(errtab, r->error));
+                findstr(errtab, r->error));
         return r->error;
     }
     *errp = xmalloc(r->count * sizeof(unsigned int));
