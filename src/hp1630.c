@@ -38,7 +38,7 @@ char *prog;
 /* value of status byte 4 */
 static strtab_t _sb4_errors[] = SB4_ERRORS;
 
-#define INSTRUMENT "hp1630" /* the /etc/gpib.conf entry */
+#define INSTRUMENT "hp1630"
 #define PATH_DATE  "/bin/date"
 
 #define MAXCONFBUF (16*1024)
@@ -66,9 +66,11 @@ static struct option longopts[] = {
 static void 
 usage(void)
 {
+    char *addr = gpib_default_addr(INSTRUMENT);
+
     fprintf(stderr, 
 "Usage: %s [--options]\n"
-"  -n,--name name     name of instrument [%s]\n"
+"  -n,--name name     instrument address [%s]\n"
 "  -c,--clear         set default values, verify model no., set date\n"
 "  -l,--local         return instrument to local operation on exit\n"
 "  -v,--verbose       show protocol on stderr\n"
@@ -81,7 +83,7 @@ usage(void)
 "  -a,--save-analog   save analog data to stdout (1631 only)\n"
 "  -r,--restore       restore analyzer state (partial or complete) from stdin\n"
 "  -d,--date          set date\n"
-           , prog, INSTRUMENT);
+           , prog, addr ? addr : "no default");
     exit(1);
 }
 
@@ -355,7 +357,7 @@ hp1630_save(gd_t gd, char *cmd)
 int
 main(int argc, char *argv[])
 {
-    char *instrument = INSTRUMENT;
+    char *addr = NULL;
     gd_t gd;
     int c;
     int local = 0;
@@ -371,6 +373,7 @@ main(int argc, char *argv[])
     int save_analog = 0;
     int restore = 0;
     int date = 0;
+    int todo = 0;
 
     /*
      * Handle options.
@@ -379,60 +382,77 @@ main(int argc, char *argv[])
     while ((c = getopt_long(argc, argv, OPTIONS, longopts, NULL)) != EOF) {
         switch (c) {
         case 'n':   /* --name */
-            instrument = optarg;
-            break;
-        case 'l':   /* --local */
-            local = 1;
+            addr = optarg;
             break;
         case 'v':   /* --verbose */
             verbose = 1;
             break;
+        case 'l':   /* --local */
+            local = 1;
+            todo++;
+            break;
         case 'c':   /* --clear */
             clear = 1;
+            todo++;
             break;
         case 'p':   /* --print-screen */
             print_screen = 1;
+            todo++;
             break;
         case 'P':   /* --print-all */
             print_all = 1;
+            todo++;
             break;
         case 's':   /* --save-all */
             save_all = 1;
+            todo++;
             break;
         case 'C':   /* --save-config */
             save = 1;
             save_config = 1;
+            todo++;
             break;
         case 'A':   /* --save-state */
             save = 1;
             save_state = 1;
+            todo++;
             break;
         case 't':   /* --save-timing */
             save = 1;
             save_timing = 1;
+            todo++;
             break;
         case 'a':   /* --save-analog (1631 only) */
             save = 1;
             save_analog = 1;
+            todo++;
             break;
         case 'r':   /* --restore */
             restore = 1;
+            todo++;
             break;
         case 'd':   /* --date */
             date = 1;
+            todo++;
             break;
         }
     }
-
-    if (!clear && !local && !print_screen && !print_all && !save 
-            && !save_all && !restore)
+    if (optind < argc || !todo)
         usage();
+    if (!addr)
+        addr = gpib_default_addr(INSTRUMENT);
+    if (!addr) {
+        fprintf(stderr, "%s: use --name to provide instrument address\n", prog);
+        exit(1);
+    }
+
     if (save + save_all + restore + print_screen + print_all > 1)
         usage();
 
-    gd = gpib_init(instrument, _interpret_status, 0);
+    gd = gpib_init(addr, _interpret_status, 0);
     if (!gd) {
-        fprintf(stderr, "%s: couldn't find device %s in /etc/gpib.conf\n",                 prog, instrument);
+        fprintf(stderr, "%s: device initialization failed for address %s\n", 
+                prog, addr);
         exit(1);
     }
     gpib_set_verbose(gd, verbose);

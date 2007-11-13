@@ -36,8 +36,7 @@
 #include "gpib.h"
 #include "util.h"
 
-/*#define INSTRUMENT "dg535"*/  /* default instrument name */
-#define INSTRUMENT "gpibgw:gpib0,15"
+#define INSTRUMENT "dg535"
 
 char *prog = "";
 static int verbose = 0;
@@ -90,9 +89,11 @@ static struct option longopts[] = {
 static void 
 usage(void)
 {
+    char *addr = gpib_default_addr(INSTRUMENT);
+
     fprintf(stderr, 
 "Usage: %s [--options]\n"
-"  -n,--name name              instrument name [%s]\n"
+"  -n,--name name              instrument address [%s]\n"
 "  -c,--clear                  initialize instrument to default values\n"
 "  -l,--local                  return instrument to local operation on exit\n"
 "  -v,--verbose                show protocol on stderr\n"
@@ -121,7 +122,7 @@ usage(void)
 "  -Z,--set-trig-z             set trigger input impedence (hi|lo)\n"
 
 "  -d,--delay                  output delay (chan,secs)\n"
-           , prog, INSTRUMENT);
+           , prog, addr ? addr : "no default");
     exit(1);
 }
 
@@ -190,7 +191,7 @@ _interpret_status(gd_t gd, unsigned char status, char *msg)
 int
 main(int argc, char *argv[])
 {
-    char *instrument = INSTRUMENT;
+    char *addr = NULL;
     int c;
     int clear = 0;
     int local = 0;
@@ -219,6 +220,7 @@ main(int argc, char *argv[])
     int set_trig_slope = -1;
     int exit_val = 0;
     int single_shot = 0;
+    int todo = 0;
 
     /*
      * Handle options.
@@ -227,22 +229,26 @@ main(int argc, char *argv[])
     while ((c = getopt_long(argc, argv, OPTIONS, longopts, NULL)) != EOF) {
         switch (c) {
         case 'n': /* --name */
-            instrument = optarg;
-            break;
-        case 'c': /* --clear */
-            clear = 1;
-            break;
-        case 'l': /* --local */
-            local = 1;
+            addr = optarg;
             break;
         case 'v': /* --verbose */
             verbose = 1;
             break;
+        case 'c': /* --clear */
+            clear = 1;
+            todo++;
+            break;
+        case 'l': /* --local */
+            local = 1;
+            todo++;
+            break;
         case 'D': /* --display-string */
             display_string = optarg;
+            todo++;
             break;
         case 'x': /* --single-shot */
             single_shot = 1;
+            todo++;
             break;
         case 'o': /* --out-chan */
             out_chan = rfindstr(out_names, optarg);
@@ -253,6 +259,7 @@ main(int argc, char *argv[])
             break;
         case 'q' : /* --get-out-mode */
             get_out_mode = 1;
+            todo++;
             break;
         case 'Q': /* --set-out-mode */
             set_out_mode = rfindstr(out_modes, optarg);
@@ -260,21 +267,27 @@ main(int argc, char *argv[])
                 fprintf(stderr, "%s: bad --out-mode optarg\n", prog);
                 exit(1);
             }
+            todo++;
             break;
         case 'a': /* --get-out-ampl */
             get_out_ampl = 1;
+            todo++;
             break;
         case 'A': /* --set-out-ampl */
             set_out_ampl = strtod(optarg, NULL);
+            todo++;
             break;
         case 'f' : /* --get-out-offset */
             get_out_offset = 1;
+            todo++;
             break;
         case 'F': /* --set-out-offset */
             set_out_offset = strtod(optarg, NULL);
+            todo++;
             break;
         case 'p': /* --get-out-polarity */
             get_out_polarity = 1;
+            todo++;
             break;
         case 'P': /* --set-out-polarity */
             if (!strcasecmp(optarg, "-"))
@@ -283,9 +296,11 @@ main(int argc, char *argv[])
                 set_out_polarity = 1;
             else
                 usage();
+            todo++;
             break;
         case 'y': /* --get-out-z */
             get_out_z = 1;
+            todo++;
             break;
         case 'Y': /* --set-out-z */
             if (!strcasecmp(optarg, "lo"))
@@ -294,9 +309,11 @@ main(int argc, char *argv[])
                 set_out_z = 1;
             else
                 usage();
+            todo++;
             break;
         case 'm' : /* --get-trig-mode */
             get_trig_mode = 1;
+            todo++;
             break;
         case 'M' : /* --set-trig-mode */
             set_trig_mode = rfindstr(trig_modes, optarg);
@@ -304,9 +321,11 @@ main(int argc, char *argv[])
                 fprintf(stderr, "%s: bad --trig-mode optarg\n", prog);
                 exit(1);
             }
+            todo++;
             break;
         case 't': /* --get-trig-rate */
             get_trig_rate = 1;
+            todo++;
             break;
         case 'T': /* --set-trig-rate */
             if (freqstr(optarg, &set_trig_rate) < 0) {
@@ -315,9 +334,11 @@ main(int argc, char *argv[])
                 fprintf(stderr, "%s: or period units: %s\n", prog,PERIOD_UNITS);
                 exit(1);
             }
+            todo++;
             break;
         case 's' : /* --get-trig-slope */
             get_trig_slope = 1;
+            todo++;
             break;
         case 'S' : /* --set-trig-slope */
             if (!strcasecmp(optarg, "rising"))
@@ -326,15 +347,19 @@ main(int argc, char *argv[])
                 set_trig_slope = 0;
             else
                 usage();
+            todo++;
             break;
         case 'b' : /* --get-trig-count */
             get_burst_count = 1;
+            todo++;
             break;
         case 'B' : /* --set-trig-count */
             set_burst_count = strtoul(optarg, NULL, 0);
+            todo++;
             break;
         case 'z' : /* --get-trig-z */
             get_trig_z = 1;
+            todo++;
             break;
         case 'Z' : /* --set-trig-z */
             if (!strcasecmp(optarg, "lo"))
@@ -343,26 +368,23 @@ main(int argc, char *argv[])
                 set_trig_z = 1;
             else
                 usage();
+            todo++;
             break;
         default:
             usage();
             break;
         }
     }
-    if (!clear && !local && !display_string 
-            && !get_out_mode && set_out_mode == -1 
-            && !get_out_ampl && set_out_ampl == HUGE_VALF 
-            && !get_out_offset && set_out_offset == HUGE_VALF
-            && !get_out_polarity && set_out_polarity == -1 
-            && !get_out_z && set_out_z == -1 
-            && !get_trig_mode && set_trig_mode == -1 
-            && !get_trig_rate && set_trig_rate == 0.0 
-            && !get_trig_z && set_trig_z == -1 
-            && !get_burst_count && set_burst_count == -1 
-            && !get_trig_slope && set_trig_slope == -1
-            && !single_shot) {
+    if (optind < argc || !todo)
         usage();
+
+    if (!addr)
+        addr = gpib_default_addr(INSTRUMENT);
+    if (!addr) {
+        fprintf(stderr, "%s: use --name to provide instrument address\n", prog);
+        exit(1);
     }
+
     if (out_chan == -1 && (get_out_mode || set_out_mode != -1)) {
         fprintf(stderr, "%s: --get/set-out-mode needs --out-chan\n", prog);
         exit(1);
@@ -384,11 +406,10 @@ main(int argc, char *argv[])
         exit(1);
     }
 
-    /* find device in /etc/gpib.conf */
-    gd = gpib_init(instrument, _interpret_status, 0);
+    gd = gpib_init(addr, _interpret_status, 0);
     if (!gd) {
-        fprintf(stderr, "%s: couldn't find device %s in /etc/gpib.conf\n", 
-                prog, instrument);
+        fprintf(stderr, "%s: device initialization failed for address %s\n", 
+                prog, addr);
         exit(1);
     }
     gpib_set_verbose(gd, verbose);

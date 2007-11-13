@@ -7,11 +7,11 @@ LDADD=-lrpcsvc -lm
 
 PROGS=hp1630 hptopbm hptodino r5005 hp3455 hp3457 hp8656 dg535 \
       hp3488 sr620 hp603x gpsh ics8065
-LIBOBJS=util.o gpib.o units.o vxi11_xdr.o vxi11_clnt.o
-ICSLIBOBJS=ics.o ics8000_clnt.o ics8000_xdr.o util.o
+LIBOBJS=util.o gpib.o units.o vxi11_xdr.o vxi11_clnt.o \
+	ics.o ics8000_clnt.o ics8000_xdr.o
 TESTPROGS=testfreq testampl
 
-all: $(PROGS) $(TESTPROGS)
+all: $(PROGS)
 
 # utilities
 hptopbm: hptopbm.o $(LIBOBJS)
@@ -38,8 +38,8 @@ hp603x: hp603x.o $(LIBOBJS)
 	$(CC) -o $@ hp603x.o $(LIBOBJS) $(LDADD)
 gpsh: gpsh.o $(LIBOBJS)
 	$(CC) -o $@ gpsh.o $(LIBOBJS) $(LDADD) -lreadline -ltermcap
-ics8065: ics8065.o $(ICSLIBOBJS)
-	$(CC) -o $@ ics8065.o $(ICSLIBOBJS) -lrpcsvc
+ics8065: ics8065.o $(LIBOBJS)
+	$(CC) -o $@ ics8065.o $(LIBOBJS) $(LDADD)
 ics.o: ics8000.h
 
 # VXI-11 support

@@ -122,17 +122,11 @@ _interpret_status(gd_t gd, unsigned char status, char *msg)
 }
 
 static void
-_open(char *name)
+_open(char *addr)
 {
-    char *left = NULL;
-    int addr = strtoul(name, &left, 0);
-
-    if (left && *left == '\0' && addr >= 0 && addr <= 30) {
-        if (!(gd = gpib_init_byaddr(addr, _interpret_status, 100000)))
-           printf("failed to open device at address %d\n", addr);
-    } else if (!gd) {
-        if (!(gd = gpib_init(name, _interpret_status, 100000)))
-           printf("no device named '%s' in /etc/gpib.conf\n", name);
+    if (!gd) {
+        if (!(gd = gpib_init(addr, _interpret_status, 100000)))
+           printf("couldn't initialize device: %s\n", addr);
     } else {
         printf("please close the device first\n");
         _help();

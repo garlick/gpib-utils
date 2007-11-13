@@ -34,8 +34,7 @@
 #include "hp3488.h"
 #include "gpib.h"
 
-#define INSTRUMENT "hp3488" /* the /etc/gpib.conf entry */
-#define BOARD       0       /* minor board number in /etc/gpib.conf */
+#define INSTRUMENT "hp3488"
 
 char *prog = "";
 static int lerr_flag = 1;   /* logic errors: 0=ignored, 1=fatal */
@@ -59,9 +58,11 @@ static struct option longopts[] = {
 static void 
 usage(void)
 {
+    char *addr = gpib_default_addr(INSTRUMENT);
+
     fprintf(stderr, 
 "Usage: %s [--options]\n"
-"  -n,--name name                instrument name [%s]\n"
+"  -n,--name name                instrument address [%s]\n"
 "  -c,--clear                    initialize instrument to default values\n"
 "  -l,--local                    return instrument to local operation on exit\n"
 "  -v,--verbose                  show protocol on stderr\n"
@@ -71,7 +72,7 @@ usage(void)
 "  -0,--open caddr[,caddr]...    open contacts for specified channels\n"
 "  -1,--close caddr[,caddr]...   close contacts for specified channels\n"
 "  -q,--query caddr[,caddr]...   view state of specified channels (or slots)\n"
-           , prog, INSTRUMENT);
+           , prog, addr ? addr : "no default");
     exit(1);
 }
 
@@ -366,7 +367,7 @@ hp3488_clear(gd_t gd)
 int
 main(int argc, char *argv[])
 {
-    char *instrument = INSTRUMENT;
+    char *addr = INSTRUMENT;
     gd_t gd;
     int c;
     int verbose = 0;
@@ -386,7 +387,7 @@ main(int argc, char *argv[])
     while ((c = getopt_long(argc, argv, OPTIONS, longopts, NULL)) != EOF) {
         switch (c) {
         case 'n': /* --name */
-            instrument = optarg;
+            addr = optarg;
             break;
         case 'c': /* --clear */
             clear = 1;
@@ -420,7 +421,6 @@ main(int argc, char *argv[])
             break;
         }
     }
-
     if (optind < argc)
         usage();
 
@@ -428,12 +428,17 @@ main(int argc, char *argv[])
             && !selftest)
         usage();
 
-    /* After every operation, perform serial poll, then call
-     * _interpret_status() with the status byte as an argument.
-     */
-    gd = gpib_init(instrument, _interpret_status, 100000);
+    if (!addr)
+        addr = gpib_default_addr(INSTRUMENT);
+    if (!addr) {
+        fprintf(stderr, "%s: use --name to provide instrument address\n", prog);
+        exit(1);
+    }
+
+    gd = gpib_init(addr , _interpret_status, 100000);
     if (!gd) {
-        fprintf(stderr, "%s: couldn't find device %s in /etc/gpib.conf\n",                 prog, instrument);
+        fprintf(stderr, "%s: device initialization failed for address %s\n",
+                                prog, addr);
         exit(1);
     }
     gpib_set_verbose(gd, verbose);

@@ -12,22 +12,25 @@ are wrapped.  Because the gpib.c wrappers were already there, it was
 possible to add VXI-11 support without modifying the instrument utilities 
 themselves.
 
-Each utility takes an instrument name argument which is passed to the
-gpib.c wrapper initialization function.  If it contains a colon, it is 
-interpreted to be a VXI-11 hostname:logical_device.  Instrument names 
-without colons are passed to linux-gpib to be looked up in /etc/gpib.conf 
-as before.  For example, a native VXI-11 instrument might be called 
-"meter:inst0", an instrument at GPIB address 9 behind an Ethernet-to-GPIB 
-controller such as the ICS 8065 might be addressed as "gpibgw:gpib0,9",
-and a direct attachd GPIB meter might be called "meter".
+Each utility takes a --name command line argument, used to specify the
+instrument address which is passed to the gpib.c wrapper initialization 
+function.  If the address contains a colon, the initialization function 
+interprets it to be a VXI-11 hostname:logical_device, otherwise it is 
+assumed to be a numerical GPIB primary address.  For example, a native 
+VXI-11 instrument might be called "meter:inst0", an instrument at GPIB 
+address 9 behind an Ethernet-to-GPIB controller such as the ICS 8065 might 
+be addressed as "gpibgw:gpib0,9", and the same instrument directly attached 
+to a GPIB card would simply be addressed as "9".  For convenience, a 
+configuration file /etc/gpib-utils.conf has been added so that default 
+addresses can be entered for each instrument.
 
 Since gpib-utils is rather unsophisticated in its use of GPIB facilities,
 only the core VXI-11 channel was used.  The abort and intr (SRQ) channels
 were not implemented.  VXI-11 device locking is not used.
 
-Note it is possible for gpib-utils to be compiled standalone without
-linux-gpib if only VXI-11 protocol is used to access instruments.
-Simply define -DHAVE_GPIB=0 in CFLAGS and remove -lgpib from LDADD.
+Note that gpib-utils now compiles standalone without linux-gpib by default.
+To build against linux-gpib, you must uncomment the extra CFLAGS and LDFLAGS
+definitions in src/Makefile and rebuild.
 
 Special thanks to Jerry Mercola of ICS Electronics (iscelect.com) for 
 providing a model 8065 Ethernet-to-GPIB controller as the development 

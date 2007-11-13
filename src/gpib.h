@@ -24,15 +24,17 @@ typedef struct gpib_device *gd_t;
  */
 typedef int (*spollfun_t)(gd_t gd, unsigned char status_byte, char *msg);
 
+/* Look up a device's default address in /etc/gpib-utils.conf
+ * Result is allocated in static storage that may be overwritten on next call.
+ */
+char *gpib_default_addr(char *name);
+
 /* Initialize/finalize a device.  If sf is non-NULL, a serial poll is 
  * run after every I/O and the resulting status byte is passed to the sf
  * function for processing.  If the function returns "not ready", sleep 
  * 'sec' seconds before retrying the serial poll.
  */
-gd_t gpib_init(char *name, spollfun_t sf, unsigned long retry);
-gd_t gpib_init_byname(char *key, spollfun_t sf, unsigned long retry);
-gd_t gpib_init_byaddr(int pad, spollfun_t sf, unsigned long retry);
-gd_t gpib_init_vxi(char *ipaddr, char *device, spollfun_t sf, unsigned long retry);
+gd_t gpib_init(char *addr, spollfun_t sf, unsigned long retry);
 void gpib_fini(gd_t gd);
 
 /* Get/set the gpib timeout in seconds.
