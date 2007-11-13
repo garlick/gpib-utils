@@ -13,12 +13,15 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-root-%(%{__id_u} -n)
 %description
 GPIB Instrument utilities for:
 * HP 1630/1631 logic analyzer
-* HP 3455 digital voltmeter
+* HP 3455 digital multi-meter
 * HP 3457 digital multi-meter
 * Racal 5005 digital multi-meter
 * HP 8656A synthesized frequency generator
 * HP 3488A switch/control unit
-
+* Stanford Research DG535 four channel digital delay/pulse generator
+* Stanford Research SR620 universal time interval counter
+* Agilent 603xA family autoranging system DC power supplies
+* ICS 8065 VXI-to-GPIB gateway
 %prep
 %setup
 

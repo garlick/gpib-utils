@@ -1,4 +1,4 @@
-2007-11-12 Jim Garlick <garlick.jim@gmail.com>
+2007-11-13 Jim Garlick <garlick.jim@gmail.com>
 
 	* src/hp1630.c : Swallow InvAsm with XX learn string.
 	Add -d option to set the date [Rudolf Reuter].
@@ -10,8 +10,15 @@
 	* htdocs/dinotrace.gif : Restore corrupted image.
 
 	* src/errstr.[ch] : Folded in with util.[ch], renamed errtab to
-	strtab, finderr to findstr, added rfindstr, changed "unknown error %d"
-	to "unknown code %d".
+	strtab, finderr() to findstr(), added rfindstr(), changed 
+	"unknown error %d" to "unknown code %d". 
+
+	* src/gpib.[ch] : Add gpib-utils.conf config file support with
+	gpib_default_addr().  Remove byaddr and byname initialization
+	functions and have all initialization go through gpib_init().
+
+	* src/* : Update to reflect initialization and error string handling
+	changes in gpib.[ch].
 
 2007-11-11 Jim Garlick <garlick.jim@gmail.com>
 

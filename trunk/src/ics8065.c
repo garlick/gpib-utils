@@ -25,6 +25,9 @@
 
 #include "ics.h"
 #include "util.h"
+#include "gpib.h"
+
+#define INSTRUMENT "ics8065"
 
 #define OPTIONS "n:cfCriejJ:tT:mM:sS:zZ:kK:gG:vV:qQ:wW:"
 static struct option longopts[] = {
@@ -64,9 +67,11 @@ char *prog;
 void
 usage(void)
 {
+    char *addr = gpib_default_addr(INSTRUMENT);
+
     fprintf(stderr, 
   "Usage: %s [--options]\n"
-  "  -n,--name                 instrument hostname (default: gpibgw)\n"
+  "  -n,--name                 instrument address [%s]\n"
   "  -j,--get-interface-name   get VXI-11 logical name (e.g. gpib0)\n"
   "  -J,--set-interface-name   set VXI-11 logical name (e.g. gpib0)\n"
   "  -t,--get-comm-timeout     get TCP timeout (in seconds)\n"
@@ -93,7 +98,7 @@ usage(void)
   "  -r,--reboot               reboot\n"
   "  -i,--get-idn-string       get idn string\n"
   "  -e,--get-errlog           get error log (side effect: log is cleared)\n"
-                       , prog);
+                       , prog, addr ? addr : "no default");
         exit(1);
 
 }
@@ -103,7 +108,7 @@ main(int argc, char *argv[])
 {
     ics_t ics;
     int c;
-    char *name = "gpibgw";
+    char *addr = NULL;
     int get_interface_name = 0;
     char *set_interface_name = NULL;
     int get_comm_timeout = 0;
@@ -130,115 +135,135 @@ main(int argc, char *argv[])
     int reboot = 0;
     int get_idn = 0;
     int get_errlog = 0;
+    int todo = 0;
 
     prog = basename(argv[0]);
 
     while ((c = getopt_long(argc, argv, OPTIONS, longopts, NULL)) != EOF) {
         switch (c) {
             case 'n' :  /* --name */
-                name = optarg;
+                addr = optarg;
                 break;
             case 'j' :  /* --get-interface-name */
                 get_interface_name = 1;
+                todo++;
                 break;
             case 'J' :  /* --set-interface-name */
                 set_interface_name = optarg;
+                todo++;
                 break;
             case 't' :  /* --get-comm-timeout */
                 get_comm_timeout = 1;
+                todo++;
                 break;
             case 'T' :  /* --set-comm-timeout */
                 set_comm_timeout = strtoul(optarg, NULL, 0);
+                todo++;
                 break;
             case 's' :  /* --get-static-ip-mode */
                 get_static_ip_mode = 1;
+                todo++;
                 break;
             case 'S' :  /* --set-static-ip-mode */
                 set_static_ip_mode = strtoul(optarg, NULL, 0);
+                todo++;
                 break;
             case 'z' :  /* --get-ip-number */
                 get_ip_number = 1;
+                todo++;
                 break;
             case 'Z' :  /* --set-ip-number */
                 set_ip_number = optarg;
+                todo++;
                 break;
             case 'k' :  /* --get-netmask */
                 get_netmask = 1;
+                todo++;
                 break;
             case 'K' :  /* --set-netmask */
                 set_netmask = optarg;
+                todo++;
                 break;
             case 'g' :  /* --get-gateway */
                 get_gateway = 1;
+                todo++;
                 break;
             case 'G' :  /* --set-gateway */
                 set_gateway = optarg;
+                todo++;
                 break;
             case 'v' :  /* --get-keepalive */
                 get_keepalive = 1;
+                todo++;
                 break;
             case 'V' :  /* --set-keepalive */
                 set_keepalive = strtoul(optarg, NULL, 0);
+                todo++;
                 break;
             case 'q' :  /* --get-gpib-address */
                 get_gpib_address = 1;
+                todo++;
                 break;
             case 'Q' :  /* --set-gpib-address */
                 set_gpib_address = strtoul(optarg, NULL, 0);
+                todo++;
                 break;
             case 'w' :  /* --get-system-controller */
                 get_system_controller = 1;
+                todo++;
                 break;
             case 'W' :  /* --set-system-controller */
                 set_system_controller = strtoul(optarg, NULL, 0);
+                todo++;
                 break;
             case 'm' :  /* --get-ren-mode */
                 get_ren_mode = 1;
+                todo++;
                 break;
             case 'M' :  /* --set-ren-mode */
                 set_ren_mode = strtoul(optarg, NULL, 0);
+                todo++;
                 break;
             case 'C':   /* --reload-config */
                 reload_config = 1;
+                todo++;
                 break;
             case 'f':   /* --reload-factory */
                 reload_factory = 1;
+                todo++;
                 break;
             case 'c':   /* --commit-config */
                 commit_config = 1;
+                todo++;
                 break;
             case 'r' :  /* --reboot */
                 reboot = 1;
+                todo++;
                 break;
             case 'i' :  /* --idn */
                 get_idn = 1;
+                todo++;
                 break;
             case 'e' :  /* --errlog */
                 get_errlog = 1;
+                todo++;
                 break;
             default:
                 usage();
                 break;
         }
     }
-    if (optind < argc)
+    if (optind < argc || !todo)
         usage();
 
-    if(!get_errlog && !get_idn && !reboot 
-            && !commit_config && !reload_factory && !reload_config
-            && !get_interface_name && !set_interface_name
-            && !get_static_ip_mode && set_static_ip_mode == -1
-            && !get_ip_number && !set_ip_number
-            && !get_netmask && !set_netmask
-            && !get_gateway && !set_gateway
-            && !get_keepalive && set_keepalive == -1
-            && !get_system_controller && set_system_controller == -1
-            && !get_gpib_address && set_gpib_address == -1
-            && !get_ren_mode && set_ren_mode == -1
-            && !get_comm_timeout && set_comm_timeout == -1)
-        usage();
+    if (!addr)
+        addr = gpib_default_addr(INSTRUMENT);
+    if (!addr) {
+        fprintf(stderr, "%s: use --name to provide instrument address\n", prog);
+        exit(1);
+    }
 
-    ics = ics_init(name);
+    ics = ics_init(addr);
     if (!ics)
         exit(1);
 

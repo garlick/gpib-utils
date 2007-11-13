@@ -36,8 +36,7 @@
 #include "gpib.h"
 #include "util.h"
 
-#define INSTRUMENT "sr620"  /* the /etc/gpib.conf entry */
-#define BOARD       0       /* minor board number in /etc/gpib.conf */
+#define INSTRUMENT "sr620"
 
 #define MAXCONFBUF  256
 #define MAXIDBUF    80
@@ -73,9 +72,11 @@ static struct option longopts[] = {
 static void 
 usage(void)
 {
+    char *addr = gpib_default_addr(INSTRUMENT);
+
     fprintf(stderr, 
 "Usage: %s [--options]\n"
-"  -n,--name name        instrument name [%s]\n"
+"  -n,--name name        instrument address [%s]\n"
 "  -c,--clear            initialize instrument to default values\n"
 "  -l,--local            return instrument to local operation on exit\n"
 "  -v,--verbose          show protocol on stderr\n"
@@ -89,7 +90,7 @@ usage(void)
 "  -p,--graph-histogram  graph histogram\n"
 "  -P,--graph-mean       graph mean stripchart\n"
 "  -P,--graph-jitter     graph jitter stripchart\n"
-           , prog, INSTRUMENT);
+           , prog, addr ? addr : "no default");
     exit(1);
 }
 
@@ -554,7 +555,7 @@ sr620_graph_disable(gd_t gd)
 int
 main(int argc, char *argv[])
 {
-    char *instrument = INSTRUMENT;
+    char *addr = NULL;
     int c;
     int clear = 0;
     int local = 0;
@@ -577,7 +578,7 @@ main(int argc, char *argv[])
     while ((c = getopt_long(argc, argv, OPTIONS, longopts, NULL)) != EOF) {
         switch (c) {
         case 'n': /* --name */
-            instrument = optarg;
+            addr = optarg;
             break;
         case 'c': /* --clear */
             clear = 1;
@@ -623,15 +624,25 @@ main(int argc, char *argv[])
             break;
         }
     }
+    if (optind < argc)
+        usage();
 
     if (!clear && !local && !save && !restore && !test && !autocal &&
             !graph_clear && !graph_enable && !graph_disable && 
             !graph_histogram && !graph_mean && !graph_jitter)
         usage();
 
-    gd = gpib_init(instrument, _interpret_status, 0);
+    if (!addr)
+        addr = gpib_default_addr(INSTRUMENT);
+    if (!addr) {
+        fprintf(stderr, "%s: use --name to provide instrument address\n", prog);
+        exit(1);
+    }
+
+    gd = gpib_init(addr, _interpret_status, 0);
     if (!gd) {
-        fprintf(stderr, "%s: couldn't find device %s in /etc/gpib.conf\n",                 prog, instrument);
+        fprintf(stderr, "%s: device initialization failed for address %s\n", 
+                prog, addr);
         exit(1);
     }
     gpib_set_verbose(gd, verbose);

@@ -950,10 +950,10 @@ _new_gpib(void)
     return new;
 }
 
-gd_t
-gpib_init_byaddr(int pad, spollfun_t sf, unsigned long retry)
-{
 #if HAVE_GPIB
+static gd_t
+_ibdev(int pad, spollfun_t sf, unsigned long retry)
+{
     gd_t new = _new_gpib();
     /* dflt: board=0, sad=0, tmo=T30s, eot=1, bin=0, reos=0, xeos=0, eos=0xa */
     new->d = ibdev(0, pad, 0, T30s, 1, 0x0a);
@@ -965,32 +965,11 @@ gpib_init_byaddr(int pad, spollfun_t sf, unsigned long retry)
     return new;
 error:
     _free_gpib(new);
-#else
-    return NULL;
-#endif
 }
-
-gd_t
-gpib_init_byname(char *key, spollfun_t sf, unsigned long retry)
-{
-#if HAVE_GPIB 
-    gd_t new = _new_gpib();
-    new->d = ibfind(key);
-    if (new->d < 0)
-        goto error;
-    new->sf_fun = sf;
-    new->sf_retry = retry;
-
-    return new;
-error:
-    _free_gpib(new);
-#else
-    return NULL;
 #endif
-}
 
-gd_t
-gpib_init_vxi(char *host, char *device, spollfun_t sf, unsigned long retry)
+static gd_t
+_init_vxi(char *host, char *device, spollfun_t sf, unsigned long retry)
 {
     gd_t new = _new_gpib();
     Create_LinkParms p;
@@ -1021,19 +1000,54 @@ gpib_init_vxi(char *host, char *device, spollfun_t sf, unsigned long retry)
 }
 
 gd_t
-gpib_init(char *name, spollfun_t sf, unsigned long retry)
+gpib_init(char *addr, spollfun_t sf, unsigned long retry)
 {
-    char *cpy = xstrdup(name);
+    char *cpy = xstrdup(addr);
     char *p = strchr(cpy, ':');
-    gd_t res;
+    int pad;
+    gd_t res = NULL;
 
     if (p) {
         *p++ = '\0';
-        res = gpib_init_vxi(cpy, p, sf, retry);
-    } else {
-        res = gpib_init_byname(name, sf, retry);
+        res = _init_vxi(cpy, p, sf, retry);
+    } else { 
+#if HAVE_GPIB
+        addr = strtoul(name, NULL, 10);
+        res = _ibdev(pad, sf, retry);
+#endif
     }
-    /*free(cpy);*/ /* XXX: ok to free? */
+    free(cpy);
+    return res;
+}
+
+static char *
+_parse_line(char *buf, char *key)
+{
+    char *k, *v;
+
+    for (k = buf; *k != '\0'; k++)
+        if (*k == '#')
+            *k = '\0';
+    k = strtok(buf, " \t\r\n");
+    if (!k || strcmp(k, key) != 0)
+        return NULL;
+    return strtok(NULL, " \t\r\n");
+}
+
+char *
+gpib_default_addr(char *name)
+{
+    static char buf[64];
+    FILE *cf;
+    char *res = NULL;
+
+    if (!(cf = fopen("/etc/gpib-utils.conf", "r")))
+        cf = fopen("../etc/gpib-utils.conf", "r");
+    if (cf) {
+        while (res == NULL && fgets(buf, sizeof(buf), cf) != NULL)
+            res = _parse_line(buf, name);
+        (void)fclose(cf);
+    }
     return res;
 }
 

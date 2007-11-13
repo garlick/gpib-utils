@@ -35,8 +35,7 @@
 #include "gpib.h"
 #include "util.h"
 
-#define INSTRUMENT "hp603x" /* the /etc/gpib.conf entry */
-#define BOARD       0       /* minor board number in /etc/gpib.conf */
+#define INSTRUMENT "hp603x"
 
 #define MAXMODELBUF 512
 
@@ -55,13 +54,15 @@ static struct option longopts[] = {
 static void 
 usage(void)
 {
+    char *addr = gpib_default_addr(INSTRUMENT);
+
     fprintf(stderr, 
 "Usage: %s [--options]\n"
-"  -n,--name name                instrument name [%s]\n"
+"  -n,--name name                instrument address [%s]\n"
 "  -c,--clear                    initialize instrument to default values\n"
 "  -l,--local                    return instrument to local operation on exit\n"
 "  -v,--verbose                  show protocol on stderr\n"
-           , prog, INSTRUMENT);
+           , prog, addr ? addr : "no default");
     exit(1);
 }
 
@@ -155,7 +156,7 @@ hp603X_checkid(gd_t gd)
 int
 main(int argc, char *argv[])
 {
-    char *instrument = INSTRUMENT;
+    char *addr = NULL;
     gd_t gd;
     int c;
     int verbose = 0;
@@ -169,7 +170,7 @@ main(int argc, char *argv[])
     while ((c = getopt_long(argc, argv, OPTIONS, longopts, NULL)) != EOF) {
         switch (c) {
         case 'n': /* --name */
-            instrument = optarg;
+            addr = optarg;
             break;
         case 'c': /* --clear */
             clear = 1;
@@ -189,15 +190,20 @@ main(int argc, char *argv[])
     if (optind < argc)
         usage();
 
-    /*if (!clear && !local)
-        usage();*/
+    if (!clear && !local)
+        usage();
 
-    /* After every operation, perform serial poll, then call
-     * _interpret_status() with the status byte as an argument.
-     */
-    gd = gpib_init(instrument, _interpret_status, 100000);
+    if (!addr)
+        addr = gpib_default_addr(INSTRUMENT);
+    if (!addr) {
+        fprintf(stderr, "%s: use --name to provide instrument address\n", prog);
+        exit(1);
+    }
+
+    gd = gpib_init(addr, _interpret_status, 100000);
     if (!gd) {
-        fprintf(stderr, "%s: couldn't find device %s in /etc/gpib.conf\n",                 prog, instrument);
+        fprintf(stderr, "%s: device initialization failed for address %s\n", 
+                prog, addr);
         exit(1);
     }
     gpib_set_verbose(gd, verbose);

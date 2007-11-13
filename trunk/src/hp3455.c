@@ -38,8 +38,7 @@
 #include "hp3455.h"
 #include "units.h"
 
-#define INSTRUMENT "hp3455" /* the /etc/gpib.conf entry */
-#define BOARD       0       /* minor board number in /etc/gpib.conf */
+#define INSTRUMENT "hp3455"
 
 char *prog = "";
 
@@ -66,9 +65,11 @@ static struct option longopts[] = {
 static void 
 usage(void)
 {
+    char *addr = gpib_default_addr(INSTRUMENT);
+
     fprintf(stderr, 
 "Usage: %s [--options]\n"
-"  -n,--name name                                 dmm name [%s]\n"
+"  -n,--name name                                 instrument address [%s]\n"
 "  -c,--clear                                     clear instrument\n"
 "  -l,--local                                     re-enable front panel\n"
 "  -v,--verbose                                   watch protocol on stderr\n"
@@ -83,7 +84,7 @@ usage(void)
 "  -y,--storez value                              store value into z reg\n"
 "  -s,--samples                                   number of samples [0]\n"
 "  -T,--period                                    sample period\n"
-           , prog, INSTRUMENT);
+           , prog, addr ? addr : "no default");
     exit(1);
 }
 
@@ -135,13 +136,13 @@ hp3455_checksrq(gd_t gd)
 int
 main(int argc, char *argv[])
 {
+    char *addr = NULL;
     gd_t gd;
     int selftest = 0;
     int verbose = 0;
     int clear = 0;
     int local = 0;
     int showtime = 0;
-    char *instrument = INSTRUMENT;
     int c;
     char *function = NULL;
     char *range = NULL;
@@ -162,7 +163,7 @@ main(int argc, char *argv[])
     while ((c = getopt_long(argc, argv, OPTIONS, longopts, NULL)) != EOF) {
         switch (c) {
         case 'n': /* --name */
-            instrument = optarg;
+            addr = optarg;
             break;
         case 'c': /* --clear */
             clear = 1;
@@ -271,16 +272,25 @@ main(int argc, char *argv[])
             break;
         }
     }
+    if (optind < argc)
+        usage();
 
     if (!clear && !local && !function && !range && !autocal && !math 
             && !trigger && !autocal && !highres && !storey && !storez 
             && !selftest && samples == 0)
         usage();
 
-    /* find device in /etc/gpib.conf */
-    gd = gpib_init(instrument, NULL, 0);
+    if (!addr)
+        addr = gpib_default_addr(INSTRUMENT);
+    if (!addr) {
+        fprintf(stderr, "%s: use --name to provide instrument address\n", prog);
+        exit(1);
+    }
+
+    gd = gpib_init(addr, NULL, 0);
     if (!gd) {
-        fprintf(stderr, "%s: couldn't find device %s in /etc/gpib.conf\n",                 prog, instrument);
+        fprintf(stderr, "%s: device initialization failed for address %s\n", 
+                prog, addr);
         exit(1);
     }
 
