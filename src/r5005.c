@@ -255,6 +255,7 @@ main(int argc, char *argv[])
         exit(1);
     }
     gpib_set_verbose(gd, verbose);
+    gpib_set_reos(gd, 1);
 
     /* clear dmm state */
     if (clear) {

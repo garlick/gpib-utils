@@ -1,3 +1,8 @@
+2007-11-14 Jim Garlick <garlick.jim@gmail.com>
+
+	* src/dg535.c : Complete output query commands.  
+	Add get/set delay command.
+
 2007-11-13 Jim Garlick <garlick.jim@gmail.com>
 
 	* src/hp1630.c : Swallow InvAsm with XX learn string.
@@ -19,6 +24,12 @@
 
 	* src/* : Update to reflect initialization and error string handling
 	changes in gpib.[ch].
+
+	* examples/gpib.conf : Removed.  We now explicitly set any non-default
+	flags in each program.
+
+	* man/* : Removed note about default board number and gpib.conf
+	entry since these are deprecated.
 
 2007-11-11 Jim Garlick <garlick.jim@gmail.com>
 

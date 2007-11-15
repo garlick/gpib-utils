@@ -23,8 +23,6 @@ hp8656 \- control HP 8656A signal generator
 .B hp8656 [\fIOPTIONS\fR]
 .SH DESCRIPTION
 \fBhp8656\fR controls the HP 8656A signal generator via its GPIB interface.
-The instrument is presumed to be attached to GPIB adapter 0 and configured 
-with an entry in /etc/gpib.conf (see CONFIGURATION below).
 .PP
 \fBhp8656\fR performs actions selected on the command line in a fixed sequence:
 .IP
@@ -87,18 +85,6 @@ for freq in `seq 100 10 1000`; do
    hp8656 --frequency up
 done
 hp8656 --local
-.fi
-.SH "CONFIGURATION"
-The /etc/gpib.conf entry for this instrument included the following
-parameters:
-.IP
-.nf
-eos = 0xa
-set-reos = no
-set-bin = no
-set-xeos = no
-set-eot = yes
-timeout = T30s
 .fi
 .SH "SEE ALSO"
 "HP 8656A Signal Generator 0.1 - 990 MHz Operating Manual", May 1981.

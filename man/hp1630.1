@@ -26,8 +26,6 @@ hp1630 \- control HP 1630/31 logic analyzer
 .fi
 .SH DESCRIPTION
 \fBhp1630\fR controls the HP 1630/31 logic analyzer via its GPIB interface.
-The instrument is presumed to be attached to GPIB adapter 0 and configured 
-with an entry in /etc/gpib.conf (see CONFIGURATION below).
 .PP
 \fBhp1630\fR performs actions selected on the command line in a fixed sequence:
 .IP
@@ -81,18 +79,6 @@ Save the instrument analog measurement data to standard output (hp1631 only).
 \fB\-r\fR, \fB\-\-restore\fR 
 Restore state/measurement data saved by any of the save options
 from standard input.
-.SH "CONFIGURATION"
-The /etc/gpib.conf entry for this instrument includes the following
-parameters:
-.IP
-.nf
-eos = 0xa
-set-reos = no
-set-bin = no
-set-xeos = no
-set-eot = yes
-timeout = T30s
-.fi
 .SH "SEE ALSO"
 "Hewlett Packard 1630A/D Logic Analyzer Operating Manual",
 second edition, May 1983.

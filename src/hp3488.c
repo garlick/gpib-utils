@@ -442,6 +442,7 @@ main(int argc, char *argv[])
         exit(1);
     }
     gpib_set_verbose(gd, verbose);
+    gpib_set_reos(gd, 1);
 
     if (clear)
         hp3488_clear(gd);

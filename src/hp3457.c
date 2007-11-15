@@ -382,6 +382,7 @@ main(int argc, char *argv[])
         exit(1);
     }
     gpib_set_verbose(gd, verbose);
+    gpib_set_reos(gd, 1);
 
     /* Clear dmm state, verify that model is HP3457A, and
      * select remote defaults.
