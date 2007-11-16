@@ -234,18 +234,26 @@ _ibwrt(gd_t gd, void *buf, int len)
 #endif
 
 static void 
-_vxiwrt(gd_t gd, void *buf, int len)
+_vxiwrt(gd_t gd, char *buf, int len)
 {
     Device_WriteParms p;
     Device_WriteResp *r;
+    char *nbuf = NULL;
 
+    if (gd->vxi_xeos && buf[len - 1] != gd->vxi_eos) {
+        nbuf = xmalloc(len + 1);
+        memcpy(nbuf, buf, len);
+        nbuf[len] = gd->vxi_eos;
+    }
     p.lid = gd->vxi_lid;
     p.io_timeout = gd->vxi_timeout;
     p.lock_timeout = gd->vxi_timeout;
     p.flags = gd->vxi_eot ? VXI_ENDW : 0;
-    p.data.data_val = buf;
-    p.data.data_len = len;
+    p.data.data_val = nbuf ? nbuf : buf;
+    p.data.data_len = nbuf ? len + 1 : len;
     r = device_write_1(&p, gd->vxi_cli);
+    if (nbuf)
+        free(nbuf);
     if (r == NULL) {
         clnt_perror(gd->vxi_cli, prog);
         gpib_fini(gd);

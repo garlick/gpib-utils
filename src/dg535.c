@@ -191,8 +191,8 @@ _interpret_status(gd_t gd, unsigned char status, char *msg)
     return err;
 }
 
-int
-parse_delay(char *str, int *chanp, double *delayp)
+static int
+_parse_delay(char *str, int *chanp, double *delayp)
 {
     char *cstr, *dstr;
     int c;
@@ -285,7 +285,7 @@ main(int argc, char *argv[])
             todo++;
             break;
         case 'D': /* --set-delay */
-            if (!parse_delay(optarg, &set_delay_chan, &set_delay_time)) {
+            if (!_parse_delay(optarg, &set_delay_chan, &set_delay_time)) {
                 fprintf(stderr, "%s: bad --set-delay argument\n", prog);
                 exit(1);
             }
