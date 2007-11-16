@@ -18,3 +18,6 @@ clean:
 
 %.html : %.1
 	man2html -r <$< >$@
+
+install: 
+	scp * shell.sourceforge.net:/home/groups/g/gp/gpib-utils/htdocs
