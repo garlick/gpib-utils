@@ -29,16 +29,19 @@ GPIB Instrument utilities for:
 make
 
 %install
-mkdir -p $RPM_BUILD_ROOT/{%{_bindir},%{_mandir}/man1}
+mkdir -p $RPM_BUILD_ROOT/{%{_bindir},%{_mandir}/man1,%{_sysconfdir}}
 BINDIR=$RPM_BUILD_ROOT/%{_bindir} MANDIR=$RPM_BUILD_ROOT/%{_mandir}/man1 make -e install
+cp etc/gpib-utils.conf $RPM_BUILD_ROOT/%{_sysconfdir}/
 
 %clean
 
 %files
 %defattr(-,root,root)
-%doc ChangeLog examples COPYING
+%doc ChangeLog COPYING INSTALL README README.vxi
+# %doc examples 
 %{_bindir}/*
 %{_mandir}/man1/*
+%config %{_sysconfdir}/gpib-utils.conf
 
 %changelog
 * Fri Feb 17 2006 Jim Garlick <garlick@speakeasy.net>

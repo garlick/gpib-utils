@@ -404,7 +404,7 @@ gpib_clr(gd_t gd, unsigned long usec)
 {
     assert(gd->magic == GPIB_DEVICE_MAGIC);
 #if HAVE_GPIB
-    if (gd->vxi_loc == NULL)
+    if (gd->vxi_cli == NULL)
         _ibclr(gd, usec);
     else
 #endif
@@ -919,7 +919,7 @@ _free_gpib(gd_t gd)
 void
 gpib_fini(gd_t gd)
 {
-    if (gd->vxi_lid)
+    if (gd->vxi_lid != -1)
         destroy_link_1(&gd->vxi_lid, gd->vxi_cli);
     if (gd->vxi_cli)
         clnt_destroy(gd->vxi_cli);
@@ -954,17 +954,18 @@ _new_gpib(void)
 static gd_t
 _ibdev(int pad, spollfun_t sf, unsigned long retry)
 {
-    gd_t new = _new_gpib();
-    /* dflt: board=0, sad=0, tmo=T30s, eot=1, bin=0, reos=0, xeos=0, eos=0xa */
-    new->d = ibdev(0, pad, 0, T30s, 1, 0x0a);
-    if (new->d < 0)
-        goto error;
-    new->sf_fun = sf;
-    new->sf_retry = retry;
+    int handle;
+    gd_t new = NULL;
 
+    /* dflt: board=0, sad=0, tmo=T30s, eot=1, bin=0, reos=0, xeos=0, eos=0xa */
+    handle = ibdev(0, pad, 0, T30s, 1, 0x0a);
+    if (handle >= 0) {
+        new = _new_gpib();
+        new->d = handle;
+        new->sf_fun = sf;
+        new->sf_retry = retry;
+    }
     return new;
-error:
-    _free_gpib(new);
 }
 #endif
 
@@ -1002,21 +1003,20 @@ _init_vxi(char *host, char *device, spollfun_t sf, unsigned long retry)
 gd_t
 gpib_init(char *addr, spollfun_t sf, unsigned long retry)
 {
-    char *cpy = xstrdup(addr);
-    char *p = strchr(cpy, ':');
-    int pad;
     gd_t res = NULL;
 
-    if (p) {
+    if (strchr(addr, ':') != NULL) {
+        char *cpy = xstrdup(addr);
+        char *p = strchr(cpy, ':');
+
         *p++ = '\0';
         res = _init_vxi(cpy, p, sf, retry);
+        free(cpy);
     } else { 
 #if HAVE_GPIB
-        addr = strtoul(name, NULL, 10);
-        res = _ibdev(pad, sf, retry);
+        res = _ibdev(strtoul(addr, NULL, 10), sf, retry);
 #endif
     }
-    free(cpy);
     return res;
 }
 

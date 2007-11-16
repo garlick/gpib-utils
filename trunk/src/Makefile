@@ -1,9 +1,9 @@
-CFLAGS=-Wall -Wno-unused -g 
+CFLAGS=-Wall -Wno-unused -g
 LDADD=-lrpcsvc -lm
 
 # Uncomment to build with linux-gpib
-#CFLAGS+=-DHAVE_GPIB=1
-#LDADD+=-lgpib
+CFLAGS+=-DHAVE_GPIB=1
+LDADD+=-lgpib
 
 PROGS=hp1630 hptopbm hptodino r5005 hp3455 hp3457 hp8656 dg535 \
       hp3488 sr620 hp603x gpsh ics8065
