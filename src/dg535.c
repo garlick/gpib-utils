@@ -53,37 +53,26 @@ static struct option longopts[] = {
     {"display-string",  required_argument, 0, 'e'},
     {"single-shot",     no_argument,       0, 'x'},
     {"out-chan",        required_argument, 0, 'o'},
-
     {"get-delay",       no_argument,       0, 'd'},
     {"set-delay",       required_argument, 0, 'D'},
-
     {"get-out-mode",    no_argument,       0, 'q'},
     {"set-out-mode",    required_argument, 0, 'Q'},
-
     {"get-out-ampl",    no_argument,       0, 'a'},
     {"set-out-ampl",    required_argument, 0, 'A'},
-
     {"get-out-offset",  no_argument,       0, 'f'},
     {"set-out-offset",  required_argument, 0, 'F'},
-
     {"get-out-polarity",no_argument,       0, 'p'},
     {"set-out-polarity",required_argument, 0, 'P'},
-
     {"get-out-z",       no_argument,       0, 'y'},
     {"set-out-z",       required_argument, 0, 'Y'},
-
     {"get-trig-rate",   no_argument,       0, 't'},
     {"set-trig-rate",   required_argument, 0, 'T'},
-
     {"get-trig-mode",   no_argument      , 0, 'm'},
     {"set-trig-mode",   required_argument, 0, 'M'},
-
     {"get-trig-slope",  no_argument,       0, 's'},
     {"set-trig-slope",  required_argument, 0, 'S'},
-
     {"get-burst-count", no_argument,       0, 'b'},
     {"set-burst-count", required_argument, 0, 'B'},
-
     {"get-trig-z",      no_argument,       0, 'z'},
     {"set-trig-z",      required_argument, 0, 'Z'},
     {0, 0, 0, 0},
@@ -103,28 +92,17 @@ usage(void)
 "  -e,--display-string         display string (1-20 chars), empty to clear\n"
 "  -x,--single-shot            trigger instrument in single shot mode\n"
 "  -o,--out-chan               select output channel (t0|a|b|ab|c|d|cd)\n"
-"  -d,--get-delay              get output delay\n"
-"  -D,--set-delay              set output delay (chan,secs)\n"
-"  -q,--get-out-mode           get output mode\n"
-"  -Q,--set-out-mode           set output mode (ttl|nim|ecl|var)\n"
-"  -a,--get-out-ampl           get output amplitude\n"
-"  -A,--set-out-ampl           set output amplitude (-4:-0.1, +0.1:+4) volts\n"
-"  -f,--get-out-offset         get output offset\n"
-"  -F,--set-out-offset         set output offset (-4:+4) volts\n"
-"  -p,--get-out-polarity       get output polarity\n"
-"  -P,--set-out-polarity       set output polarity (+|-)\n"
-"  -y,--get-out-z              get output impedence\n"
-"  -Y,--set-out-z              set output impedence (hi|lo)\n"
-"  -m,--get-trig-mode          get trigger mode\n"
-"  -M,--set-trig-mode          set trigger mode (int|ext|ss|bur)\n"
-"  -t,--get-trig-rate          get trigger rate\n"
-"  -T,--set-trig-rate          set trigger rate (0.001hz:1.000mhz)\n"
-"  -s,--get-trig-slope         get trigger slope\n"
-"  -S,--set-trig-slope         set trigger slope (rising|falling)\n"
-"  -b,--get-burst-count        get trigger burst count\n"
-"  -B,--set-burst-count        set trigger burst count (2:19)\n"
-"  -z,--get-trig-z             get trigger input impedence\n"
-"  -Z,--set-trig-z             set trigger input impedence (hi|lo)\n"
+"  -dD,--get/set-delay         output delay (chan,secs)\n"
+"  -qQ,--get/set-out-mode      output mode (ttl|nim|ecl|var)\n"
+"  -aA,--get/set-out-ampl      output amplitude (-4:-0.1, +0.1:+4) volts\n"
+"  -fF,--get/set-out-offset    output offset (-4:+4) volts\n"
+"  -pP,--get/set-out-polarity  output polarity (+|-)\n"
+"  -yY,--get/set-out-z         output impedence (hi|lo)\n"
+"  -mM,--get/set-trig-mode     trigger mode (int|ext|ss|bur)\n"
+"  -tT,--get/set-trig-rate     trigger rate (0.001hz:1.000mhz)\n"
+"  -sS,--get/set-trig-slope    trigger slope (rising|falling)\n"
+"  -bB,--get/set-burst-count   trigger burst count (2:19)\n"
+"  -zZ,--get/set-trig-z        trigger input impedence (hi|low)\n"
            , prog, addr ? addr : "no default");
     exit(1);
 }

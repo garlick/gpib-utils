@@ -13,6 +13,7 @@
 #endif
 #include <errno.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "gpib.h"
 #include "vxi11.h"
@@ -109,22 +110,35 @@ _vxird(gd_t gd, void *buf, int len)
 {
     Device_ReadParms p;
     Device_ReadResp *r;
+    int res = 0;
 
-    p.lid = gd->vxi_lid;
-    p.requestSize = len;
-    p.io_timeout = gd->vxi_timeout;
-    p.lock_timeout = gd->vxi_timeout;
-    p.flags = gd->vxi_reos ? VXI_TERMCHRSET : 0;
-    p.termChar = gd->vxi_eos;
-    r = device_read_1(&p, gd->vxi_cli);
-    if (r == NULL) {
-        clnt_perror(gd->vxi_cli, prog);
-        gpib_fini(gd);
-        exit(1);
-    }
-    memcpy(buf, r->data.data_val, r->data.data_len);
+    do {
+        if (len == 0) {
+            fprintf(stderr, "%s: read buffer too small\n", prog);
+            gpib_fini(gd);
+            exit(1);
+        }
+        p.lid = gd->vxi_lid;
+        p.requestSize = len;
+        p.io_timeout = gd->vxi_timeout;
+        p.lock_timeout = gd->vxi_timeout;
+        p.flags = gd->vxi_reos ? VXI_TERMCHRSET : 0;
+        p.termChar = gd->vxi_eos;
+        r = device_read_1(&p, gd->vxi_cli);
+        if (r == NULL) {
+            clnt_perror(gd->vxi_cli, prog);
+            gpib_fini(gd);
+            exit(1);
+        }
+        memcpy(buf, r->data.data_val, r->data.data_len);
+        res += r->data.data_len;
+        if (r->reason == 0) { /* more data available */
+            len -= r->data.data_len;
+            buf += r->data.data_len;
+        }
+    } while (len > 0 && r->reason == 0);
 
-    return r->data.data_len;
+    return res;
 }
 
 int
@@ -249,6 +263,7 @@ _vxiwrt(gd_t gd, char *buf, int len)
     p.io_timeout = gd->vxi_timeout;
     p.lock_timeout = gd->vxi_timeout;
     p.flags = gd->vxi_eot ? VXI_ENDW : 0;
+    /* XXX: can we handle arbitrarily large buffer here? */
     p.data.data_val = nbuf ? nbuf : buf;
     p.data.data_len = nbuf ? len + 1 : len;
     r = device_write_1(&p, gd->vxi_cli);
@@ -327,6 +342,33 @@ gpib_wrtf(gd_t gd, char *fmt, ...)
     _serial_poll(gd, "gpib_wrtf");
 
     return n;
+}
+
+
+int 
+gpib_qry(gd_t gd, char *str, void *buf, int len)
+{
+    int count; 
+
+    assert(gd->magic == GPIB_DEVICE_MAGIC);
+    if (gd->vxi_cli == NULL) {
+#if HAVE_GPIB
+        _ibwrt(gd, str, strlen(str));
+        count = _ibrd(gd, buf, len);
+#endif
+    } else {
+        _vxiwrt(gd, str, strlen(str));
+        count = _vxird(gd, buf, len);
+    }
+    if (gd->verbose) {
+        char *cpy = xstrcpyprint(str);
+
+        fprintf(stderr, "T: \"%s\" R: [%d bytes]\n", cpy, count);
+        free(cpy);
+    }
+    _serial_poll(gd, "gpib_qry");
+
+    return count;
 }
 
 #if HAVE_GPIB
@@ -988,8 +1030,7 @@ _init_vxi(char *host, char *device, spollfun_t sf, unsigned long retry)
     new->sf_retry = retry;
     new->vxi_cli = clnt_create(host, DEVICE_CORE, DEVICE_CORE_VERSION, "tcp");
     if (new->vxi_cli == NULL) {
-        fprintf(stderr, "%s: clnt_create() returned NULL\n", prog);
-        clnt_pcreateerror("gpib_init_vxi");
+        clnt_pcreateerror(prog);
         exit(1);
     }
     p.clientId = 0;
@@ -1057,6 +1098,69 @@ gpib_default_addr(char *name)
         (void)fclose(cf);
     }
     return res;
+}
+
+static int
+_extract_dlab_len(unsigned char *data, int lenlen, int len)
+{
+    char tmpstr[64];
+  
+    if (lenlen > len || lenlen > sizeof(tmpstr) - 1)
+       return -1;
+    memcpy(tmpstr, data, lenlen);
+    tmpstr[lenlen] = '\0';
+    return strtoul(tmpstr, NULL, 10);
+}
+
+/* Verify/decode some 488.2 data formats.
+ */
+int
+gpib_decode_488_2_data(unsigned char *data, int *lenp, int flags)
+{
+    int len = *lenp;
+
+    if (len < 3)
+        return -1;
+
+    /* 8.7.10 indefinite length arbitrary block response data */
+    if (data[0] == '#' && data[1] == '0' && data[len - 1] == '\n') {
+        if (!(flags & GPIB_DECODE_ILAB) && !(flags & GPIB_VERIFY_ILAB)) {
+            fprintf(stderr, "%s: unexpectedly got ILAB response\n", prog);
+            return -1;
+        }
+        if (flags & GPIB_DECODE_ILAB) {
+            memmove(data, &data[2], len - 3);
+            *lenp -= 3;
+        }
+
+    /* 8.7.9 definite length arbitrary block response data */
+    } else if (data[0] == '#' && data[1] >= '1' && data[1] <= '9') {
+        int llen = data[1] - '0';
+        int dlen = _extract_dlab_len(&data[2], llen, len - 2);
+
+        if (!(flags & GPIB_DECODE_DLAB) && !(flags & GPIB_VERIFY_DLAB)) {
+            fprintf(stderr, "%s: unexpectedly got DLAB response\n", prog);
+            return -1;
+        }
+        dlen = _extract_dlab_len(&data[2], data[1] - '0', len - 2);
+        if (dlen == -1) {
+            fprintf(stderr, "%s: failed to decode DLAB data length\n", prog);
+            return -1;
+        }
+        if (dlen + 2 + llen > len) {
+            fprintf(stderr, "%s: DLAB data length is too large\n", prog);
+            return -1;
+        }
+        if (flags & GPIB_DECODE_DLAB) {
+            memmove(data, data + 2 + llen + dlen, dlen);
+            *lenp = dlen;
+        }
+    } else {
+        fprintf(stderr, "%s : unexpected or garbled 488.2 response\n", prog);
+        return -1;
+    }
+
+    return 0;
 }
 
 /*
