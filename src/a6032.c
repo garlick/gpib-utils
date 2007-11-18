@@ -201,11 +201,7 @@ _save_setup(gd_t gd)
     unsigned char *buf = xmalloc(SETUP_STR_SIZE);
     int len;
 
-    len = gpib_qry(gd, ":SYSTEM:SETUP?", buf, SETUP_STR_SIZE);
-    if (gpib_decode_488_2_data(buf, &len, GPIB_VERIFY_DLAB) == -1) {
-        fprintf(stderr, "%s: failed to decode 488.2 DLAB data\n", prog);
-        return -1;
-    }
+    len = gpib_qry(gd, "*LRN?", buf, SETUP_STR_SIZE);
     if (write_all(1, buf, len) < 0) {
         perror("write");
         return -1;
@@ -229,11 +225,6 @@ _restore_setup(gd_t gd)
         perror("read");
         return -1;
     }
-    if (gpib_decode_488_2_data(buf, &len, GPIB_VERIFY_DLAB) == -1) {
-        fprintf(stderr, "%s: failed to decode 488.2 DLAB data\n", prog);
-        return -1;
-    }
-    gpib_wrtf(gd, ":SYSTEM:SETUP ");
     gpib_wrt(gd, buf, len);
     fprintf(stderr, "%s: restore setup: %d bytes\n", prog, len);
     return 0;
