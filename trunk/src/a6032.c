@@ -39,16 +39,17 @@
 #include "util.h"
 #include "a6032.h"
 
+#define PATH_DATE "/bin/date"
+
 #define INSTRUMENT "a6032"
 
-/* Constants from "SICL example in C", Agilent 6000 Series Programmer's Ref. */
 #define SETUP_STR_SIZE  3000
 #define IMAGE_SIZE      6000000
 
 char *prog = "";
 static int verbose = 0;
 
-#define OPTIONS "n:clvisrpf:P:"
+#define OPTIONS "n:clvisrpf:P:d"
 static struct option longopts[] = {
     {"name",            required_argument, 0, 'n'},
     {"clear",           no_argument,       0, 'c'},
@@ -60,6 +61,7 @@ static struct option longopts[] = {
     {"print-screen",    no_argument,       0, 'p'},
     {"print-format",    required_argument, 0, 'f'},
     {"print-palette",   required_argument, 0, 'P'},
+    {"set-date",        no_argument,       0, 'd'},
     {0, 0, 0, 0},
 };
 
@@ -80,6 +82,7 @@ usage(void)
 "  -p,--print-screen       send screen dump to stdout\n"
 "  -f,--print-format       select print format (bmp|bmp8bit|png) [png]\n"
 "  -P,--print-palette      select print palette (gray|col) [col]\n"
+"  -d,--set-date           set date and time to match UNIX\n"
            , prog, addr ? addr : "no default");
     exit(1);
 }
@@ -156,6 +159,7 @@ _interpret_status(gd_t gd, unsigned char status, char *msg)
     }
     if (status & A6032_STAT_RQS) {
         fprintf(stderr, "%s: device is requesting service\n", prog);
+        /* FIXME: how to clear? */
         /*err = 1;*/
     }
     if (status & A6032_STAT_ESB) {
@@ -166,6 +170,7 @@ _interpret_status(gd_t gd, unsigned char status, char *msg)
     }
     if (status & A6032_STAT_MSG) {
         fprintf(stderr, "%s: advisory message has been displayed\n", prog);
+        /* FIXME: how to clear? */
     }
     if (status & A6032_STAT_USR) {
         fprintf(stderr, "%s: user event has occurred\n", prog);
@@ -175,6 +180,52 @@ _interpret_status(gd_t gd, unsigned char status, char *msg)
     }
     /*gpib_wrtf(gd, "*CLS");*/
     return err;
+}
+
+static int
+_getunixdate(char *datestr, int len)
+{
+	FILE *pipe;
+    char *cmd;
+
+    if (asprintf(&cmd, "%s +'%%Y,%%m,%%d-%%H,%%M,%%S'", PATH_DATE) < 0) {
+        fprintf(stderr, "%s: out of memory", prog);
+        return -1;
+    }
+	if (!(pipe = popen(cmd, "r"))) {
+		perror("popen");
+		return -1;
+	}
+	if (fscanf(pipe, "%s", datestr) != 2)
+		return -1;
+    assert(strlen(datestr) < len);
+	if (pclose(pipe) < 0) {
+		perror("pclose");
+		return -1;
+	}
+    free(cmd);
+    return 0;
+}
+
+/* Set the date on the analyzer to match the UNIX date.
+ */
+static int
+_setdate(gd_t gd)
+{
+    char datestr[64];
+    char *timestr;
+
+    _getunixdate(datestr, 64);
+    timestr = strchr(datestr, '-');
+    if (!timestr) {
+        fprintf(stderr, "%s: error parsing UNIX date string\n", prog);
+        return -1;
+    }
+    *timestr++ = '\0';
+
+    gpib_wrtf(gd, ":SYSTEM:DATE %s", datestr);
+    gpib_wrtf(gd, ":SYSTEM:TIME %s", timestr);
+    return 0;
 }
 
 /* Print scope idn string.
@@ -276,6 +327,7 @@ main(int argc, char *argv[])
     int print_screen = 0;
     char *print_format = "png";
     char *print_palette = "col";
+    int set_date = 0;
 
     /*
      * Handle options.
@@ -324,6 +376,10 @@ main(int argc, char *argv[])
                 usage();
             print_palette = optarg;
             break;
+        case 'd': /* --set-date */
+            set_date = 1;
+            todo++;
+            break;
         default:
             usage();
             break;
@@ -349,12 +405,19 @@ main(int argc, char *argv[])
     /* clear instrument to default settings */
     if (clear) {
         gpib_clr(gd, 0);
+        gpib_wrtf(gd, "*CLS");
         gpib_wrtf(gd, "*RST");
         sleep(1);
     }
 
     if (get_idn) {
         if (_get_idn(gd) == -1) {
+            exit_val = 1;
+            goto done;
+        }
+    }
+    if (set_date) {
+        if (_setdate(gd) == -1) {
             exit_val = 1;
             goto done;
         }
