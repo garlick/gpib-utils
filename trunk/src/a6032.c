@@ -409,15 +409,14 @@ main(int argc, char *argv[])
         gpib_wrtf(gd, "*RST");
         sleep(1);
     }
-
-    if (get_idn) {
-        if (_get_idn(gd) == -1) {
+    if (clear || set_date) {
+        if (_setdate(gd) == -1) {
             exit_val = 1;
             goto done;
         }
     }
-    if (set_date) {
-        if (_setdate(gd) == -1) {
+    if (get_idn) {
+        if (_get_idn(gd) == -1) {
             exit_val = 1;
             goto done;
         }
