@@ -43,12 +43,12 @@
 
 /* Constants from "SICL example in C", Agilent 6000 Series Programmer's Ref. */
 #define SETUP_STR_SIZE  3000
-#define IMAGE_SIZE      300000
+#define IMAGE_SIZE      6000000
 
 char *prog = "";
 static int verbose = 0;
 
-#define OPTIONS "n:clvisrpf:a:P:"
+#define OPTIONS "n:clvisrpf:P:"
 static struct option longopts[] = {
     {"name",            required_argument, 0, 'n'},
     {"clear",           no_argument,       0, 'c'},
@@ -59,7 +59,6 @@ static struct option longopts[] = {
     {"restore-setup",   no_argument,       0, 'r'},
     {"print-screen",    no_argument,       0, 'p'},
     {"print-format",    required_argument, 0, 'f'},
-    {"print-area",      required_argument, 0, 'a'},
     {"print-palette",   required_argument, 0, 'P'},
     {0, 0, 0, 0},
 };
@@ -79,9 +78,8 @@ usage(void)
 "  -s,--save-setup         save setup to stdout\n"
 "  -r,--restore-setup      restore setup from stdin\n"
 "  -p,--print-screen       send screen dump to stdout\n"
-"  -f,--print-format       select print format (tiff|bmp|bmp8bit|png) [png]\n"
-"  -a,--print-area         select print area (grat|scr) [scr]\n"
-"  -P,--print-palette      select print palette (mon|gray|col) [col]\n"
+"  -f,--print-format       select print format (bmp|bmp8bit|png) [png]\n"
+"  -P,--print-palette      select print palette (gray|col) [col]\n"
            , prog, addr ? addr : "no default");
     exit(1);
 }
@@ -212,6 +210,7 @@ _save_setup(gd_t gd)
         perror("write");
         return -1;
     }
+    fprintf(stderr, "%s: save setup: %d bytes\n", prog, len);
     free(buf);
     return 0;
 }
@@ -234,33 +233,39 @@ _restore_setup(gd_t gd)
         fprintf(stderr, "%s: failed to decode 488.2 DLAB data\n", prog);
         return -1;
     }
-    gpib_wrtf(gd, ":SYSTEM:SETUP %d", len);
+    gpib_wrtf(gd, ":SYSTEM:SETUP ");
     gpib_wrt(gd, buf, len);
+    fprintf(stderr, "%s: restore setup: %d bytes\n", prog, len);
     return 0;
 }
 
 /* Print screen to stdout.
  */
 static int
-_print_screen(gd_t gd, char *fmt, char *area, char *palette)
+_print_screen(gd_t gd, char *fmt, char *palette)
 {
     double tmout = gpib_get_timeout(gd);
-    unsigned char buf[IMAGE_SIZE];
+    unsigned char *buf = xmalloc(IMAGE_SIZE);
     int len;
     char qry[64];
 
-    snprintf(qry, sizeof(qry), ":DISPLAY:DATA? %s,%s,%s", fmt, area, palette);
+    snprintf(qry, sizeof(qry), ":DISPLAY:DATA? %s,scr,%s", fmt, palette);
     len = gpib_qry(gd, qry, buf, IMAGE_SIZE);
 
     if (gpib_decode_488_2_data(buf, &len, GPIB_DECODE_DLAB) == -1) {
         fprintf(stderr, "%s: failed to decode 488.2 data\n", prog);
-        return 0;
+        goto fail;
     }
-
     if (write_all(1, buf, len) < 0) {
         perror("write");
-        return 0;
+        goto fail;
     }
+    fprintf(stderr, "%s: print screen: %d bytes (format=%s, palette=%s)\n", 
+            prog, len, fmt, palette);
+    free(buf);
+    return 0;
+fail:
+    free(buf);
     return -1;
 }
 
@@ -279,7 +284,6 @@ main(int argc, char *argv[])
     int restore_setup = 0;
     int print_screen = 0;
     char *print_format = "png";
-    char *print_area = "scr";
     char *print_palette = "col";
 
     /*
@@ -319,12 +323,14 @@ main(int argc, char *argv[])
             todo++;
             break;
         case 'f': /* --print-format */
+            if (strncasecmp(optarg, "bmp", 3) && strncasecmp(optarg, "png", 3)
+                    && strncasecmp(optarg, "bmp8bit", 7))
+                usage();
             print_format = optarg;
             break;
-        case 'a': /* --print-area */
-            print_area = optarg;
-            break;
         case 'P': /* --print-palette */
+            if (strncasecmp(optarg, "col", 3) && strncasecmp(optarg, "gray", 4))
+                usage();
             print_palette = optarg;
             break;
         default:
@@ -375,7 +381,7 @@ main(int argc, char *argv[])
         }
     }
     if (print_screen) {
-        if (_print_screen(gd, print_format, print_area, print_palette) == -1) {
+        if (_print_screen(gd, print_format, print_palette) == -1) {
             exit_val = 1;
             goto done;
         }

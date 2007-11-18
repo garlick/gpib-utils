@@ -351,20 +351,26 @@ gpib_qry(gd_t gd, char *str, void *buf, int len)
     int count; 
 
     assert(gd->magic == GPIB_DEVICE_MAGIC);
-    if (gd->vxi_cli == NULL) {
 #if HAVE_GPIB
+    if (gd->vxi_cli == NULL)
         _ibwrt(gd, str, strlen(str));
-        count = _ibrd(gd, buf, len);
+    else
 #endif
-    } else {
         _vxiwrt(gd, str, strlen(str));
-        count = _vxird(gd, buf, len);
-    }
     if (gd->verbose) {
         char *cpy = xstrcpyprint(str);
 
-        fprintf(stderr, "T: \"%s\" R: [%d bytes]\n", cpy, count);
+        fprintf(stderr, "T: \"%s\"\n", cpy);
         free(cpy);
+    }
+#if HAVE_GPIB
+    if (gd->vxi_cli == NULL)
+        count = _ibrd(gd, buf, len);
+    else
+#endif
+        count = _vxird(gd, buf, len);
+    if (gd->verbose) { 
+        fprintf(stderr, "R: [%d bytes]\n", count);
     }
     _serial_poll(gd, "gpib_qry");
 
@@ -1152,7 +1158,7 @@ gpib_decode_488_2_data(unsigned char *data, int *lenp, int flags)
             return -1;
         }
         if (flags & GPIB_DECODE_DLAB) {
-            memmove(data, data + 2 + llen + dlen, dlen);
+            memmove(data, data + 2 + llen, dlen);
             *lenp = dlen;
         }
     } else {
