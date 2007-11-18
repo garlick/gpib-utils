@@ -85,10 +85,19 @@ void gpib_wrt(gd_t gd, void *buf, int len);
 void gpib_wrtstr(gd_t gd, char *str);
 int gpib_wrtf(gd_t gd, char *fmt, ...);
 
+int gpib_qry(gd_t gd, char *str, void *buf, int len);
+
 void gpib_loc(gd_t gd);
 void gpib_clr(gd_t gd, unsigned long usec);
 void gpib_trg(gd_t gd);
 int gpib_rsp(gd_t gd, unsigned char *status);
+
+#define GPIB_DECODE_DLAB    1
+#define GPIB_DECODE_ILAB    2
+#define GPIB_VERIFY_DLAB    4
+#define GPIB_VERIFY_ILAB    8
+int gpib_decode_488_2_data(unsigned char *data, int *lenp, int flags);
+
 
 /*
  * vi:tabstop=4 shiftwidth=4 expandtab

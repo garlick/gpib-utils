@@ -1,3 +1,16 @@
+2007-11-18 Jim Garlick <garlick.jim@gmail.com>
+
+	* a6032.[ch] : New.
+
+	* gpib.[ch] : Enhancements/bug fixes for a6032:
+	- _vxird() internally issues multiple reads until 'reason' is nonzero
+	- added gpib_qry(), write+read+spoll
+	- added gpib_decode_488_2_data()
+
+2007-11-16 Jim Garlick <garlick.jim@gmail.com>
+
+	* dg535.c : Shorten usage output by combining get/set lines.
+
 2007-11-15 Jim Garlick <garlick.jim@gmail.com>
 
 	* etc/gpib.conf : Readded with ni-usb config.
@@ -7,7 +20,9 @@
 
 	* gpib-utils.spec : Install the gpib-utils.conf file.
 
-	* : tag gpib-utils-1-3-pre1
+	* src/Makefile : Enable linux-gpib.
+
+	* : tag gpib-utils-1-3-pre1 
 
 2007-11-14 Jim Garlick <garlick.jim@gmail.com>
 
