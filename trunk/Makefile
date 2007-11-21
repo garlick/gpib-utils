@@ -2,9 +2,7 @@ BINDIR=/usr/local/bin
 MANDIR=/usr/local/man/man1
 
 all:
-	make -C src all
-#	make -C examples all
-#	make -C htdocs all
+	make -C src all CFLAGS_GPIB=-DHAVE_GPIB=1 LDADD_GPIB=-lgpib
 
 install:
 	mkdir -p $(BINDIR) $(MANDIR)
@@ -13,4 +11,3 @@ install:
 
 clean:
 	make -C src clean
-#	make -C examples clean

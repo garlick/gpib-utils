@@ -1,3 +1,9 @@
+2007-11-21 Jim Garlick <garlick.jim@gmail.com>
+
+	* gpib.c : Implement _vxiabort() (not yet used).
+
+	* INSTALL : Rename to README.gpib.
+
 2007-11-18 Jim Garlick <garlick.jim@gmail.com>
 
 	* a6032.[ch] : New.

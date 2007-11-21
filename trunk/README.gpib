@@ -8,7 +8,6 @@ in the usual place your system puts include files and libraries, type:
    make
 To install in /usr/local/{bin,man}, type:
    make install
-Or go with the prepackaged RPM's.
    
 You will need gpib.conf entries for your instruments.  You can use the one 
 in the gpib-utils/examples directory as a template if you like.

@@ -8,6 +8,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdarg.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
 #if HAVE_GPIB
 #include <gpib/ib.h>
 #endif
@@ -35,8 +39,8 @@ struct gpib_device {
     int             vxi_bin;   /* flag: use 8 bits to match eos */
     int             vxi_timeout;/* timeout in milliseconds */
     CLIENT         *vxi_cli;   /* vxi client handle */
+    CLIENT         *vxi_abrt;  /* vxi abort handle */
     Device_Link     vxi_lid;   /* vxi logical device handle */
-    unsigned short  vxi_abort_port; /* vxi abort socket */
 };
 
 extern char *prog;
@@ -394,16 +398,19 @@ static void
 _vxiloc(gd_t gd)
 {
     Device_GenericParms p;
+    Device_Error *r;
 
     p.lid = gd->vxi_lid;
     p.flags = 0;
     p.io_timeout = gd->vxi_timeout;
     p.lock_timeout = gd->vxi_timeout;
-    if (device_local_1(&p, gd->vxi_cli) == NULL) {
+    if ((r = device_local_1(&p, gd->vxi_cli)) == NULL) {
         clnt_perror(gd->vxi_cli, prog);
         gpib_fini(gd);
         exit(1);
     }
+    if (r->error)
+        fprintf(stderr, "%s: device_local: error %ld\n", prog, r->error);
 }
 
 void
@@ -443,16 +450,19 @@ static void
 _vxiclr(gd_t gd, unsigned long usec)
 {
     Device_GenericParms p;
+    Device_Error *r;
 
     p.lid = gd->vxi_lid;
     p.flags = 0;
     p.io_timeout = gd->vxi_timeout;
     p.lock_timeout = gd->vxi_timeout;
-    if (device_clear_1(&p, gd->vxi_cli) == NULL) {
+    if ((r = device_clear_1(&p, gd->vxi_cli)) == NULL) {
         clnt_perror(gd->vxi_cli, prog);
         gpib_fini(gd);
         exit(1);
     }
+    if (r->error)
+        fprintf(stderr, "%s: device_clear: error %ld\n", prog, r->error);
 }
 
 void 
@@ -488,16 +498,19 @@ static void
 _vxitrg(gd_t gd)
 {
     Device_GenericParms p;
+    Device_Error *r;
 
     p.lid = gd->vxi_lid;
     p.flags = 0;
     p.io_timeout = gd->vxi_timeout;
     p.lock_timeout = gd->vxi_timeout;
-    if (device_trigger_1(&p, gd->vxi_cli) == NULL) {
+    if ((r = device_trigger_1(&p, gd->vxi_cli)) == NULL) {
         clnt_perror(gd->vxi_cli, prog);
         gpib_fini(gd);
         exit(1);
     }
+    if (r->error)
+        fprintf(stderr, "%s: device_trigger: error %ld\n", prog, r->error);
 }
 
 void
@@ -963,20 +976,41 @@ gpib_get_verbose(gd_t gd)
     return gd->verbose;
 }
 
-void
+static void
 _free_gpib(gd_t gd)
 {
-    assert(gd->magic == GPIB_DEVICE_MAGIC);
     /*assert(gd->sf_level == 0);*/
     gd->magic = 0;
     free(gd);
 }
 
+/* Call to abort in-progress RPC on core channel.
+ */
+static void
+_vxiabort(gd_t gd)
+{
+    Device_Error *r;
+
+    if ((r = device_abort_1(&gd->vxi_lid, gd->vxi_abrt)) == NULL)
+        clnt_perror(gd->vxi_abrt, prog); 
+    else if (r->error)
+        fprintf(stderr, "%s: device_abort: error %ld\n", prog, r->error);
+}
+
 void
 gpib_fini(gd_t gd)
 {
-    if (gd->vxi_lid != -1)
-        destroy_link_1(&gd->vxi_lid, gd->vxi_cli);
+    Device_Error *r;
+
+    assert(gd->magic == GPIB_DEVICE_MAGIC);
+    if (gd->vxi_lid != -1) {
+        if ((r = destroy_link_1(&gd->vxi_lid, gd->vxi_cli)) == NULL)
+            clnt_perror(gd->vxi_cli, prog);
+        else if (r->error)
+            fprintf(stderr, "%s: destroy_link: error %ld\n", prog, r->error);
+    }
+    if (gd->vxi_abrt)
+        clnt_destroy(gd->vxi_abrt);
     if (gd->vxi_cli)
         clnt_destroy(gd->vxi_cli);
     _free_gpib(gd);
@@ -994,8 +1028,8 @@ _new_gpib(void)
     new->sf_level = 0;
     new->sf_retry = 0;
     new->vxi_cli = NULL;
+    new->vxi_abrt = NULL;
     new->vxi_lid = -1;
-    new->vxi_abort_port = -1;
     new->vxi_timeout = 30000; /* 30s */
     new->vxi_eot = 1;
     new->vxi_bin = 0;
@@ -1025,20 +1059,45 @@ _ibdev(int pad, spollfun_t sf, unsigned long retry)
 }
 #endif
 
+
+static int
+_get_sockaddr(char *host, int p, struct sockaddr_in *sap)
+{
+    struct addrinfo *aip;
+    char port[16];
+    int err;
+
+    snprintf(port, sizeof(port), "%d", p);
+    if ((err = getaddrinfo(host, port, NULL, &aip))) {
+        fprintf(stderr, "%s: getaddrinfo: %s\n", prog, gai_strerror(err));
+        return -1;
+    }
+    assert(sizeof (struct sockaddr_in) == sizeof(struct sockaddr));
+    memcpy(sap, aip->ai_addr, sizeof(struct sockaddr));
+    freeaddrinfo(aip);
+    return 0;
+}
+
 static gd_t
 _init_vxi(char *host, char *device, spollfun_t sf, unsigned long retry)
 {
     gd_t new = _new_gpib();
     Create_LinkParms p;
     Create_LinkResp *r;
+    struct sockaddr_in addr;
+    int sock;
 
     new->sf_fun = sf;
     new->sf_retry = retry;
+
+    /* open core connection */
     new->vxi_cli = clnt_create(host, DEVICE_CORE, DEVICE_CORE_VERSION, "tcp");
     if (new->vxi_cli == NULL) {
         clnt_pcreateerror(prog);
         exit(1);
     }
+
+    /* establish link to device */
     p.clientId = 0;
     p.lockDevice = 0;
     p.lock_timeout = 10000; /* not used */
@@ -1050,8 +1109,23 @@ _init_vxi(char *host, char *device, spollfun_t sf, unsigned long retry)
         exit(1);
     }
     new->vxi_lid = r->lid;
-    new->vxi_abort_port = r->abortPort;
-      
+
+#if 0
+    /* XXX: someday wire _vxiabort() + gpib_fini() into a SIGINT handler? */
+    /* open async connection to device for RPC abort */
+    if (_get_sockaddr(host, r->abortPort, &addr) == -1) {
+        gpib_fini(new);
+        exit(1);
+    }
+    sock = RPC_ANYSOCK;
+    new->vxi_abrt = clnttcp_create(&addr, DEVICE_ASYNC, DEVICE_ASYNC_VERSION,
+            &sock, 0, r->maxRecvSize);
+    if (new->vxi_abrt == NULL) {
+        clnt_pcreateerror(prog);
+        gpib_fini(new);
+        exit(1);
+    }
+#endif
     return new;
 }
 

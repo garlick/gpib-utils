@@ -5,8 +5,6 @@ Summary: GPIB Instrument Utilities
 License:  GPL
 Group: Application/Engineering
 Url: http://sourceforge.net/projects/gpib-utils/
-BuildRequires: linux-gpib
-Requires: linux-gpib
 Source0: %{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-root-%(%{__id_u} -n)
 
@@ -22,22 +20,26 @@ GPIB Instrument utilities for:
 * Stanford Research SR620 universal time interval counter
 * Agilent 603xA family autoranging system DC power supplies
 * ICS 8065 VXI-to-GPIB gateway
+* Agilent 6000 series oscilloscope
 %prep
 %setup
 
 %build
-make
+# bypass top level Makefile to build vxi only
+make -C src 
+
 
 %install
 mkdir -p $RPM_BUILD_ROOT/{%{_bindir},%{_mandir}/man1,%{_sysconfdir}}
-BINDIR=$RPM_BUILD_ROOT/%{_bindir} MANDIR=$RPM_BUILD_ROOT/%{_mandir}/man1 make -e install
+make -e install \
+   BINDIR=$RPM_BUILD_ROOT/%{_bindir} MANDIR=$RPM_BUILD_ROOT/%{_mandir}/man1 
 cp etc/gpib-utils.conf $RPM_BUILD_ROOT/%{_sysconfdir}/
 
 %clean
 
 %files
 %defattr(-,root,root)
-%doc ChangeLog COPYING INSTALL README README.vxi
+%doc ChangeLog COPYING README README.gpib README.vxi
 # %doc examples 
 %{_bindir}/*
 %{_mandir}/man1/*
