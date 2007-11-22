@@ -1243,6 +1243,13 @@ gpib_decode_488_2_data(unsigned char *data, int *lenp, int flags)
     return 0;
 }
 
+/* SRQ service function */
+char *
+device_intr_srq_1_svc(char *a1, struct svc_req *r)
+{
+    return NULL; /* XXX stub */
+}
+
 /*
  * vi:tabstop=4 shiftwidth=4 expandtab
  */

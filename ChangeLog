@@ -1,6 +1,9 @@
 2007-11-21 Jim Garlick <garlick.jim@gmail.com>
 
-	* gpib.c : Implement _vxiabort() (not yet used).
+	* src/gpib.c : Implement _vxiabort() (not yet used).
+
+	* src/vxi11srq.x : Broken out from vxi11.x to allow server side
+	implementation of device_intr_srq().
 
 	* INSTALL : Rename to README.gpib.
 

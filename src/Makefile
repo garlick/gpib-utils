@@ -3,8 +3,8 @@ LDADD=-lrpcsvc -lm $(LDADD_GPIB)
 
 PROGS=hp1630 hptopbm hptodino r5005 hp3455 hp3457 hp8656 dg535 \
       hp3488 sr620 hp603x gpsh ics8065 a6032
-LIBOBJS=util.o gpib.o units.o vxi11_xdr.o vxi11_clnt.o \
-	ics.o ics8000_clnt.o ics8000_xdr.o
+LIBOBJS=util.o gpib.o units.o vxi11_xdr.o vxi11_clnt.o vxi11srq_svc.o \
+	ics.o ics8000_clnt.o ics8000_xdr.o 
 TESTPROGS=testfreq testampl
 
 all: $(PROGS)
@@ -40,7 +40,7 @@ ics.o: ics8000.h
 a6032: a6032.o $(LIBOBJS)
 	$(CC) -o $@ a6032.o $(LIBOBJS) $(LDADD)
 
-# VXI-11 support
+# VXI-11 core/async
 gpib.o: vxi11.h
 vxi11.h: vxi11.x
 	rm -f $@; rpcgen -o $@ -h vxi11.x
@@ -50,6 +50,16 @@ vxi11_clnt.c: vxi11.x vxi11.h
 	rm -f $@; rpcgen -o $@ -l vxi11.x
 vxi11_svc.c:  vxi11.x vxi11.h
 	rm -f $@; rpcgen -o $@ -m vxi11.x
+# VXI-11 srq
+srq: vxi11srq.h vxi11srq_xdr.c vxi11srq_clnt.c vxi11srq_svc.c
+vxi11srq.h: vxi11srq.x
+	rm -f $@; rpcgen -o $@ -h vxi11srq.x
+vxi11srq_xdr.c: vxi11srq.x vxi11srq.h
+	rm -f $@; rpcgen -o $@ -c vxi11srq.x
+vxi11srq_clnt.c: vxi11srq.x vxi11srq.h
+	rm -f $@; rpcgen -o $@ -l vxi11srq.x
+vxi11srq_svc.c:  vxi11srq.x vxi11srq.h
+	rm -f $@; rpcgen -o $@ -m vxi11srq.x
 # VXI-11 extension for ICS 8000 series
 ics8000.h: ics8000.x
 	rm -f $@; rpcgen -o $@ -h ics8000.x
@@ -76,5 +86,6 @@ clean:
 	rm -f *.o $(PROGS)
 	rm -f $(TESTPROGS)
 	rm -f vxi11.h vxi11_xdr.c vxi11_clnt.c vxi11_svc.c
+	rm -f vxi11srq.h vxi11srq_xdr.c vxi11srq_clnt.c vxi11srq_svc.c
 	rm -f ics8000.h ics8000_xdr.c ics8000_clnt.c ics8000_svc.c
 
