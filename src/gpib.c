@@ -12,15 +12,20 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <rpc/pmap_clnt.h>
 #if HAVE_GPIB
 #include <gpib/ib.h>
 #endif
 #include <errno.h>
 #include <string.h>
 #include <ctype.h>
+#include <pthread.h>
 
 #include "gpib.h"
 #include "vxi11.h"
+#if 0
+#include "vxi11srq.h"
+#endif
 #include "util.h"
 
 #define GPIB_DEVICE_MAGIC 0x43435334
@@ -41,6 +46,7 @@ struct gpib_device {
     CLIENT         *vxi_cli;   /* vxi client handle */
     CLIENT         *vxi_abrt;  /* vxi abort handle */
     Device_Link     vxi_lid;   /* vxi logical device handle */
+    pthread_t       vxi_srqthread;
 };
 
 extern char *prog;
@@ -1036,6 +1042,7 @@ _new_gpib(void)
     new->vxi_reos = 0;
     new->vxi_xeos = 0;
     new->vxi_eos = 0xa;
+    new->vxi_srqthread;
 
     return new;
 }
@@ -1059,6 +1066,55 @@ _ibdev(int pad, spollfun_t sf, unsigned long retry)
 }
 #endif
 
+#if 0
+/* SRQ service function */
+void *
+device_intr_srq_1_svc(Device_SrqParms *p, struct svc_req *rq)
+{
+    char *tmpstr = xmalloc(p->handle.handle_len + 1);
+
+    memcpy(tmpstr, p->handle.handle_val, p->handle.handle_len);
+    tmpstr[p->handle.handle_len] = '\0';
+    fprintf(stderr, "%s: SRQ received for handle '%s'\n", prog, tmpstr);
+
+    return NULL;
+}
+
+extern void device_intr_1(struct svc_req *, register SVCXPRT *);
+
+static void *
+_vxisrq_thread(void *arg)
+{
+    SVCXPRT *transp;
+
+    pmap_unset(DEVICE_INTR, DEVICE_INTR_VERSION);
+
+    transp = svcudp_create(RPC_ANYSOCK);
+    if (transp == NULL) {
+        fprintf(stderr, "%s: cannot create udp SRQ service\n", prog);
+        return NULL;
+    }
+    if (!svc_register(transp, DEVICE_INTR, DEVICE_INTR_VERSION, 
+                      device_intr_1, IPPROTO_UDP)) {
+        fprintf(stderr, "%s: unable to register udp SRQ service\n", prog);
+        return NULL;
+    }
+
+    transp = svctcp_create(RPC_ANYSOCK, 0, 0);
+    if (transp == NULL) {
+        fprintf(stderr, "%s: cannot create tcp SRQ service\n", prog);
+        return NULL;
+    }
+    if (!svc_register(transp, DEVICE_INTR, DEVICE_INTR_VERSION, 
+                      device_intr_1, IPPROTO_TCP)) {
+        fprintf(stderr, "%s: unable to register tcp SRQ service\n", prog);
+        return NULL;
+    }
+
+    svc_run ();
+    fprintf(stderr, "%s: error: SRQ svc_run returned\n", prog);
+    return NULL;
+}
 
 static int
 _get_sockaddr(char *host, int p, struct sockaddr_in *sap)
@@ -1077,6 +1133,7 @@ _get_sockaddr(char *host, int p, struct sockaddr_in *sap)
     freeaddrinfo(aip);
     return 0;
 }
+#endif
 
 static gd_t
 _init_vxi(char *host, char *device, spollfun_t sf, unsigned long retry)
@@ -1097,7 +1154,7 @@ _init_vxi(char *host, char *device, spollfun_t sf, unsigned long retry)
         exit(1);
     }
 
-    /* establish link to device */
+    /* establish link to instrument */
     p.clientId = 0;
     p.lockDevice = 0;
     p.lock_timeout = 10000; /* not used */
@@ -1109,10 +1166,8 @@ _init_vxi(char *host, char *device, spollfun_t sf, unsigned long retry)
         exit(1);
     }
     new->vxi_lid = r->lid;
-
 #if 0
-    /* XXX: someday wire _vxiabort() + gpib_fini() into a SIGINT handler? */
-    /* open async connection to device for RPC abort */
+    /* open async connection to instrument for RPC abort */
     if (_get_sockaddr(host, r->abortPort, &addr) == -1) {
         gpib_fini(new);
         exit(1);
@@ -1125,6 +1180,10 @@ _init_vxi(char *host, char *device, spollfun_t sf, unsigned long retry)
         gpib_fini(new);
         exit(1);
     }
+
+    /* start srq service thread */
+    if (pthread_create(&new->vxi_srqthread, NULL, _vxisrq_thread, NULL) != 0)
+        fprintf(stderr, "%s: pthread_create _vxisrq_thread failed\n", prog);
 #endif
     return new;
 }
@@ -1241,13 +1300,6 @@ gpib_decode_488_2_data(unsigned char *data, int *lenp, int flags)
     }
 
     return 0;
-}
-
-/* SRQ service function */
-char *
-device_intr_srq_1_svc(char *a1, struct svc_req *r)
-{
-    return NULL; /* XXX stub */
 }
 
 /*
