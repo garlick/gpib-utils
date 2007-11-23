@@ -1,10 +1,10 @@
 CFLAGS=-Wall -Wno-unused -g $(CFLAGS_GPIB)
-LDADD=-lrpcsvc -lm $(LDADD_GPIB)
+LDADD=-lrpcsvc -lm $(LDADD_GPIB) # -lpthread
 
 PROGS=hp1630 hptopbm hptodino r5005 hp3455 hp3457 hp8656 dg535 \
       hp3488 sr620 hp603x gpsh ics8065 a6032
-LIBOBJS=util.o gpib.o units.o vxi11_xdr.o vxi11_clnt.o vxi11srq_svc.o \
-	ics.o ics8000_clnt.o ics8000_xdr.o 
+LIBOBJS=util.o gpib.o units.o vxi11_xdr.o vxi11_clnt.o \
+	ics.o ics8000_clnt.o ics8000_xdr.o # vxi11srq_xdr.o vxi11srq_svc.o
 TESTPROGS=testfreq testampl
 
 all: $(PROGS)

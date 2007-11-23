@@ -1,3 +1,6 @@
+/* VXI-11 RPCL definitions. Taken from appendix C of the VXI-11 specfication. */
+/* See http://www.vxi.org */
+
 struct Device_SrqParms {
    opaque handle<>;
 };
