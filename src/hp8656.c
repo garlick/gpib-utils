@@ -39,16 +39,16 @@
 char *prog = "";
 static int verbose = 0;
 
-#define OPTIONS "n:f:a:vclF:A:"
+#define OPTIONS "a:f:a:vclF:i:"
 static struct option longopts[] = {
-    {"name",            required_argument, 0, 'n'},
+    {"address",         required_argument, 0, 'a'},
     {"clear",           no_argument,       0, 'c'},
     {"local",           no_argument,       0, 'l'},
     {"verbose",         no_argument,       0, 'v'},
     {"incrfreq",        required_argument, 0, 'F'},
     {"frequency",       required_argument, 0, 'f'},
-    {"incrampl",        required_argument, 0, 'A'},
-    {"amplitude",       required_argument, 0, 'a'},
+    {"incrampl",        required_argument, 0, 'i'},
+    {"amplitude",       required_argument, 0, 'A'},
     {0, 0, 0, 0},
 };
 
@@ -59,14 +59,14 @@ usage(void)
 
     fprintf(stderr, 
 "Usage: %s [--options]\n"
-"  -n,--name name                instrument address [%s]\n"
+"  -a,--address                  instrument address [%s]\n"
 "  -c,--clear                    initialize instrument to default values\n"
 "  -l,--local                    return instrument to local operation on exit\n"
 "  -v,--verbose                  show protocol on stderr\n"
 "  -f,--frequency [value|up|dn]  set carrier freq [100Mhz]\n"
-"  -a,--amplitude [value|up|dn]  set carrier amplitude [-127dBm]\n"
+"  -A,--amplitude [value|up|dn]  set carrier amplitude [-127dBm]\n"
 "  -F,--incrfreq value           set carrier freq increment [10.0MHz]\n"
-"  -A,--incrampl value           set carrier amplitude increment [10.0dB]\n"
+"  -i,--incrampl value           set carrier amplitude increment [10.0dB]\n"
            , prog, addr ? addr : "no default");
     exit(1);
 }
@@ -88,7 +88,7 @@ main(int argc, char *argv[])
     prog = basename(argv[0]);
     while ((c = getopt_long(argc, argv, OPTIONS, longopts, NULL)) != EOF) {
         switch (c) {
-        case 'n': /* --name */
+        case 'a': /* --address */
             addr = optarg;
             break;
         case 'c': /* --clear */
@@ -142,7 +142,7 @@ main(int argc, char *argv[])
                         HP8656_FREQ, f, HP8656_UNIT_HZ);
             }
             break;
-        case 'A': /* --incrampl */
+        case 'i': /* --incrampl */
             /* XXX instrument accepts '%' units here too */
             if (amplstr(optarg, &a) < 0)  {
                 char *end;
@@ -176,7 +176,7 @@ main(int argc, char *argv[])
                     HP8656_AMPL, HP8656_INCR_SET, a*1E6, HP8656_UNIT_UV);
             }
             break;
-        case 'a': /* --amplitude */
+        case 'A': /* --amplitude */
             if (!strcasecmp(optarg, "up")) {
                 sprintf(cmdstr + strlen(cmdstr), "%s%s", 
                         HP8656_AMPL, HP8656_STEP_UP);
@@ -218,10 +218,10 @@ main(int argc, char *argv[])
     if (!addr)
         addr = gpib_default_addr(INSTRUMENT);
     if (!addr) {
-        fprintf(stderr, "%s: use --name to provide instrument address\n", prog);
+        fprintf(stderr, "%s: no default address for %s, use --address\n",
+                prog, INSTRUMENT);
         exit(1);
     }
-
     gd = gpib_init(addr, NULL, 0);
     if (!gd) {
         fprintf(stderr, "%s: device initialization failed for address %s\n", 

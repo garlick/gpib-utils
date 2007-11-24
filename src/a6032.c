@@ -51,7 +51,7 @@ static int verbose = 0;
 
 #define OPTIONS "n:clvisrpf:P:d"
 static struct option longopts[] = {
-    {"name",            required_argument, 0, 'n'},
+    {"address",         required_argument, 0, 'a'},
     {"clear",           no_argument,       0, 'c'},
     {"local",           no_argument,       0, 'l'},
     {"verbose",         no_argument,       0, 'v'},
@@ -72,7 +72,7 @@ usage(void)
 
     fprintf(stderr, 
 "Usage: %s [--options]\n"
-"  -n,--name name          instrument address [%s]\n"
+"  -a,--address            set instrument address [%s]\n"
 "  -c,--clear              initialize instrument to default values\n"
 "  -l,--local              return instrument to local operation on exit\n"
 "  -v,--verbose            show protocol on stderr\n"
@@ -335,7 +335,7 @@ main(int argc, char *argv[])
     prog = basename(argv[0]);
     while ((c = getopt_long(argc, argv, OPTIONS, longopts, NULL)) != EOF) {
         switch (c) {
-        case 'n': /* --name */
+        case 'a': /* --address */
             addr = optarg;
             break;
         case 'v': /* --verbose */
@@ -391,7 +391,8 @@ main(int argc, char *argv[])
     if (!addr)
         addr = gpib_default_addr(INSTRUMENT);
     if (!addr) {
-        fprintf(stderr, "%s: use --name to provide instrument address\n", prog);
+        fprintf(stderr, "%s: no default address for %s, use --address\n", 
+                prog, INSTRUMENT);
         exit(1);
     }
     gd = gpib_init(addr, _interpret_status, 0);
@@ -439,10 +440,6 @@ main(int argc, char *argv[])
             goto done;
         }
     }
-
-    /* :SYSTEM:DATE <date> */
-    /* :SYSTEM:TIME <time> */
-    /* :SYSTEM:DSP <string> */
 
     /* return front panel if requested */
     if (local)

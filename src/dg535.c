@@ -44,9 +44,9 @@ static strtab_t out_names[] = DG535_OUT_NAMES;
 static strtab_t out_modes[] = DG535_OUT_MODES;
 static strtab_t trig_modes[] = DG535_TRIG_MODES;
 
-#define OPTIONS "n:clve:o:dD:qQ:aA:fF:pP:yY:tT:mM:sS:bB:zZ:D:x"
+#define OPTIONS "a:clve:o:dD:qQ:gG:fF:pP:yY:tT:mM:sS:bB:zZ:D:x"
 static struct option longopts[] = {
-    {"name",            required_argument, 0, 'n'},
+    {"address",         required_argument, 0, 'a'},
     {"clear",           no_argument,       0, 'c'},
     {"local",           no_argument,       0, 'l'},
     {"verbose",         no_argument,       0, 'v'},
@@ -57,8 +57,8 @@ static struct option longopts[] = {
     {"set-delay",       required_argument, 0, 'D'},
     {"get-out-mode",    no_argument,       0, 'q'},
     {"set-out-mode",    required_argument, 0, 'Q'},
-    {"get-out-ampl",    no_argument,       0, 'a'},
-    {"set-out-ampl",    required_argument, 0, 'A'},
+    {"get-out-ampl",    no_argument,       0, 'g'},
+    {"set-out-ampl",    required_argument, 0, 'G'},
     {"get-out-offset",  no_argument,       0, 'f'},
     {"set-out-offset",  required_argument, 0, 'F'},
     {"get-out-polarity",no_argument,       0, 'p'},
@@ -85,16 +85,16 @@ usage(void)
 
     fprintf(stderr, 
 "Usage: %s [--options]\n"
-"  -n,--name name              instrument address [%s]\n"
+"  -a,--address                instrument address [%s]\n"
 "  -c,--clear                  initialize instrument to default values\n"
 "  -l,--local                  return instrument to local operation on exit\n"
 "  -v,--verbose                show protocol on stderr\n"
 "  -e,--display-string         display string (1-20 chars), empty to clear\n"
 "  -x,--single-shot            trigger instrument in single shot mode\n"
 "  -o,--out-chan               select output channel (t0|a|b|ab|c|d|cd)\n"
-"  -dD,--get/set-delay         output delay (chan,secs)\n"
+"  -dD,--get/set-delay         output delay (chan,delay)\n"
 "  -qQ,--get/set-out-mode      output mode (ttl|nim|ecl|var)\n"
-"  -aA,--get/set-out-ampl      output amplitude (-4:-0.1, +0.1:+4) volts\n"
+"  -gG,--get/set-out-ampl      output amplitude (-4:-0.1, +0.1:+4) volts\n"
 "  -fF,--get/set-out-offset    output offset (-4:+4) volts\n"
 "  -pP,--get/set-out-polarity  output polarity (+|-)\n"
 "  -yY,--get/set-out-z         output impedence (hi|lo)\n"
@@ -102,7 +102,7 @@ usage(void)
 "  -tT,--get/set-trig-rate     trigger rate (0.001hz:1.000mhz)\n"
 "  -sS,--get/set-trig-slope    trigger slope (rising|falling)\n"
 "  -bB,--get/set-burst-count   trigger burst count (2:19)\n"
-"  -zZ,--get/set-trig-z        trigger input impedence (hi|low)\n"
+"  -zZ,--get/set-trig-z        trigger input impedence (hi|lo)\n"
            , prog, addr ? addr : "no default");
     exit(1);
 }
@@ -182,7 +182,12 @@ _parse_delay(char *str, int *chanp, double *delayp)
     if ((c = rfindstr(out_names, cstr)) == -1)
         return 0;
     *chanp = c;
-    *delayp = strtod(dstr, NULL);
+
+    if (freqstr(dstr, delayp) == -1) {
+        fprintf(stderr, "%s: specify time units in s, ms, us, ns, ps\n", prog);
+        return 0;
+    }
+
     return 1;
 }
 
@@ -229,7 +234,7 @@ main(int argc, char *argv[])
     prog = basename(argv[0]);
     while ((c = getopt_long(argc, argv, OPTIONS, longopts, NULL)) != EOF) {
         switch (c) {
-        case 'n': /* --name */
+        case 'a': /* --address */
             addr = optarg;
             break;
         case 'v': /* --verbose */
@@ -281,11 +286,11 @@ main(int argc, char *argv[])
             }
             todo++;
             break;
-        case 'a': /* --get-out-ampl */
+        case 'g': /* --get-out-ampl */
             get_out_ampl = 1;
             todo++;
             break;
-        case 'A': /* --set-out-ampl */
+        case 'G': /* --set-out-ampl */
             set_out_ampl = strtod(optarg, NULL);
             todo++;
             break;
@@ -390,13 +395,6 @@ main(int argc, char *argv[])
     if (optind < argc || !todo)
         usage();
 
-    if (!addr)
-        addr = gpib_default_addr(INSTRUMENT);
-    if (!addr) {
-        fprintf(stderr, "%s: use --name to provide instrument address\n", prog);
-        exit(1);
-    }
-
     if (out_chan == -1 && (get_out_mode || set_out_mode != -1)) {
         fprintf(stderr, "%s: --get/set-out-mode needs --out-chan\n", prog);
         exit(1);
@@ -422,6 +420,13 @@ main(int argc, char *argv[])
         exit(1);
     }
 
+    if (!addr)
+        addr = gpib_default_addr(INSTRUMENT);
+    if (!addr) {
+        fprintf(stderr, "%s: no default address for %s, use --address\n", 
+                prog, INSTRUMENT);
+        exit(1);
+    }
     gd = gpib_init(addr, _interpret_status, 0);
     if (!gd) {
         fprintf(stderr, "%s: device initialization failed for address %s\n", 
@@ -593,31 +598,6 @@ main(int argc, char *argv[])
                     fprintf(stderr, "%s: bur\n", prog); 
                     break;
             }
-        }
-        if (set_trig_rate != 0.0 && tmode != DG535_TRIG_INT && tmode != DG535_TRIG_BUR) {
-            fprintf(stderr, "%s: --set-trig-rate needs --set-trig-mode=int|bur\n", prog);
-            exit_val = 1;
-            goto done;
-        }
-        if (set_trig_slope != -1 && tmode != DG535_TRIG_EXT) {
-            fprintf(stderr, "%s: --set-trig-slope needs --set-trig-mode=ext\n", prog);
-            exit_val = 1;
-            goto done;
-        }
-        if (set_burst_count != -1 && tmode != DG535_TRIG_BUR) {
-            fprintf(stderr, "%s: --set-trig-count needs --set-trig-mode=bur\n", prog);
-            exit_val = 1;
-            goto done;
-        }
-        if (set_trig_z != -1 && tmode != DG535_TRIG_EXT) {
-            fprintf(stderr, "%s: --set-trig-z needs --set-trig-mode=ext\n", prog);
-            exit_val = 1;
-            goto done;
-        }
-        if (single_shot && tmode != DG535_TRIG_SS) {
-            fprintf(stderr, "%s: --single-shot needs --set-trig-mode=ss\n", prog);
-            exit_val = 1;
-            goto done;
         }
         if (set_trig_rate != 0.0 && tmode == DG535_TRIG_INT)
             gpib_wrtf(gd, "%s 0,%lf", DG535_TRIG_RATE, set_trig_rate);

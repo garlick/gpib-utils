@@ -42,9 +42,8 @@ If an action is not selected on the command line, it is not performed.
 .SH OPTIONS
 \fBhp3457\fR accepts the following command line options:
 .TP
-\fB\-n\fR, \fB\-\-name\fR name
-Override the name used to look up the device in /etc/gpib.conf.
-Default: \fIhp3457\fR.
+\fB\-a\fR, \fB\-\-address\fR address
+Override the default instrument address in /etc/gpib-utils.conf.
 .TP
 \fB\-c\fR, \fB\-\-clear\fR
 Clear the instrument, verify its model number, and load defaults 
@@ -56,7 +55,7 @@ Enable front panel, and load defaults
 appropriate for manual operation, essentially the same as \fB--clear\fR
 except trigger mode is set to auto.
 .TP
-\fB\-a\fR, \fB\-\-autocal\fR 
+\fB\-A\fR, \fB\-\-autocal\fR 
 Perform AC flatness/offset and extended ohms precharge 
 autocal procedures (with input signals disconnected) to
 improve the short term accuracy of certain measurements.
@@ -128,6 +127,8 @@ set yrange[-50:50]
 set title "HP 3457A Voltmeter Test"
 plot 'sample.dat' title "Sample Plot" with linesp;
 .fi
+.SH FILES
+/etc/gpib-utils.conf
 .SH "SEE ALSO"
 "HP 3457A Multimeter Operating Manual", May 1986.
 .PP

@@ -1,48 +1,67 @@
-<h3>gpib-utils</h3>
+<html>
+<h1>gpib-utils</h1>
+Welcome to gpib-utils, a collection of linux command line utilities
+for various electronic test instruments.
+<p>
+Gpib-utils natively supports LAN-connected instruments using 
+<a href="http://www.vxibus.org/?q=node/206">VXI-11 protocol</a>,
+including GPIB instruments connected via a VXI-11 gateway such 
+as the <a href="http://www.icselect.com/vxi11_ds.html">ICS 8065</a>.  
+In addition, gpib-utils can be compiled with
+<a href="http://linux-gpib.sourceforge.net/">linux-gpib</a>
+to access instruments attached to a GPIB PCI or USB adapter.
+<h3>Supported Instruments</h3>
+<ul>
+ <li><a href="http://www.metrictest.com/product_info.jsp?mfgmdl=HP%201631D">
+     HP 1630/1631 logic analyzer/oscilloscope</a>
+  <ul>
+    <li>save/restore setup and state/timing/analog data
+    <li>screen dump and conversion to PBM format
+    <li>convert state/timing data to DECSIM ASCI format for off-line analysis 
+        with <a href="http://www.veripool.com/dinotrace/">dinotrace</a>
+    <li>see <a href="hp1630_example.html">examples</a>
+  </ul>
+ <li><a href="http://www.home.agilent.com/agilent/product.jspx?nid=-536902766.0.00&cc=US&lc=eng">Agilent 6000 Series Oscilloscope</a>
+  <ul>
+   <li>save/restore setup
+   <li>print screen
+  </ul>
+ <li><a href="http://www.tucker.com/java/jsp/product_partno3457A_invid31051_condR.htm">HP 3457 DMM</a>
+  <ul>
+   <li>set configuration parameters
+   <li>take samples at regular intervals (output gnuplot-ready)
+  </ul>
+ <li><a href="http://www.tucker.com/java/jsp/product_partno8656A_invid9383_condR.htm">HP 8656 Signal Generator</a>
+  <ul>
+   <li>set configuration parameters
+  </ul>
+ <li><a href="http://www.metrictest.com/product_info.jsp?mfgmdl=HP%203488A&gclid=CO26ksX4848CFRk0awod-xBeMg">HP 3488 Switch/Control Unit</a>
+  <ul>
+   <li>probe installed switch cards
+   <li>open/close/query switches
+  </ul>
+ <li><a href="http://www.thinksrs.com/products/DG535.htm">Stanford Research Systems DG535 Digital Delay / Pulse Generator</a>
+  <ul>
+   <li>get/set configuration parameters
+  </ul>
+ <li><a href="http://www.thinksrs.com/products/SR620.htm">Stanford Research Systems SR620 Universal Time Interval Counter</a>
+  <ul>
+   <li>save/restore setup
+  </ul>
+ <li><a href="http://www.icselect.com/vxi11_ds.html">ICS 8065 Ethernet-GPIB Controller</a>
+  <ul>
+   <li>access error log
+   <li>configure, reboot, etc.
+  </ul>
+</ul>
 
-Welcome to gpib-utils.  This package contains linux command line utilities
-for several GPIB-based electronic test instruments.
-<p>
-The hp1630 utility offers configuration save/restore, screen printing,
-and off-analyzer trace manipulation for the 
-<a href="http://www.tucker.com/images/images_spec/00000086.pdf">HP 
-1630/1631 logic analyzer/oscilloscope</a>.  
-Here is a 1631A screen dump of an FM signal source produced with the command:
-<pre>
-hp1630 --print-screen | hptopbm &gt file
-</pre>
-<p>
-<hr>
-<center>
-<img src="screen.gif" alt="[hp1630 screen dump]">
-</center>
-<hr>
-<p>
-Here is a screen dump of
-<a href="http://www.veripool.com/dinotrace/">dinotrace</a>
-browsing an 1631A timing trace saved in DECSIM ASCI format with the command:
-<pre>
-hp1630 --save-timing | hptodino &gt file
-</pre>
-<p>
-<hr>
-<center>
-<img src="dinotrace.gif" alt="[dinotrace screen dump]">
-</center>
-<hr>
-<p>
-The hp3455, hp3457, and r5005 utilities can set configurations for 
-<a href="http://www.tucker.com/images/images_spec/1450.pdf">HP 3455</a>, 
-<a href="http://www.tucker.com/images/images_spec/1360.pdf">HP 3457</a>,
-and Racal-Dana 5005 digital multimeters.  
-These utilities can also take samples from the instruments at regular 
-intervals.  
-<p>
-The hp8656 utility can configure the
-<a href="http://www.tucker.com/images/images_spec/00000185.pdf">HP 8656A</a>
-synthesized signal generator.
-Here is a frequency response plot of a high pass RC filter taken with
-the following shell script:
+<h3>Example Use Case</h3>
+
+Here is an example of how gpib-utils might be used to automate a
+bench experiment.  In this case we measure the frequency response of an
+RC filter attached to the HP 8656 signal generator and HP 3457 DMM
+using the following script.
+
 <pre>
 #!/bin/bash
 
@@ -59,30 +78,30 @@ done
 hp3457 --local
 hp8656 --local
 </pre>
-<p>
+Graphing the output with <a href="http://www.gnuplot.info/">gnuplot</a>
+for three different RC combinations yields:
+<img src="filter.png" alt="[filter response plot of RC filter]">
 <hr>
-<img src="filter.gif" alt="[filter response plot of RC filter]">
-<hr>
-<p>
-See the <a href="INSTALL">INSTALL</a> file for instructions on setting up
-with <a href="http://linux-gpib.sourceforge.net/">linux-gpib</a>.
-<p>
-For operation information, see the man pages:
-<a href="hp3455.html">hp3455(1)</a>, 
-<a href="hp3457.html">hp3457(1)</a>, 
-<a href="hp8656.html">hp8656(1)</a>, 
-<a href="r5005.html">r5005(1)</a>, 
-<a href="hp1630.html">hp1630(1)</a>, 
-<a href="hptopbm.html">hptopbm(1)</a>.
-<p>
-The examples directory that is part of the release tarball may also be of use.
-<p>
-For downloads, trackers, etc, please see the project's
-<a href="http://sourceforge.net/projects/gpib-utils">SF summary page</a>.
-<p>
-Cheers,
-<br>
-Jim Garlick
+
+<h3>More Information</h3>
+
+<ul>
+ <li><a href="linux-gpib.html">Seting up gpib-utils with linux-gpib</a>
+ <li><a href="vxi.html">Adding VXI-11 Support to gpib-utils</a>
+ <li>Manual pages for each instrument:
+ <ul>
+  <li><a href="a6032.html">a6032(1)</a>
+  <li><a href="dg535.html">dg535(1)</a>
+  <li><a href="hp1630.html">hp1630(1)</a>
+  <li><a href="hp3457.html">hp3457(1)</a>
+  <li><a href="hp8656.html">hp8656(1)</a>
+  <li><a href="hptodino.html">hptodino(1)</a>
+  <li><a href="hptopbm.html">hptopbm(1)</a>
+  <li><a href="ics8065.html">ics8065(1)</a>
+  <li><a href="sr620.html">sr620(1)</a>
+ </ul>
+ <li><a href="http://sourceforge.net/projects/gpib-utils">SF summary page</a>
+</ul>
 <hr>
 $Id$
 

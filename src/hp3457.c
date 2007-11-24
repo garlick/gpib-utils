@@ -39,16 +39,16 @@
 char *prog = "";
 static int verbose = 0;
 
-#define OPTIONS "n:f:r:t:m:H:s:T:d:vclaS"
+#define OPTIONS "a:f:r:t:m:H:s:T:d:vclAS"
 static struct option longopts[] = {
-    {"name",            required_argument, 0, 'n'},
+    {"address",         required_argument, 0, 'a'},
     {"clear",           no_argument,       0, 'c'},
     {"local",           no_argument,       0, 'l'},
-    {"verbose",         no_argument, 0, 'v'},
+    {"verbose",         no_argument,       0, 'v'},
     {"function",        required_argument, 0, 'f'},
     {"range",           required_argument, 0, 'r'},
     {"trigger",         required_argument, 0, 't'},
-    {"autocal",         no_argument,       0, 'a'},
+    {"autocal",         no_argument,       0, 'A'},
     {"selftest",        no_argument,       0, 'S'},
     {"highres",         required_argument, 0, 'H'},
     {"samples",         required_argument, 0, 's'},
@@ -64,11 +64,11 @@ usage(void)
 
     fprintf(stderr, 
 "Usage: %s [--options]\n"
-"  -n,--name name                     instrument address [%s]\n"
+"  -a,--address                       instrument address [%s]\n"
 "  -c,--clear                         clear instrument, set remote defaults\n"
 "  -l,--local                         enable front panel, set local defaults\n"
 "  -v,--verbose                       show protocol on stderr\n"
-"  -a,--autocal                       autocalibrate\n"
+"  -A,--autocal                       autocalibrate\n"
 "  -S,--selftest                      run selftest\n"
 "  -f,--function dcv|acv|acdcv|dci|aci|acdci|ohm2|ohm4|freq|period\n"
 "                                     select function [dcv]\n"
@@ -270,7 +270,7 @@ main(int argc, char *argv[])
     prog = basename(argv[0]);
     while ((c = getopt_long(argc, argv, OPTIONS, longopts, NULL)) != EOF) {
         switch (c) {
-        case 'n': /* --name */
+        case 'a': /* --address */
             addr = optarg;
             break;
         case 'c': /* --clear */
@@ -279,7 +279,7 @@ main(int argc, char *argv[])
         case 'l': /* --local */
             local = 1;
             break;
-        case 'a': /* --autocal */
+        case 'A': /* --autocal */
             autocal = 1;
             break;
         case 'S': /* --selftest */
@@ -369,10 +369,12 @@ main(int argc, char *argv[])
     if (!clear && !local && !autocal && !selftest 
             && !funstr && !rangestr && !trigstr && !digstr && samples == 0)
         usage();
+
     if (!addr)
         addr = gpib_default_addr(INSTRUMENT);
     if (!addr) {
-        fprintf(stderr, "%s: use --name to provide instrument address\n", prog);
+        fprintf(stderr, "%s: no default address for %s, use --address\n",
+                prog, INSTRUMENT);
         exit(1);
     }
     gd = gpib_init(addr, _interpret_status, 0);

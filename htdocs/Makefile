@@ -1,17 +1,16 @@
-HTMLMAN= hp8656.html hp1630.html hp3455.html hp3457.html r5005.html \
-	 hptopbm.html hptodino.html
+HTMLMAN= hp8656.html hp1630.html hp3457.html hptopbm.html hptodino.html \
+	 ics8065.html sr620.html dg535.html a6032.html
 VPATH=	../man
-OTHER= INSTALL screen.gif
+OTHER= screen.png filter.png
 
 # note: dinotrace.gif is a cropped screen dump taken manually
-# note: filter.gif requires manual editing of filter.gp in ../examples/scripts
 
 all: $(HTMLMAN) $(OTHER)
 
-INSTALL: ../INSTALL
-	cp $< $@
-screen.gif: ../examples/hp1630/screen.gif
-	cp $< $@
+screen.png: ../examples/hp1630/screen.pbm
+	pnmtopng <$< >$@	
+filter.png: ../examples/scripts/filter.ppm
+	pnmtopng <$< >$@	
 
 clean:
 	rm -f $(HTMLMAN) $(OTHER)

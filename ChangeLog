@@ -1,3 +1,47 @@
+2007-11-23 Jim Garlick <garlick.jim@gmail.com>
+
+	* src/vxi11srq.x : Rename to vxi11intr.x.
+	
+	* src/gpib.c : Handle short read in _ibrd() in case this is possible.
+	Make providing _ibrd() a buffer too small to contain a response a 
+	fatal error.  Drop obvious assertions from _ibrd().
+
+	* src/hp1630.c : Pad MAXCONFBUF with 256 bytes to avoid triggering 
+	fatal error on HP1630D analyzers, previously handled with a commented 
+	out assertion in gpib.c.
+
+	* src/gpib.c : Drop unfinished VXI-11 abort/intr code.
+
+	* src/hp3455.[ch], man/hp3455.1, src/r5005.[ch], man/r5005.1 :
+	Removed.  Can no longer test and I don't know of anyone using these.
+
+	* src/gpib.c : Change default serial poll backoff factor from 0 to 1us.
+
+	* src/a6032.c, src/dg535.c, src/hp1630.c, src/hp3457.c, src/hp3488.c,
+	src/hp603x.c, src/hp8656.c, src/ics8065.c, src/sr620.c : 
+	Renamed -n,name option to -a,address.
+
+	* src/dg535.c : Renamed -a,get-out-ampl option to -g,get-out-ampl.
+	Renamed -A,set-out-ampl option to -G,set-out-ampl.
+	
+	* src/hp1630.c : Renamed -A,save-state option to -S,save-state.
+	Renamed -t,save-timing option to -T,save-timing.
+	Renamed -a,save-analog option to -A,save-analog.
+
+	* src/hp3457.c : Rebaned -a,autocal option to -A,autocal.
+
+	* src/hp8656.c : Renamed -A,incrampl option to -i,incrampl.
+	Renamed -a,amplitude option to -A,amplitude.
+
+	* src/sr620.c : Renamed -a,autocal option to -t,autocal.
+
+	* man/* : Updated to reflect option changes above.
+
+	* man/a6032.1, man/dg535.1, man/sr620.1, man/ics8065.1 : New.
+
+	* README, README.vxi, README.gpib : Removed and incorporated into
+	htdocs.
+
 2007-11-21 Jim Garlick <garlick.jim@gmail.com>
 
 	* src/gpib.c : Implement _vxiabort() (not yet used).

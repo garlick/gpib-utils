@@ -29,9 +29,9 @@
 
 #define INSTRUMENT "ics8065"
 
-#define OPTIONS "n:cfCriejJ:tT:mM:sS:zZ:kK:gG:vV:qQ:wW:"
+#define OPTIONS "a:cfCriejJ:tT:mM:sS:zZ:kK:gG:vV:qQ:wW:"
 static struct option longopts[] = {
-        {"name",                required_argument,  0, 'n'},
+        {"address",             required_argument,  0, 'a'},
         {"get-interface-name",  no_argument,        0, 'j'},
         {"set-interface-name",  required_argument,  0, 'J'},
         {"get-comm-timeout",    no_argument,        0, 't'},
@@ -71,7 +71,7 @@ usage(void)
 
     fprintf(stderr, 
   "Usage: %s [--options]\n"
-  "  -n,--name                 instrument address [%s]\n"
+  "  -a,--address              instrument address [%s]\n"
   "  -j,--get-interface-name   get VXI-11 logical name (e.g. gpib0)\n"
   "  -J,--set-interface-name   set VXI-11 logical name (e.g. gpib0)\n"
   "  -t,--get-comm-timeout     get TCP timeout (in seconds)\n"
@@ -141,7 +141,7 @@ main(int argc, char *argv[])
 
     while ((c = getopt_long(argc, argv, OPTIONS, longopts, NULL)) != EOF) {
         switch (c) {
-            case 'n' :  /* --name */
+            case 'a' :  /* --address */
                 addr = optarg;
                 break;
             case 'j' :  /* --get-interface-name */
@@ -259,10 +259,10 @@ main(int argc, char *argv[])
     if (!addr)
         addr = gpib_default_addr(INSTRUMENT);
     if (!addr) {
-        fprintf(stderr, "%s: use --name to provide instrument address\n", prog);
+        fprintf(stderr, "%s: no default address for %s, use --address\n",
+                prog, INSTRUMENT);
         exit(1);
     }
-
     ics = ics_init(addr);
     if (!ics)
         exit(1);
