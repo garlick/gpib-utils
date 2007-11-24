@@ -1,0 +1,406 @@
+2007-11-23 Jim Garlick <garlick.jim@gmail.com>
+
+	* src/vxi11srq.x : Rename to vxi11intr.x.
+	
+	* src/gpib.c : Handle short read in _ibrd() in case this is possible.
+	Make providing _ibrd() a buffer too small to contain a response a 
+	fatal error.  Drop obvious assertions from _ibrd().
+
+	* src/hp1630.c : Pad MAXCONFBUF with 256 bytes to avoid triggering 
+	fatal error on HP1630D analyzers, previously handled with a commented 
+	out assertion in gpib.c.
+
+	* src/gpib.c : Drop unfinished VXI-11 abort/intr code.
+
+	* src/hp3455.[ch], man/hp3455.1, src/r5005.[ch], man/r5005.1 :
+	Removed.  Can no longer test and I don't know of anyone using these.
+
+	* src/gpib.c : Change default serial poll backoff factor from 0 to 1us.
+
+	* src/a6032.c, src/dg535.c, src/hp1630.c, src/hp3457.c, src/hp3488.c,
+	src/hp603x.c, src/hp8656.c, src/ics8065.c, src/sr620.c : 
+	Renamed -n,name option to -a,address.
+
+	* src/dg535.c : Renamed -a,get-out-ampl option to -g,get-out-ampl.
+	Renamed -A,set-out-ampl option to -G,set-out-ampl.
+	
+	* src/hp1630.c : Renamed -A,save-state option to -S,save-state.
+	Renamed -t,save-timing option to -T,save-timing.
+	Renamed -a,save-analog option to -A,save-analog.
+
+	* src/hp3457.c : Rebaned -a,autocal option to -A,autocal.
+
+	* src/hp8656.c : Renamed -A,incrampl option to -i,incrampl.
+	Renamed -a,amplitude option to -A,amplitude.
+
+	* src/sr620.c : Renamed -a,autocal option to -t,autocal.
+
+	* man/* : Updated to reflect option changes above.
+
+	* man/a6032.1, man/dg535.1, man/sr620.1, man/ics8065.1 : New.
+
+	* README, README.vxi, README.gpib : Removed and incorporated into
+	htdocs.
+
+	* : tag gpib-utils-1-3
+
+2007-11-21 Jim Garlick <garlick.jim@gmail.com>
+
+	* src/gpib.c : Implement _vxiabort() (not yet used).
+
+	* src/vxi11srq.x : Broken out from vxi11.x to allow server side
+	implementation of device_intr_srq().
+
+	* INSTALL : Rename to README.gpib.
+
+2007-11-18 Jim Garlick <garlick.jim@gmail.com>
+
+	* a6032.[ch] : New.
+
+	* gpib.[ch] : Enhancements/bug fixes for a6032:
+	- _vxird() internally issues multiple reads until 'reason' is nonzero
+	- added gpib_qry(), write+read+spoll
+	- added gpib_decode_488_2_data()
+
+2007-11-16 Jim Garlick <garlick.jim@gmail.com>
+
+	* dg535.c : Shorten usage output by combining get/set lines.
+
+2007-11-15 Jim Garlick <garlick.jim@gmail.com>
+
+	* etc/gpib.conf : Readded with ni-usb config.
+
+	* src/gpib.c : Fixed some bugs that emerged when compiling with
+	linux-gpib again.
+
+	* gpib-utils.spec : Install the gpib-utils.conf file.
+
+	* src/Makefile : Enable linux-gpib.
+
+	* : tag gpib-utils-1-3-pre1 
+
+2007-11-14 Jim Garlick <garlick.jim@gmail.com>
+
+	* src/dg535.c : Complete output query commands.  
+	Add get/set delay command.
+
+2007-11-13 Jim Garlick <garlick.jim@gmail.com>
+
+	* src/hp1630.c : Swallow InvAsm with XX learn string.
+	Add -d option to set the date [Rudolf Reuter].
+	
+	* htdocs/index.html : Correct print screen example [Rudolf Reuter]
+
+	* htdocs/filer.gif : Regenerate with mono colors [Rudolf Reuter].
+
+	* htdocs/dinotrace.gif : Restore corrupted image.
+
+	* src/errstr.[ch] : Folded in with util.[ch], renamed errtab to
+	strtab, finderr() to findstr(), added rfindstr(), changed 
+	"unknown error %d" to "unknown code %d". 
+
+	* src/gpib.[ch] : Add gpib-utils.conf config file support with
+	gpib_default_addr().  Remove byaddr and byname initialization
+	functions and have all initialization go through gpib_init().
+
+	* src/* : Update to reflect initialization and error string handling
+	changes in gpib.[ch].
+
+	* examples/gpib.conf : Removed.  We now explicitly set any non-default
+	flags in each program.
+
+	* man/* : Removed note about default board number and gpib.conf
+	entry since these are deprecated.
+
+2007-11-11 Jim Garlick <garlick.jim@gmail.com>
+
+	* src/dg535.c : Added trigger control functions.
+
+2007-11-10 Jim Garlick <garlick.jim@gmail.com>
+
+	* src/ics8000.x : Corrected several errors [Jay Berg]
+
+	* src/ics8065.c, src/ics.[ch] : Add remaining functions.
+
+2007-11-09 Jim Garlick <garlick.jim@gmail.com>
+
+	* src/ics8000.x : Added ICSCONFIG RPCL from 8065 manual.
+
+	* src/ics.[ch] : Wrappers for ICSCONFIG RPC.
+
+	* src/ics8065.c : New utility for accessing ICS 8065 error log.
+
+2007-11-07 Jim Garlick <garlick.jim@gmail.com>
+
+	* src/vxi11.x : Added VXI_WAITLOCK, VXI_ENDW, and VXI_TERMCHRSET
+	flag definitions per VXI-11 spec.
+
+	* src/gpib.c : Set defaults for various ib flags and use them
+	to set VXI-11 flags as appropriate.
+
+	* src/dg535.c : Implement _interpret_status() callback.
+	Add output control functions.
+
+2007-11-06 Jim Garlick <garlick.jim@gmail.com>
+
+	* src/vxi11.x : New VXI-11 RPCL from http://www.agilent.com/find/linux.
+
+	* Makefile : Build VXI-11 support with rpcgen.
+
+	* src/gpib.c : Add VXI-11 support.
+
+	* : Rename local wrapper functions from gpib_ib* to gpib_*.
+
+	* README.vxi : Description of VXI-11 support.
+
+2006-10-01 Jim Garlick <garlick.jim@gmail.com>
+
+	* src/hp603x.[ch] : New (incomplete).
+
+	* src/gpsh.c : Simple shell for testing devices.
+	
+	* src/gpib.[ch] : Add opaque gd_t type.
+
+	* src/sr620.c : Add save/restore and graph functions.
+
+	* src/tek2230.c: Removed (mine died !)
+
+2006-09-08 Jim Garlick <garlick@speakeasy.net>
+
+	* src/util.[ch]: Use void * for read/write buffers.
+
+	* src/gpib.c: Fix error message typo.
+
+	* src/sr620.[ch]: New (incomplete).
+
+2006-05-13 Jim Garlick <garlick@speakeasy.net>
+
+	* man/hp3488.1: New.
+
+	* man/Makefile: added hp3488.1
+
+	* src/hp3488.[ch]: 
+	- hp3488_checksrq(): interpret error register contents.
+	- hp3488_list(): include descriptions in slot listing.
+	- add --selftest option.
+	- _disambiguate_ctype(): turn off display while probing.
+	- hp3488_open()/hp3488_close(): pass entire channel list in one command.
+	- hp3488_query_caddr(): report query result as 1 (closed) or 0 (open).
+
+2006-05-12 Jim Garlick <garlick@speakeasy.net>
+
+	* src/hp3488.[ch]: New.
+
+	* src/Makefile: hp3488 support
+
+	* examples/gpib.conf: includes hp3488 entry. 
+
+2006-02-28 Jim Garlick <garlick@speakeasy.net>
+
+	* src/hp1630.c: drop \r\n in model comparison
+
+	* : tag gpib-utils-1-2
+
+2006-02-26 Jim Garlick <garlick@speakeasy.net>
+
+	* src/Makefile: fix link line for r5005.
+
+	* src/hp1630.c: workaround for HP1630D firmware bug [Adam Goldman].
+
+	* src/gpib.c: comment out ibrd() EOI assertion and remove short 
+	read and write handling which probably can't happen.
+
+2006-02-17 Jim Garlick <garlick@speakeasy.net>
+
+	* gpib-utils.spec: Update for Fedora packaging guidelines.
+
+2006-02-13 Jim Garlick <garlick@speakeasy.net>
+
+	* src/hpcrc.[ch]: New. CRC algorithm for hp1630. [Adam Goldman]
+
+	* src/gpib.c: in gpib_ibrd(), remove EOI assertion, continue 
+	reading until EOI or zero ibcnt.
+
+	* src/gpib.c: in gpib_ibwrt(), continue on a short read.
+
+	* src/hp1630.c: verify CRC on save/restore of learn strings.
+
+	* src/hptodino.c: verify CRC on read of learn string.
+
+2006-02-09 Jim Garlick <garlick@speakeasy.net>
+
+	* src/util.[ch]: New.
+
+	* src/hp1630.c: Use read_all(), write_all() instead of getchar(), 
+	fread(), and fwrite() for save/restore/print.
+
+	* src/hp1630.c: Cleanup save/restore functions.  
+	- Check learn string length.  
+	- Restore learn strings to the analyzer individually, checking
+	  status byte 4 on each restore.  
+	- Display learn string cmd+lengths on save.
+
+	* src/gpib.c: in gpib_ibrd(), assert that EOI is set.
+
+2006-02-08 Jim Garlick <garlick@speakeasy.net>
+
+	* src/hp1630.c: Add clear entry before date set [Adam Goldman]
+
+2005-12-09 Jim Garlick <garlick@speakeasy.net>
+
+	* src/*h: some gratuitous reformatting of text.
+
+	* src/tek2230.c: New.
+
+2005-12-01 Jim Garlick <garlick@speakeasy.net>
+
+	* src/hp3455.c: Cleanup (make it like hp3457).
+
+	* src/r5005.c: Cleanup (make it like hp3457).
+
+	* src/dg535.c: New.
+
+	* src/gpib.[ch]: New (factored).
+
+2005-11-28 Jim Garlick <garlick@speakeasy.net>
+
+	* src/errstr.[ch]: factored code from r5005.c and hp1630.c.
+
+	* src/hp1630.c: Cleanup.
+	- Add -c (clear), -l (local), and -v (verbose) options.
+	- Remove -d (date), -r (reset) options.  Actually folded these into -c.
+	- Changed short opt for --save-config from -c to -C
+	- Moved table of sb4 errors to hp1630.h and removed #defines.
+	- Restored _ibclr() function.
+
+	* src/hp1630.h: fixed status byte bit definitions (was bit pos, 
+	now mask).  Was incorrectly treating the bit positions as masks 
+	in checksrq().
+
+2005-11-25 Jim Garlick <garlick@speakeasy.net>
+
+	* src/hptodino.c: Forgot to update for new freqstr() prototype.  Fixed.
+
+	* man/hptodino.1: New.
+
+	* man/hptopbm.1: Added reference to thinkjettopbm(1), though 
+	it doesn't seem to work with hp1630 screen dumps.
+
+	* src/hp1630.c: Fixed some unsigned vs signed char warnings.
+
+	* src/units.[ch]: Subsumed ampl.c and freq.c.
+
+	* src/ampl.c, src/freq.c: Removed.
+
+2005-11-20 Jim Garlick <garlick@speakeasy.net>
+
+	* man/hp8656.1: New.
+
+	* man/hp3457.1: Updated to refect changes in the code.
+
+	* examples/gpib.conf: added dg535 and hp8656 instruments.
+
+	* src/hp3457.c: A lot of changes related to allowing the instrument
+	state to persist across invocations, e.g. so we can run it from scripts
+	where it is invoked multiple times.
+
+	* examples/scripts: New.
+
+	* htdocs: replaced discharging battery example with RC filter freq
+	response example.  Added hp8656 links.
+
+	* : tag gpib-utils-1-1
+
+2005-10-23 Jim Garlick <garlick@speakeasy.net>
+
+	* src/freq.c, src/ampl.c: cleanup.
+
+2005-10-21 Jim Garlick <garlick@speakeasy.net>
+
+	* src/hp8656.[ch]: New.
+
+	* htdocs: New (the sf web pages).
+
+2005-10-14 Jim Garlick <garlick@speakeasy.net>
+
+	* : tag gpib-utils-1-0
+
+2005-09-30 Jim Garlick <garlick@speakeasy.net>
+
+	* : housecleaning prior to release as sourceforge gpib-utils project.
+
+2005-07-14 Jim Garlick <garlick@speakeasy.net>
+
+	* r1500.[ch], wrappers.[ch], sd6031.[ch]: removed.
+
+	* freq.c: added
+
+	* hptodino.c: added
+
+2005-07-05 Jim Garlick <garlick@speakeasy.net>
+
+	* : moved to home subversion repo.
+
+2005-04-14 Jim Garlick <garlick@speakeasy.net>
+
+	* r5005.c: removed serial poll (called in _ibtrg) from inside 
+	sample loop.  ibrsp was occasionally failing with error 0.
+
+2005-04-08 Jim Garlick <garlick@speakeasy.net>
+
+	* r5005.1: New.
+
+	* hp3455.1: New.
+
+	* hp1630.1: New.
+
+	* hp1630.c: update for linux-gpib.  Removed wrappers.[ch] dependency.
+
+	* r5005.c: revamped based on manual and HP DVM experience.  Removed
+	wrappers.[ch] dependency.
+
+2005-04-04 Jim Garlick <garlick@speakeasy.net>
+
+	* Makefile, wrappers.[ch]: switch from Jens Torring's GPIB package,
+	http://www.physik.fu-berlin.de/~toerring; to linux-gpib,
+	http://linux-gpib.sourceforge.net/.
+
+	* hp3455.c: New for HP DVM.
+
+	* gpib.conf: update for linux-gpib.
+
+2004-08-21 Jim Garlick <garlick@speakeasy.net>
+
+	* Makefile, wrappers.c: cleaned up include/lib paths.
+
+	* Makefile: added install target.
+
+2004-08-01 Jim Garlick <garlick@speakeasy.net>
+
+	* : Moved to home CVS repo
+
+	* : tag gpib-utils-0-1
+
+2002-11-30 Jim Garlick <garlick@speakeasy.net>
+
+	* : Updated hp1630 error codes to support hp1631.
+
+	* : Added r5005 utility for Racal Dana 5005 digital multimeter
+
+	* : Added sd6041 utility for Systron Donner 1041A freq counter
+
+	* : Warn if r1500 delay/width value will be rounded due to 100ns 
+	increment limitation on continuous/multiple pulses.
+
+2002-11-29 Jim Garlick <garlick@speakeasy.net>
+
+	* : Cleanup of hp1630 util.
+
+2002-11-27 Jim Garlick <garlick@speakeasy.net>
+
+	* : Added r1500 utility for Racal Dana series 1500 delay pulse 
+	generator.
+
+2002-11-25 Jim Garlick <garlick@speakeasy.net>
+
+	* : Added hp1630 utility for HP 163x series logic analyzers
