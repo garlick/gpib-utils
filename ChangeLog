@@ -28,7 +28,7 @@
 	Renamed -t,save-timing option to -T,save-timing.
 	Renamed -a,save-analog option to -A,save-analog.
 
-	* src/hp3457.c : Rebaned -a,autocal option to -A,autocal.
+	* src/hp3457.c : Renamed -a,autocal option to -A,autocal.
 
 	* src/hp8656.c : Renamed -A,incrampl option to -i,incrampl.
 	Renamed -a,amplitude option to -A,amplitude.
