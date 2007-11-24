@@ -367,7 +367,7 @@ hp3488_clear(gd_t gd)
 int
 main(int argc, char *argv[])
 {
-    char *addr = INSTRUMENT;
+    char *addr = NULL;
     gd_t gd;
     int c;
     int verbose = 0;
@@ -437,8 +437,8 @@ main(int argc, char *argv[])
     }
     gd = gpib_init(addr , _interpret_status, 100000);
     if (!gd) {
-        fprintf(stderr, "%s: device initialization failed for address %s\n",
-                                prog, addr);
+        fprintf(stderr, "%s: device initialization failed for address %s\n", 
+                prog, addr);
         exit(1);
     }
     gpib_set_verbose(gd, verbose);
