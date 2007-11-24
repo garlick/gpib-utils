@@ -1,7 +1,7 @@
-set terminal postscript color
-set output 'sample.ps'
-#set terminal pbm color
-#set output 'sample.ppm'
+#set terminal postscript color
+#set output 'sample.ps'
+set terminal pbm color
+set output 'sample.ppm'
 
 set xlabel "time (s)"
 set ylabel "dc volts (v)"

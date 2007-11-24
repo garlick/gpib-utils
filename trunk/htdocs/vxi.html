@@ -1,0 +1,75 @@
+<html>
+<h2>Adding VXI-11 Support to gpib-utils</h2>
+
+The <a href="http://www.vxibus.org/?q=node/206">VXI-11.3 specification</a>
+defines a protocol based on ONC RPC for
+communicating with instruments over ethernet, either natively to a LAN
+jack on the back of an instrument, or via an Ethernet-to-GPIB gateway.
+<p>
+Adding VXI-11 support to gpib-utils was a matter of including the
+<tt>vxi11.x</tt> ONC RPC definitions from the VXI-11 spec (pulled from
+the Agilent application note examples referenced below), adding Makefile 
+targets to generate the stubs for the VXI-11 services with rpcgen, and adding 
+VXI-11 function calls to <tt>gpib.c</tt>, where all gpib-utils's I/O functions 
+are wrapped.  Because the <tt>gpib.c</tt> wrappers were already there, it was 
+possible to add VXI-11 support without modifying the instrument utilities 
+themselves, although in some cases it was necessary to alter error handling
+code to more gracefully exit, shutting down RPC services to avoid leaving 
+the other end of the connection to time out.
+<p>
+Each utility takes a <tt>--address</tt> command line argument, used to 
+specify the instrument address which is passed to the gpib.c wrapper 
+initialization function.  If the address contains a colon, the 
+initialization function now interprets it to be a VXI-11 
+<i>hostname:logical_device</i>, otherwise it is 
+assumed to be a numeric GPIB primary address.  For example, a native 
+VXI-11 instrument might be called <tt>meter:inst0</tt>, an instrument at GPIB 
+address 9 behind an Ethernet-to-GPIB controller such as the ICS 8065 might 
+be addressed as <tt>gpibgw:gpib0,9</tt>, and the same instrument directly 
+attached to a GPIB card would simply be addressed as <tt>9</tt>.  
+For convenience, a configuration file <tt>/etc/gpib-utils.conf</tt> 
+has been added so that default addresses can be entered there for each 
+instrument and the <tt>--address</tt> argument does not have to be used 
+every time.  In earlier releases of gpib-utils, each instrument was expected
+to be present in /etc/gpib.conf.  This is no longer necessary.
+<p>
+Since gpib-utils is rather unsophisticated in its use of GPIB facilities,
+only the core VXI-11 channel was used.  The abort and intr (SRQ) channels
+were not implemented.  VXI-11 device locking is not used.  It is possible
+that future releases of gpib-utils will implement a feature similar to
+linux-gpib <i>autopoll</i> using the SRQ reverse channel and posix threads.
+<p>
+Note that gpib-utils now compiles standalone without linux-gpib by default.
+To build against linux-gpib, run "make clean" then "make all-gpib" at the
+top level Makefile.
+<h3>References</h3>
+The following references were used:
+<ul>
+<li>Model 8065 Ethernet <-> GPIB Controller Instruction Manual,
+  ICS Electronics.
+<li><a href="http://www.icselect.com/pdfs/ab80_1.pdf">
+Frequently Asked Questions (FAQ) For The ICS Model 8065 Ethernet-To-GPIB 
+Controller, Application Note AB80-1, ICS Electronics</a>.
+<li><a href="http://www.icselect.com/pdfs/ab80_3.pdf">
+VXI-11 RPC Programming Guide for the 8065: An Introduction to
+RPC Programming, Application Note AB80-3, ICS Electronics</a>.
+<li><a href="http://www.icselect.com/pdfs/ab80_4.pdf">
+SRQ Handling With a VXI-11 Interrupt Channel On ICS's Model 8065 
+Ethernet-To-GPIB Controller, Application Note AB80-4, ICS Electronics</a>.
+<li>VMEbus Extensions for Instrumentation: TCP/IP Instrument Protocol
+  Specification VXI-11, Revision 1.0, July 17, 1995.
+<li><a href="http://www.home.agilent.com/agilent/redirector.jspx?action=obs&nid=-536900530.0.00&lc=eng&cc=US&ckey=1189329&pubno=5989-6716EN&ltype=&ctype=AGILENT_EDITORIAL">
+Using Linux to Control LXI Instruments Through VXI-11, Application Note
+1465-28, Agilent Technologies</a>.
+<li><a href="http://www.home.agilent.com/agilent/editorial.jspx?cc=US&lc=eng&ckey=1189308&nid=-536900530.0.00&id=1189308">Example code from Agilent application note</a>.
+<li><a href="http://www.oreilly.com/catalog/rpc/?CMP=OTC-KW7501011010&ATT=rpc">
+Power Programming with RPC, John Bloomer, O'Reilly & Associates, Inc., 1992.</a>
+<li><a href="http://www.lxistandard.org/home">LXI home page</a>
+</ul>
+<h3>Thanks</h3>
+Special thanks to Jerry Mercola of <a href="http://icselect.com">
+ICS Electronics</a> for providing a model 8065 Ethernet-to-GPIB 
+controller as the development platform for adding VXI-11 support to 
+gpib-utils, and to Jay Berg for technical advice along the way, 
+especially with the ICSCONFIG RCPL used to implement the ics8065 utility.
+</html>

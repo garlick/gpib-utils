@@ -41,13 +41,13 @@ static strtab_t _sb4_errors[] = SB4_ERRORS;
 #define INSTRUMENT "hp1630"
 #define PATH_DATE  "/bin/date"
 
-#define MAXCONFBUF (16*1024)
+#define MAXCONFBUF (16*1024+256)
 #define MAXPRINTBUF (128*1024)
 #define MAXMODELBUF (16)
 
-#define OPTIONS "n:clvpPsCAtard"
+#define OPTIONS "a:clvpPsCSTArd"
 static struct option longopts[] = {
-    {"name",            required_argument, 0, 'n'},
+    {"address",         required_argument, 0, 'a'},
     {"clear",           no_argument, 0, 'c'},
     {"local",           no_argument, 0, 'l'},
     {"verbose",         no_argument, 0, 'v'},
@@ -55,9 +55,9 @@ static struct option longopts[] = {
     {"print-all",       no_argument, 0, 'P'},
     {"save-all",        no_argument, 0, 's'},
     {"save-config",     no_argument, 0, 'C'},
-    {"save-state",      no_argument, 0, 'A'},
-    {"save-timing",     no_argument, 0, 't'},
-    {"save-analog",     no_argument, 0, 'a'},
+    {"save-state",      no_argument, 0, 'S'},
+    {"save-timing",     no_argument, 0, 'T'},
+    {"save-analog",     no_argument, 0, 'A'},
     {"restore",         no_argument, 0, 'r'},
     {"date",            no_argument, 0, 'd'},
     {0, 0, 0, 0},
@@ -78,9 +78,9 @@ usage(void)
 "  -P,--print-all     print all to stdout\n"
 "  -s,--save-all      save complete analyzer state to stdout\n"
 "  -C,--save-config   save config to stdout\n"
-"  -A,--save-state    save state acquisition data to stdout\n"
-"  -t,--save-timing   save timing acquisition data to stdout\n"
-"  -a,--save-analog   save analog data to stdout (1631 only)\n"
+"  -S,--save-state    save state acquisition data to stdout\n"
+"  -T,--save-timing   save timing acquisition data to stdout\n"
+"  -A,--save-analog   save analog data to stdout (1631 only)\n"
 "  -r,--restore       restore analyzer state (partial or complete) from stdin\n"
 "  -d,--date          set date\n"
            , prog, addr ? addr : "no default");
@@ -297,11 +297,7 @@ hp1630_restore(gd_t gd)
 
         /* write the learn string command */
         gpib_wrt(gd, buf + i, lslen);
-        /* XXX The following string is written after each learn string
-         * to work around a possible HP1630D firmware bug identified by
-         * Adam Goldman where the analyzer seems to be inappropriately 
-         * waiting for more data in some cases.
-         */
+        /* pad LS with magic some f/w revisions seem to need [Adam Goldman] */
         gpib_wrtf(gd,"\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n");
 
         /* get status byte 4 and check for error */
@@ -412,17 +408,17 @@ main(int argc, char *argv[])
             save_config = 1;
             todo++;
             break;
-        case 'A':   /* --save-state */
+        case 'S':   /* --save-state */
             save = 1;
             save_state = 1;
             todo++;
             break;
-        case 't':   /* --save-timing */
+        case 'T':   /* --save-timing */
             save = 1;
             save_timing = 1;
             todo++;
             break;
-        case 'a':   /* --save-analog (1631 only) */
+        case 'A':   /* --save-analog (1631 only) */
             save = 1;
             save_analog = 1;
             todo++;
@@ -439,16 +435,17 @@ main(int argc, char *argv[])
     }
     if (optind < argc || !todo)
         usage();
-    if (!addr)
-        addr = gpib_default_addr(INSTRUMENT);
-    if (!addr) {
-        fprintf(stderr, "%s: use --name to provide instrument address\n", prog);
-        exit(1);
-    }
 
     if (save + save_all + restore + print_screen + print_all > 1)
         usage();
 
+    if (!addr)
+        addr = gpib_default_addr(INSTRUMENT);
+    if (!addr) {
+        fprintf(stderr, "%s: no default address for %s, use --address\n", 
+                prog, INSTRUMENT);
+        exit(1);
+    }
     gd = gpib_init(addr, _interpret_status, 0);
     if (!gd) {
         fprintf(stderr, "%s: device initialization failed for address %s\n", 

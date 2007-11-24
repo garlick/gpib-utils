@@ -41,9 +41,8 @@ If an action is not selected on the command line, it is not performed.
 .SH OPTIONS
 \fBhp3488\fR accepts the following command line options:
 .TP
-\fB\-n\fR, \fB\-\-name\fR
-Override the name used to look up the device in /etc/gpib.conf.
-Default: \fIhp3488\fR.
+\fB\-a\fR, \fB\-\-address\fR address
+Override the default instrument address in /etc/gpib-utils.conf.
 .TP
 \fB\-c\fR, \fB\-\-clear\fR
 Clear the instrument, verify its model number, and open all channels.
@@ -95,6 +94,8 @@ do not perform this disambiguation and treat the 4-channel 44476
 and 7-channel 44477 as though it had 10 channels like the 44471.
 The 3488 will report these "phantom" channels as open, but will 
 return an error if you try to close them.
+.SH FILES
+/etc/gpib-utils.conf
 .SH "SEE ALSO"
 "HP 3488A Switch/Control Unit: Operating, Programming, and Configuration 
 Manual", Sept. 1, 1995.

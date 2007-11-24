@@ -40,9 +40,9 @@ char *prog = "";
 static int lerr_flag = 1;   /* logic errors: 0=ignored, 1=fatal */
                             /*   See: disambiguate_ctype() */
 
-#define OPTIONS "n:clSvL0:1:q:Q"
+#define OPTIONS "a:clSvL0:1:q:Q"
 static struct option longopts[] = {
-    {"name",            required_argument, 0, 'n'},
+    {"address",         required_argument, 0, 'a'},
     {"clear",           no_argument,       0, 'c'},
     {"local",           no_argument,       0, 'l'},
     {"verbose",         no_argument,       0, 'v'},
@@ -62,7 +62,7 @@ usage(void)
 
     fprintf(stderr, 
 "Usage: %s [--options]\n"
-"  -n,--name name                instrument address [%s]\n"
+"  -a,--address                  instrument address [%s]\n"
 "  -c,--clear                    initialize instrument to default values\n"
 "  -l,--local                    return instrument to local operation on exit\n"
 "  -v,--verbose                  show protocol on stderr\n"
@@ -386,7 +386,7 @@ main(int argc, char *argv[])
     prog = basename(argv[0]);
     while ((c = getopt_long(argc, argv, OPTIONS, longopts, NULL)) != EOF) {
         switch (c) {
-        case 'n': /* --name */
+        case 'a': /* --address */
             addr = optarg;
             break;
         case 'c': /* --clear */
@@ -431,10 +431,10 @@ main(int argc, char *argv[])
     if (!addr)
         addr = gpib_default_addr(INSTRUMENT);
     if (!addr) {
-        fprintf(stderr, "%s: use --name to provide instrument address\n", prog);
+        fprintf(stderr, "%s: no default address for %s, use --address\n",
+                prog, INSTRUMENT);
         exit(1);
     }
-
     gd = gpib_init(addr , _interpret_status, 100000);
     if (!gd) {
         fprintf(stderr, "%s: device initialization failed for address %s\n",

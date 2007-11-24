@@ -31,18 +31,21 @@ hp1630 \- control HP 1630/31 logic analyzer
 .IP
 .nf
 clear
+set date
 save/restore/print operation
 local
 .SH OPTIONS
 \fBhp1630\fR accepts the following command line options:
 .TP
-\fB\-n\fR, \fB\-\-name\fR
-Override the name used to look up the device in /etc/gpib.conf.
-Default: \fIhp1630\fR.
+\fB\-a\fR, \fB\-\-address\fR address
+Override the default instrument address in /etc/gpib-utils.conf.
 .TP
 \fB\-c\fR, \fB\-\-clear\fR
 Clear the instrument, load power-on values, verify the model number,
 and set the date to the UNIX date.
+.TP
+\fB\-d\fR, \fB\-\-date\fR
+Set the date to to UNIX date.
 .TP
 \fB\-l\fR, \fB\-\-local\fR
 Enable the front panel.
@@ -67,18 +70,20 @@ to standard output.
 \fB\-C\fR, \fB\-\-save-config\fR 
 Save the instrument configuration to standard output.
 .TP
-\fB\-A\fR, \fB\-\-save-state\fR 
+\fB\-S\fR, \fB\-\-save-state\fR 
 Save the instrument state measurement data to standard output.
 .TP
-\fB\-t\fR, \fB\-\-save-timing\fR 
+\fB\-T\fR, \fB\-\-save-timing\fR 
 Save the instrument timing measurement data to standard output.
 .TP
-\fB\-a\fR, \fB\-\-save-analog\fR 
+\fB\-A\fR, \fB\-\-save-analog\fR 
 Save the instrument analog measurement data to standard output (hp1631 only).
 .TP
 \fB\-r\fR, \fB\-\-restore\fR 
 Restore state/measurement data saved by any of the save options
 from standard input.
+.SH FILES
+/etc/gpib-utils.conf
 .SH "SEE ALSO"
 "Hewlett Packard 1630A/D Logic Analyzer Operating Manual",
 second edition, May 1983.

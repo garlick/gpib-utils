@@ -36,9 +36,8 @@ If an action is not selected on the command line, it is not peformed.
 .SH OPTIONS
 \fBhp8656\fR accepts the following command line options:
 .TP
-\fB\-n\fR, \fB\-\-name\fR name
-Override the name used to look up the device in /etc/gpib.conf.
-Default: \fIhp8656\fR.
+\fB\-a\fR, \fB\-\-address\fR address
+Override the default instrument address in /etc/gpib-utils.conf.
 .TP
 \fB\-c\fR, \fB\-\-clear\fR
 Clear the instrument and load the following defaults:
@@ -64,7 +63,7 @@ Set the carrier frequency.
 A value of ``up'' or ``down'' adjust the current frequency
 by the carrier frequency increment.
 .TP
-\fB\-a\fR, \fB\-\-amplitude \fR value
+\fB\-A\fR, \fB\-\-amplitude \fR value
 Set the carrier amplitude.
 A value of ``up'' or ``down'' adjust the current amplitude
 by the carrier amplitude increment.
@@ -72,7 +71,7 @@ by the carrier amplitude increment.
 \fB\-F\fR, \fB\-\-incrfreq\fR value
 Set the carrier frequency increment.
 .TP
-\fB\-A\fR, \fB\-\-incrampl\fR value
+\fB\-i\fR, \fB\-\-incrampl\fR value
 Set the carrier amplitude increment.
 
 .SH "EXAMPLES"
@@ -86,5 +85,7 @@ for freq in `seq 100 10 1000`; do
 done
 hp8656 --local
 .fi
+.SH FILES
+/etc/gpib-utils.conf
 .SH "SEE ALSO"
 "HP 8656A Signal Generator 0.1 - 990 MHz Operating Manual", May 1981.

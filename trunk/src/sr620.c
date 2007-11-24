@@ -50,16 +50,16 @@ static int verbose = 0;
 static strtab_t _selftest_errors[] = SR620_TEST_ERRORS;
 static strtab_t _autocal_errors[] = SR620_AUTOCAL_ERRORS;
 
-#define OPTIONS "n:clvsrSapPjCgG"
+#define OPTIONS "a:clvsrStpPjCgG"
 static struct option longopts[] = {
-    {"name",            required_argument, 0, 'n'},
+    {"address",         required_argument, 0, 'a'},
     {"clear",           no_argument,       0, 'c'},
     {"local",           no_argument,       0, 'l'},
     {"verbose",         no_argument,       0, 'v'},
     {"save",            no_argument,       0, 's'},
     {"restore",         no_argument,       0, 'r'},
     {"selftest",        no_argument,       0, 'S'},
-    {"autocal",         no_argument,       0, 'a'},
+    {"autocal",         no_argument,       0, 't'},
     {"graph-histogram", no_argument,       0, 'p'},
     {"graph-mean",      no_argument,       0, 'P'},
     {"graph-jitter",    no_argument,       0, 'j'},
@@ -83,13 +83,13 @@ usage(void)
 "  -s,--save             save instrument setup to stdout\n"
 "  -r,--restore          restore instrument setup from stdin\n"
 "  -S,--selftest         run instrument self test\n"
-"  -a,--autocal          run autocal procedure\n"
+"  -t,--autocal          run autocal procedure\n"
 "  -C,--graph-clear      clear graph\n"
 "  -G,--graph-enable     enable graph mode\n"
 "  -g,--graph-disable    disable graph mode (improves measurement throughput)\n"
 "  -p,--graph-histogram  graph histogram\n"
 "  -P,--graph-mean       graph mean stripchart\n"
-"  -P,--graph-jitter     graph jitter stripchart\n"
+"  -j,--graph-jitter     graph jitter stripchart\n"
            , prog, addr ? addr : "no default");
     exit(1);
 }
@@ -577,7 +577,7 @@ main(int argc, char *argv[])
     prog = basename(argv[0]);
     while ((c = getopt_long(argc, argv, OPTIONS, longopts, NULL)) != EOF) {
         switch (c) {
-        case 'n': /* --name */
+        case 'a': /* --address */
             addr = optarg;
             break;
         case 'c': /* --clear */
@@ -598,7 +598,7 @@ main(int argc, char *argv[])
         case 'S': /* --selftest */
             test = 1;
             break;
-        case 'a': /* --autocal */
+        case 't': /* --autocal */
             autocal = 1;
             break;
         case 'p': /* --graph-histogram */
@@ -635,10 +635,10 @@ main(int argc, char *argv[])
     if (!addr)
         addr = gpib_default_addr(INSTRUMENT);
     if (!addr) {
-        fprintf(stderr, "%s: use --name to provide instrument address\n", prog);
+        fprintf(stderr, "%s: no default address for %s, use --address\n",
+                prog, INSTRUMENT);
         exit(1);
     }
-
     gd = gpib_init(addr, _interpret_status, 0);
     if (!gd) {
         fprintf(stderr, "%s: device initialization failed for address %s\n", 

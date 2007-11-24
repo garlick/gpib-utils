@@ -19,13 +19,9 @@
 #include <errno.h>
 #include <string.h>
 #include <ctype.h>
-#include <pthread.h>
 
 #include "gpib.h"
 #include "vxi11.h"
-#if 0
-#include "vxi11srq.h"
-#endif
 #include "util.h"
 
 #define GPIB_DEVICE_MAGIC 0x43435334
@@ -44,9 +40,7 @@ struct gpib_device {
     int             vxi_bin;   /* flag: use 8 bits to match eos */
     int             vxi_timeout;/* timeout in milliseconds */
     CLIENT         *vxi_cli;   /* vxi client handle */
-    CLIENT         *vxi_abrt;  /* vxi abort handle */
     Device_Link     vxi_lid;   /* vxi logical device handle */
-    pthread_t       vxi_srqthread;
 };
 
 extern char *prog;
@@ -87,49 +81,43 @@ _serial_poll(gd_t gd, char *str)
 
 #if HAVE_GPIB
 static int
-_ibrd(gd_t gd, void *buf, int len)
+_ibrd(gd_t gd, char *buf, int len)
 {
-    ibrd(gd->d, buf, len);
-    if (ibsta & TIMO) {
-        fprintf(stderr, "%s: ibrd timeout\n", prog);
-        gpib_fini(gd);
-        exit(1);
-    }
-    if (ibsta & ERR) {
-        fprintf(stderr, "%s: ibrd error %d\n", prog, iberr);
-        gpib_fini(gd);
-        exit(1);
-    }
+    int count = 0;
 
-    /* XXX This assertion for EOI at the end of a read is commented out
-     * because Adam sees it trigger on "hp1630 --save-all", but he still
-     * gets complete learn strings.  The reason for the assertion is to
-     * document the assumption that 'len' bytes is sufficient to contain
-     * the whole instrument response.  Figure out why we are seeing this.
-     */
-    /*assert(ibsta & END);*/ 
-    assert(ibcnt >= 0);
-    assert(ibcnt <= len);
-   
-    return ibcnt;
+    do {
+        ibrd(gd->d, buf + count, len - count);
+        if (ibsta & TIMO) {
+            fprintf(stderr, "%s: ibrd timeout\n", prog);
+            gpib_fini(gd);
+            exit(1);
+        }
+        if (ibsta & ERR) {
+            fprintf(stderr, "%s: ibrd error %d\n", prog, iberr);
+            gpib_fini(gd);
+            exit(1);
+        }
+        count += ibcnt;
+    } while (count < len && !(ibsta & END));
+    if (!(ibsta & END)) {
+        fprintf(stderr, "%s: read buffer too small\n", prog);
+        gpib_fini(gd);
+        exit(1);
+    }
+    return count;
 }
 #endif
 
 static int
-_vxird(gd_t gd, void *buf, int len)
+_vxird(gd_t gd, char *buf, int len)
 {
     Device_ReadParms p;
     Device_ReadResp *r;
-    int res = 0;
+    int count = 0;
 
     do {
-        if (len == 0) {
-            fprintf(stderr, "%s: read buffer too small\n", prog);
-            gpib_fini(gd);
-            exit(1);
-        }
         p.lid = gd->vxi_lid;
-        p.requestSize = len;
+        p.requestSize = len - count;
         p.io_timeout = gd->vxi_timeout;
         p.lock_timeout = gd->vxi_timeout;
         p.flags = gd->vxi_reos ? VXI_TERMCHRSET : 0;
@@ -140,15 +128,15 @@ _vxird(gd_t gd, void *buf, int len)
             gpib_fini(gd);
             exit(1);
         }
-        memcpy(buf, r->data.data_val, r->data.data_len);
-        res += r->data.data_len;
-        if (r->reason == 0) { /* more data available */
-            len -= r->data.data_len;
-            buf += r->data.data_len;
-        }
-    } while (len > 0 && r->reason == 0);
-
-    return res;
+        memcpy(buf + count, r->data.data_val, r->data.data_len);
+        count += r->data.data_len;
+    } while (count < len && r->reason == 0);
+    if (r->reason == 0) {
+        fprintf(stderr, "%s: read buffer too small\n", prog);
+        gpib_fini(gd);
+        exit(1);
+    }
+    return count;
 }
 
 int
@@ -985,22 +973,8 @@ gpib_get_verbose(gd_t gd)
 static void
 _free_gpib(gd_t gd)
 {
-    /*assert(gd->sf_level == 0);*/
     gd->magic = 0;
     free(gd);
-}
-
-/* Call to abort in-progress RPC on core channel.
- */
-static void
-_vxiabort(gd_t gd)
-{
-    Device_Error *r;
-
-    if ((r = device_abort_1(&gd->vxi_lid, gd->vxi_abrt)) == NULL)
-        clnt_perror(gd->vxi_abrt, prog); 
-    else if (r->error)
-        fprintf(stderr, "%s: device_abort: error %ld\n", prog, r->error);
 }
 
 void
@@ -1015,8 +989,6 @@ gpib_fini(gd_t gd)
         else if (r->error)
             fprintf(stderr, "%s: destroy_link: error %ld\n", prog, r->error);
     }
-    if (gd->vxi_abrt)
-        clnt_destroy(gd->vxi_abrt);
     if (gd->vxi_cli)
         clnt_destroy(gd->vxi_cli);
     _free_gpib(gd);
@@ -1032,9 +1004,8 @@ _new_gpib(void)
     new->verbose = 0;
     new->sf_fun = NULL;
     new->sf_level = 0;
-    new->sf_retry = 0;
+    new->sf_retry = 1;
     new->vxi_cli = NULL;
-    new->vxi_abrt = NULL;
     new->vxi_lid = -1;
     new->vxi_timeout = 30000; /* 30s */
     new->vxi_eot = 1;
@@ -1042,7 +1013,6 @@ _new_gpib(void)
     new->vxi_reos = 0;
     new->vxi_xeos = 0;
     new->vxi_eos = 0xa;
-    new->vxi_srqthread;
 
     return new;
 }
@@ -1063,75 +1033,6 @@ _ibdev(int pad, spollfun_t sf, unsigned long retry)
         new->sf_retry = retry;
     }
     return new;
-}
-#endif
-
-#if 0
-/* SRQ service function */
-void *
-device_intr_srq_1_svc(Device_SrqParms *p, struct svc_req *rq)
-{
-    char *tmpstr = xmalloc(p->handle.handle_len + 1);
-
-    memcpy(tmpstr, p->handle.handle_val, p->handle.handle_len);
-    tmpstr[p->handle.handle_len] = '\0';
-    fprintf(stderr, "%s: SRQ received for handle '%s'\n", prog, tmpstr);
-
-    return NULL;
-}
-
-extern void device_intr_1(struct svc_req *, register SVCXPRT *);
-
-static void *
-_vxisrq_thread(void *arg)
-{
-    SVCXPRT *transp;
-
-    pmap_unset(DEVICE_INTR, DEVICE_INTR_VERSION);
-
-    transp = svcudp_create(RPC_ANYSOCK);
-    if (transp == NULL) {
-        fprintf(stderr, "%s: cannot create udp SRQ service\n", prog);
-        return NULL;
-    }
-    if (!svc_register(transp, DEVICE_INTR, DEVICE_INTR_VERSION, 
-                      device_intr_1, IPPROTO_UDP)) {
-        fprintf(stderr, "%s: unable to register udp SRQ service\n", prog);
-        return NULL;
-    }
-
-    transp = svctcp_create(RPC_ANYSOCK, 0, 0);
-    if (transp == NULL) {
-        fprintf(stderr, "%s: cannot create tcp SRQ service\n", prog);
-        return NULL;
-    }
-    if (!svc_register(transp, DEVICE_INTR, DEVICE_INTR_VERSION, 
-                      device_intr_1, IPPROTO_TCP)) {
-        fprintf(stderr, "%s: unable to register tcp SRQ service\n", prog);
-        return NULL;
-    }
-
-    svc_run ();
-    fprintf(stderr, "%s: error: SRQ svc_run returned\n", prog);
-    return NULL;
-}
-
-static int
-_get_sockaddr(char *host, int p, struct sockaddr_in *sap)
-{
-    struct addrinfo *aip;
-    char port[16];
-    int err;
-
-    snprintf(port, sizeof(port), "%d", p);
-    if ((err = getaddrinfo(host, port, NULL, &aip))) {
-        fprintf(stderr, "%s: getaddrinfo: %s\n", prog, gai_strerror(err));
-        return -1;
-    }
-    assert(sizeof (struct sockaddr_in) == sizeof(struct sockaddr));
-    memcpy(sap, aip->ai_addr, sizeof(struct sockaddr));
-    freeaddrinfo(aip);
-    return 0;
 }
 #endif
 
@@ -1166,25 +1067,7 @@ _init_vxi(char *host, char *device, spollfun_t sf, unsigned long retry)
         exit(1);
     }
     new->vxi_lid = r->lid;
-#if 0
-    /* open async connection to instrument for RPC abort */
-    if (_get_sockaddr(host, r->abortPort, &addr) == -1) {
-        gpib_fini(new);
-        exit(1);
-    }
-    sock = RPC_ANYSOCK;
-    new->vxi_abrt = clnttcp_create(&addr, DEVICE_ASYNC, DEVICE_ASYNC_VERSION,
-            &sock, 0, r->maxRecvSize);
-    if (new->vxi_abrt == NULL) {
-        clnt_pcreateerror(prog);
-        gpib_fini(new);
-        exit(1);
-    }
 
-    /* start srq service thread */
-    if (pthread_create(&new->vxi_srqthread, NULL, _vxisrq_thread, NULL) != 0)
-        fprintf(stderr, "%s: pthread_create _vxisrq_thread failed\n", prog);
-#endif
     return new;
 }
 

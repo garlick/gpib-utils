@@ -1,0 +1,40 @@
+<html>
+
+<h2>Seting up gpib-utils with linux-gpib</h2>
+
+gpib-utils optionally works with <a href="http://linux-gpib.sourceforge.net/">
+linux-gpib</a>.
+<p>
+Presuming linux-gpib is installed in the usual place your system puts 
+include files and libraries, type:
+<pre>
+   cd gpib-utils
+   make all-gpib
+</pre>
+To install in /usr/local/{bin,man}, type:
+<pre>
+   make install
+</pre>
+<p>   
+You will need an /etc/gpib.conf file for your GPIB controller card, and
+an /etc/gpib-utils.conf file for your instruments.  Refer to the 
+sample config files in gpib-utils/etc.
+<p>
+After you have set up your config files, loaded the linux-gpib driver 
+for your interface board, and run gpib_config, you can verify that everything 
+is set up properly by running ibtest and making sure an instrument responds 
+to simple commands such as:
+<p>
+<ul>
+<li>HP1630/31: "BP" should cause the analyzer to beep.
+<li>HP3457: "TONE" should cause the DMM to beep.
+<li>HP8656: "FR200MZ" should change the carrier frequency to 200 MHz
+<li>DG535: "DS hello" should display the string "hello" on LCD
+</ul>
+<p>
+The most recent linux-gpib configuration I have tested was on Fedora 7:
+linux-gpib-3.2.09, kernel 2.6.21.1.3228.fc7, and a National Instruments
+GPIB-USB-HS.
+<hr>
+$Id: linux-gpib.html 71 2007-11-12 21:52:53Z garlick $
+</html>

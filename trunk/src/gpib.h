@@ -31,8 +31,8 @@ char *gpib_default_addr(char *name);
 
 /* Initialize/finalize a device.  If sf is non-NULL, a serial poll is 
  * run after every I/O and the resulting status byte is passed to the sf
- * function for processing.  If the function returns "not ready", sleep 
- * 'sec' seconds before retrying the serial poll.
+ * function for processing.  In case serial poll returns not ready, 'retry' 
+ * is a backoff factor (in usecs) to sleep before retrying.
  */
 gd_t gpib_init(char *addr, spollfun_t sf, unsigned long retry);
 void gpib_fini(gd_t gd);
