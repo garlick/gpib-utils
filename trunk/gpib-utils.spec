@@ -1,8 +1,8 @@
-# set to 1 if building with linux-gpib
+# set to 1 if building with linux-gpib, otherwise 0
 %define buildgpib 0
 
 Name: gpib-utils
-Version: 1.2
+Version: 1.3.pre2
 Release: 1
 Summary: GPIB Instrument Utilities
 License:  GPL

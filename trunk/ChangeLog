@@ -42,6 +42,8 @@
 	* README, README.vxi, README.gpib : Removed and incorporated into
 	htdocs.
 
+	* : tag gpib-utils-1-3-pre2
+
 2007-11-21 Jim Garlick <garlick.jim@gmail.com>
 
 	* src/gpib.c : Implement _vxiabort() (not yet used).

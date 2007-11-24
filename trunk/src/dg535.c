@@ -172,6 +172,7 @@ _interpret_status(gd_t gd, unsigned char status, char *msg)
 static int
 _parse_delay(char *str, int *chanp, double *delayp)
 {
+    double f;
     char *cstr, *dstr;
     int c;
 
@@ -183,10 +184,11 @@ _parse_delay(char *str, int *chanp, double *delayp)
         return 0;
     *chanp = c;
 
-    if (freqstr(dstr, delayp) == -1) {
+    if (freqstr(dstr, &f) == -1) {
         fprintf(stderr, "%s: specify time units in s, ms, us, ns, ps\n", prog);
         return 0;
     }
+    *delayp = 1.0/f;
 
     return 1;
 }
@@ -527,7 +529,7 @@ main(int argc, char *argv[])
             exit_val = 1;
             goto done;
         }
-        fprintf(stderr, "%s: %s,%lf\n", prog, findstr(out_names, i), d);
+        fprintf(stderr, "%s: %s,%lfs\n", prog, findstr(out_names, i), d);
     }
 
     /* trigger */
