@@ -2,7 +2,7 @@
 %define buildgpib 0
 
 Name: gpib-utils
-Version: 1.3.pre2
+Version: 1.3
 Release: 1
 Summary: GPIB Instrument Utilities
 License:  GPL
