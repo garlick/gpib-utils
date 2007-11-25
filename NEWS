@@ -15,7 +15,7 @@ gpib-utils-1.3 Release Notes                                   2007-11-23
   - dg535 Stanford Research Systems DG535 digital delay/pulse generator 
   - sr620 Stanford Research Systems SR620 Universal Time Interval Counter
   - ics8065 ICS Electroncs 8065 Ethernet-GPIB Controller
-  - hp3488 Hewlett-Packard Switch/Control Unit
+  - hp3488 Hewlett-Packard 3488A Switch/Control Unit
 
 * Removed support for old instruments that I no longer have access to
   and which I know of nobody using:

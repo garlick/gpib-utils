@@ -19,9 +19,11 @@
 #include <errno.h>
 #include <string.h>
 #include <ctype.h>
+#include <pthread.h>
 
 #include "gpib.h"
 #include "vxi11.h"
+#include "vxi11intr.h"
 #include "util.h"
 
 #define GPIB_DEVICE_MAGIC 0x43435334
@@ -40,7 +42,9 @@ struct gpib_device {
     int             vxi_bin;   /* flag: use 8 bits to match eos */
     int             vxi_timeout;/* timeout in milliseconds */
     CLIENT         *vxi_cli;   /* vxi client handle */
+    CLIENT         *vxi_abrt;  /* vxi abort handle */
     Device_Link     vxi_lid;   /* vxi logical device handle */
+    pthread_t       vxi_srqthread;
 };
 
 extern char *prog;
@@ -158,7 +162,7 @@ gpib_rd(gd_t gd, void *buf, int len)
     return count;
 }
 
-void
+static void
 _zap_trailing_terminators(char *buf)
 {
     char *p = buf + strlen(buf) - 1;
@@ -341,7 +345,6 @@ gpib_wrtf(gd_t gd, char *fmt, ...)
 
     return n;
 }
-
 
 int 
 gpib_qry(gd_t gd, char *str, void *buf, int len)
@@ -787,7 +790,7 @@ gpib_set_eot(gd_t gd, int flag)
 }
 
 #if HAVE_GPIB
-int
+static int
 _ibgeteos(gd_t gd)
 {
     int c;
@@ -815,7 +818,7 @@ gpib_get_eos(gd_t gd)
 }
 
 #if HAVE_GPIB
-void
+static void
 _ibseteos(gd_t gd, int c)
 {
     ibconfig(gd->d, IbcEOSchar, c);
@@ -839,7 +842,7 @@ gpib_set_eos(gd_t gd, int c)
 }
 
 #if HAVE_GPIB
-double
+static double
 _ibgettmo(gd_t gd)
 {
     int result;
@@ -977,6 +980,19 @@ _free_gpib(gd_t gd)
     free(gd);
 }
 
+/* Call to abort in-progress RPC on core channel.
+ */
+static void
+_vxiabort(gd_t gd)
+{
+    Device_Error *r;
+
+    if ((r = device_abort_1(&gd->vxi_lid, gd->vxi_abrt)) == NULL)
+        clnt_perror(gd->vxi_abrt, prog); 
+    else if (r->error)
+        fprintf(stderr, "%s: device_abort: error %ld\n", prog, r->error);
+}
+
 void
 gpib_fini(gd_t gd)
 {
@@ -989,6 +1005,8 @@ gpib_fini(gd_t gd)
         else if (r->error)
             fprintf(stderr, "%s: destroy_link: error %ld\n", prog, r->error);
     }
+    if (gd->vxi_abrt)
+        clnt_destroy(gd->vxi_abrt);
     if (gd->vxi_cli)
         clnt_destroy(gd->vxi_cli);
     _free_gpib(gd);
@@ -1006,6 +1024,7 @@ _new_gpib(void)
     new->sf_level = 0;
     new->sf_retry = 1;
     new->vxi_cli = NULL;
+    new->vxi_abrt = NULL;
     new->vxi_lid = -1;
     new->vxi_timeout = 30000; /* 30s */
     new->vxi_eot = 1;
@@ -1013,6 +1032,7 @@ _new_gpib(void)
     new->vxi_reos = 0;
     new->vxi_xeos = 0;
     new->vxi_eos = 0xa;
+    new->vxi_srqthread;
 
     return new;
 }
@@ -1035,6 +1055,73 @@ _ibdev(int pad, spollfun_t sf, unsigned long retry)
     return new;
 }
 #endif
+
+/* SRQ service function */
+void *
+device_intr_srq_1_svc(Device_SrqParms *p, struct svc_req *rq)
+{
+    char *tmpstr = xmalloc(p->handle.handle_len + 1);
+
+    memcpy(tmpstr, p->handle.handle_val, p->handle.handle_len);
+    tmpstr[p->handle.handle_len] = '\0';
+    fprintf(stderr, "%s: SRQ received for handle '%s'\n", prog, tmpstr);
+            
+    return NULL;
+}
+
+extern void device_intr_1(struct svc_req *, register SVCXPRT *);
+
+static void *
+_vxisrq_thread(void *arg)
+{
+    SVCXPRT *transp;
+    
+    pmap_unset(DEVICE_INTR, DEVICE_INTR_VERSION);
+    
+    transp = svcudp_create(RPC_ANYSOCK);
+    if (transp == NULL) {
+        fprintf(stderr, "%s: cannot create udp SRQ service\n", prog);
+        return NULL;
+    }
+    if (!svc_register(transp, DEVICE_INTR, DEVICE_INTR_VERSION, 
+                device_intr_1, IPPROTO_UDP)) {
+        fprintf(stderr, "%s: unable to register udp SRQ service\n", prog);
+        return NULL;
+    }
+    
+    transp = svctcp_create(RPC_ANYSOCK, 0, 0);
+    if (transp == NULL) {
+        fprintf(stderr, "%s: cannot create tcp SRQ service\n", prog);
+        return NULL;
+    }
+    if (!svc_register(transp, DEVICE_INTR, DEVICE_INTR_VERSION, 
+                device_intr_1, IPPROTO_TCP)) {
+        fprintf(stderr, "%s: unable to register tcp SRQ service\n", prog);
+        return NULL;
+    }
+    svc_run ();
+    fprintf(stderr, "%s: error: SRQ svc_run returned\n", prog);
+    return NULL;
+}
+
+
+static int
+_get_sockaddr(char *host, int p, struct sockaddr_in *sap)
+{
+    struct addrinfo *aip;
+    char port[16];
+    int err;
+
+    snprintf(port, sizeof(port), "%d", p);
+    if ((err = getaddrinfo(host, port, NULL, &aip))) {
+        fprintf(stderr, "%s: getaddrinfo: %s\n", prog, gai_strerror(err));
+        return -1;
+    }
+    assert(sizeof (struct sockaddr_in) == sizeof(struct sockaddr));
+    memcpy(sap, aip->ai_addr, sizeof(struct sockaddr));
+    freeaddrinfo(aip);
+    return 0;
+}
 
 static gd_t
 _init_vxi(char *host, char *device, spollfun_t sf, unsigned long retry)
@@ -1067,6 +1154,24 @@ _init_vxi(char *host, char *device, spollfun_t sf, unsigned long retry)
         exit(1);
     }
     new->vxi_lid = r->lid;
+
+    /* open async connection to instrument for RPC abort */
+    if (_get_sockaddr(host, r->abortPort, &addr) == -1) {
+        gpib_fini(new);
+        exit(1);
+    }
+    sock = RPC_ANYSOCK;
+    new->vxi_abrt = clnttcp_create(&addr, DEVICE_ASYNC, DEVICE_ASYNC_VERSION, 
+            &sock, 0, r->maxRecvSize);
+    if (new->vxi_abrt == NULL) {
+        clnt_pcreateerror(prog);
+        gpib_fini(new);
+        exit(1);
+    }
+
+    /* start srq service thread */
+    if (pthread_create(&new->vxi_srqthread, NULL, _vxisrq_thread, NULL) != 0)
+        fprintf(stderr, "%s: pthread_create _vxisrq_thread failed\n", prog);
 
     return new;
 }
