@@ -1,3 +1,9 @@
+2007-11-30 Jim Garlick <garlick.jim@gmail.com>
+
+	* src/gpib.c : Comment out srq thread and abort hook.
+
+	* src/a34410.[ch] : New.
+
 2007-11-25 Jim Garlick <garlick.jim@gmail.com>
 
 	* src/gpib.c : Implement srq thread and abort hook.

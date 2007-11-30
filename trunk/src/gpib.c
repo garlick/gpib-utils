@@ -1155,6 +1155,7 @@ _init_vxi(char *host, char *device, spollfun_t sf, unsigned long retry)
     }
     new->vxi_lid = r->lid;
 
+#if 0
     /* open async connection to instrument for RPC abort */
     if (_get_sockaddr(host, r->abortPort, &addr) == -1) {
         gpib_fini(new);
@@ -1168,11 +1169,13 @@ _init_vxi(char *host, char *device, spollfun_t sf, unsigned long retry)
         gpib_fini(new);
         exit(1);
     }
+#endif
 
+#if 0
     /* start srq service thread */
     if (pthread_create(&new->vxi_srqthread, NULL, _vxisrq_thread, NULL) != 0)
         fprintf(stderr, "%s: pthread_create _vxisrq_thread failed\n", prog);
-
+#endif
     return new;
 }
 

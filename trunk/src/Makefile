@@ -2,7 +2,7 @@ CFLAGS=-Wall -Wno-unused -g $(CFLAGS_GPIB)
 LDADD=-lrpcsvc -lm -lpthread $(LDADD_GPIB)
 
 PROGS=hp1630 hptopbm hptodino hp3457 hp3488 hp8656 \
-      dg535 sr620 gpsh ics8065 a6032
+      dg535 sr620 gpsh ics8065 a6032 a34410
 LIBOBJS=util.o gpib.o units.o vxi11_xdr.o vxi11_clnt.o \
 	ics.o ics8000_clnt.o ics8000_xdr.o vxi11intr_xdr.o vxi11intr_svc.o
 TESTPROGS=testfreq testampl
@@ -35,6 +35,8 @@ ics8065: ics8065.o $(LIBOBJS)
 ics.o: ics8000.h
 a6032: a6032.o $(LIBOBJS)
 	$(CC) -o $@ a6032.o $(LIBOBJS) $(LDADD)
+a34410: a34410.o $(LIBOBJS)
+	$(CC) -o $@ a34410.o $(LIBOBJS) $(LDADD)
 
 # VXI-11 core/async
 gpib.o: vxi11.h
