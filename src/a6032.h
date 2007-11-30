@@ -42,3 +42,7 @@
 /* SCPI commands for this instrument are mnemonic (and plentiful!) enough 
  * that we do not need to go nuts defining them here.
  */
+
+/*
+ * vi:tabstop=4 shiftwidth=4 expandtab
+ */
