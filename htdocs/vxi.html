@@ -6,6 +6,23 @@ defines a protocol based on ONC RPC for
 communicating with instruments over ethernet, either natively to a LAN
 jack on the back of an instrument, or via an Ethernet-to-GPIB gateway.
 <p>
+VXI-11 eliminates one step in the process of establishing instrument
+connectivity to Linux:  GPIB board setup.  For GPIB boards or USB
+GPIB adapters, <a href="http://linux-gpib.sourceforge.net/">linux-gpib</a>
+provides kernel drivers and National Instruments library compatibility.
+Although linux-gpib is a well maintained project, linux-gpib kernel drivers 
+do not seem to be on track for inclusion into the Linux kernel, and 
+linux-gpib is not part of most major Linux distributions (with the exception 
+of Debian).  Thus, for many users, linux-gpib must be recompiled and 
+reinstalled every time the kernel is updated.  With VXI-11, kernel drivers 
+are not needed and instrument connectivity software like gpib-utils is
+much easier to get going.  Further, it becomes possible to build gpib-utils
+as a standalone package which could be adopted by a Linux distribution
+without the kernel baggage.  The following figure depicts gpib-utils
+relationship to the VXI-11 software stack versus GPIB:
+<p>
+<img src="vxi.png">
+<p>
 Adding VXI-11 support to gpib-utils was a matter of including the
 <tt>vxi11.x</tt> ONC RPC definitions from the VXI-11 spec (pulled from
 the Agilent application note examples referenced below), adding Makefile 
@@ -17,7 +34,7 @@ themselves, although in some cases it was necessary to alter error handling
 code to more gracefully exit, shutting down RPC services to avoid leaving 
 the other end of the connection to time out.
 <p>
-Each utility takes a <tt>--address</tt> command line argument, used to 
+Each utility takes an <tt>--address</tt> command line argument, used to 
 specify the instrument address which is passed to the gpib.c wrapper 
 initialization function.  If the address contains a colon, the 
 initialization function now interprets it to be a VXI-11 
@@ -31,19 +48,18 @@ For convenience, a configuration file <tt>/etc/gpib-utils.conf</tt>
 has been added so that default addresses can be entered there for each 
 instrument and the <tt>--address</tt> argument does not have to be used 
 every time.  In earlier releases of gpib-utils, each instrument was expected
-to be present in /etc/gpib.conf.  This is no longer necessary.
+to be present in /etc/gpib.conf.  This is no longer necessary, and indeed
+RPM packages for gpib-utils 1.3 are available compiled with and without
+linux-gpib.  In the latter case, specifying a GPIB instrument address
+results in an initialization error.
 <p>
 Since gpib-utils is rather unsophisticated in its use of GPIB facilities,
 only the core VXI-11 channel was used.  The abort and intr (SRQ) channels
-were not implemented.  VXI-11 device locking is not used.  It is possible
-that future releases of gpib-utils will implement a feature similar to
-linux-gpib <i>autopoll</i> using the SRQ reverse channel and posix threads.
-<p>
-Note that gpib-utils now compiles standalone without linux-gpib by default.
-To build against linux-gpib, run "make clean" then "make all-gpib" at the
-top level Makefile.
+were not implemented.  VXI-11 device locking is not used.  VXI-11 device
+discovery (broadcast to portmapper port 111) was not implemented
 <h3>References</h3>
-The following references were used:
+The following references were used in the course of adding VXI-11 support
+to gpib-utils:
 <ul>
 <li>Model 8065 Ethernet <-> GPIB Controller Instruction Manual,
   ICS Electronics.
@@ -64,7 +80,6 @@ Using Linux to Control LXI Instruments Through VXI-11, Application Note
 <li><a href="http://www.home.agilent.com/agilent/editorial.jspx?cc=US&lc=eng&ckey=1189308&nid=-536900530.0.00&id=1189308">Example code from Agilent application note</a>.
 <li><a href="http://www.oreilly.com/catalog/rpc/?CMP=OTC-KW7501011010&ATT=rpc">
 Power Programming with RPC, John Bloomer, O'Reilly & Associates, Inc., 1992.</a>
-<li><a href="http://www.lxistandard.org/home">LXI home page</a>
 </ul>
 <h3>Thanks</h3>
 Special thanks to Jerry Mercola of <a href="http://icselect.com">
