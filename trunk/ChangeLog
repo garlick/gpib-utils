@@ -1,3 +1,9 @@
+2007-12-01 Jim Garlick <garlick.jim@gmail.com>
+
+	* htdocs/vxi.html : Expanded a bit.
+
+	* htdocs/vxi.dia, htdocs/vxi.png : New, used by vxi.html.
+
 2007-11-30 Jim Garlick <garlick.jim@gmail.com>
 
 	* src/gpib.c : Comment out srq thread and abort hook.
