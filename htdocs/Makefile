@@ -1,5 +1,6 @@
-HTMLMAN= hp8656.html hp1630.html hp3457.html hptopbm.html hptodino.html \
-	 ics8065.html sr620.html dg535.html a6032.html
+HTMLMAN= man1/hp8656.1.html man1/hp1630.1.html man1/hp3457.1.html \
+	 man1/hptopbm.1.html man1/hptodino.1.html man1/ics8065.1.html \
+	 man1/sr620.1.html man1/dg535.1.html man1/a6032.1.html man1/hp3488.1.html
 VPATH=	../man
 OTHER= screen.png filter.png
 
@@ -13,9 +14,9 @@ filter.png: ../examples/scripts/filter.ppm
 	pnmtopng <$< >$@	
 
 clean:
-	rm -f $(HTMLMAN) $(OTHER)
+	rm -f $(HTMLMAN) $(OTHER) 
 
-%.html : %.1
+man1/%.1.html : %.1
 	man2html -r <$< >$@
 
 install: 
