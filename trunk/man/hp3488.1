@@ -98,21 +98,77 @@ Multiple channel addresses may be separated by commas (no spaces), e.g.
 brackets, e.g. ``[101-104]'', or a combination, e.g. ``[101-109],[201-209]''
 .SH "CARD OPTIONS"
 .TP
-44470 Relay Multiplexer
+44470 10 Channel Relay Multiplexer
+The 44470A Relay Multiplexer assembly consists of ten 2-wire relays connected 
+to a common analog bus.  Two modes of operation are possible: single channel,
+break-before-make or multiple channel closed together.
+Basically there are two different ways the 44470A may be used: 
+inputs from 10 different sources may be switched to the one common bus or 
+one input (common bus) may be switch to 10 different places.
+This module uses latching relays.
 .TP
-44471 General Purpose Relay
+44471 10 Channel General Purpose Relay
+The 44471A General Purpose Relay Module consists of 10 independent single
+pole - single throw switches.  More than one switch can be closed at a time.
+Therefore, if necessary, high and low signals can be switched by using a
+pair of channels.  Two modes of operation are possible, single-channel
+break-before-make or multiple channels closed together.  At turn on or reset
+(either from the front panel RESET key or the HP-IB CLEAR command), all relays
+on the 44471A will be opened.  This module uses latching relays.
 .TP
-44472 Dual 4-1 VHF Switch
+44472 Dual 4 Channel VHF Switch
+This option provides two independent 4 channel to one coaxial multiplexers.
+These multiplexers are specifically designed for broadband signal switching
+up to 300Mhz.  This module is the logical choice for wide dynamic range 
+measurements with spectrum and distortion analyzers.  The two groups are
+isolated from each other and also from the 3488A chassis ground.  The shield
+of each channel is not switched; the shields of the four channels of each group
+are in common.  Characteristic impedance is 50 ohms.  This module uses
+latching relays.
 .TP
 44473 4x4 Matrix Switch
+This module provides a 4x4 matrix of switches.  Each node or crosspoint
+in the matrix switches both signal Hi and Lo (2 wires).  Matrix switches
+provides a convenient way to connect a group of test instruments to multiple
+test points on a device or to multiple devices.  This matrix switch
+offers high flexibility for testing devices over a frequency range of DC
+to 100 kHz.  Any combination of the 4 inputs (e.g. rows) may be connected
+to amy combination of outputs (e.g. columns).
 .TP
-44474 Digital I/O
+44474 16-bit Digital I/O
+This option provides 16 bidirectional data lines (channels) plus 4 lines
+used for control and handshaking.  All lines are TTL compatable.  Several
+modes of operation are possible including 
+1) Addressing individual lines on a bit-by-bit basis, addressing as 
+two 8-bit ports or addressing all 16 lines as one word;  
+2) positive or negative true logic;
+3) Several handshake modes;
+4) External increment and channel closed signals for hardware controlled
+scanning;
+5) Several commands to write data to and read data from the module.
+The two 8-bit ports are completely independent of each other and may be used
+separately.  For instance, one port can be used for output operations, the
+other for input.  They can also be used together for 16-bit operations.
 .TP
 44475 Breadboard
 .TP
 44476 Microwave Switch
+The 44476A module contains three HP 33311B option 011 microwave switches
+designated as channels 00, 01, and 02.  These switches have the following
+features:
+1) Broad bandwidth (DC to 18 GHz, usable to 24 HHz);
+2) High isolation (>90dB to 18 GHz);
+3) Excellent repeatability (typically 0.03 dB after 1,000,000 switchings);
+4) Internal 50 Ohm terminations.
 .TP
 44477 Form C Relay
+The 4447A module consists of seven independent, break-before-make, SPDT 
+Form C relays (one contact normally open, one contact normally closed).
+The relay contacts (common: C; normally open: NO; and normally closed: NC),
+are accessible at the terminal block for field wiring connections.
+Typical uses are signal switching and power applications (250V, 2A).
+Additionally, this module is suitable for driving remote RF, coaxial, and
+microwave devices.
 .TP
 44478 1.3GHz Multiplexer
 .SH "EXAMPLES"
