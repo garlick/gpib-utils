@@ -370,8 +370,17 @@ gpib_qry(gd_t gd, char *str, void *buf, int len)
     else
 #endif
         count = _vxird(gd, buf, len);
+    if (count < len && ((char *)buf)[count - 1] != '\0')
+        ((char *)buf)[count++] = '\0';
     if (gd->verbose) { 
-        fprintf(stderr, "R: [%d bytes]\n", count);
+        if (((char *)buf)[count - 1] == '\0' && strlen((char *)buf) < 60) {
+            char *cpy = xstrcpyprint(buf);
+
+            fprintf(stderr, "R: \"%s\"\n", cpy);
+            free(cpy);
+        } else  {
+            fprintf(stderr, "R: [%d bytes]\n", count);
+        }
     }
     _serial_poll(gd, "gpib_qry");
 

@@ -12,6 +12,10 @@
 
 	* hp3488.1 : Updated to reflect interface changes.
 
+2007-12-03 Jim Garlick <garlick.jim@gmail.com>
+
+	* htdocs/index.html : Fun with inline images.
+
 2007-12-01 Jim Garlick <garlick.jim@gmail.com>
 
 	* htdocs/vxi.html : Expanded a bit.
