@@ -17,7 +17,8 @@
    along with gpib-utils; if not, write to the Free Software Foundation, 
    Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
 
-/* Agilent 34410A DMM */
+/* Agilent 34401A DMM */
+/* Agilent 34410A and 34411A DMM  */
 
 #define _GNU_SOURCE /* for asprintf */
 #include <stdio.h>
@@ -37,20 +38,21 @@
 #include "units.h"
 #include "gpib.h"
 #include "util.h"
-#include "a34410.h"
+#include "a34401.h"
 
-#define INSTRUMENT "a34410"
+#define INSTRUMENT "a34401"
 
 char *prog = "";
 static int verbose = 0;
 
-#define OPTIONS "n:clvisrpf:P:d"
+#define OPTIONS "n:clvisrpf:P:dS"
 static struct option longopts[] = {
     {"address",         required_argument, 0, 'a'},
     {"clear",           no_argument,       0, 'c'},
     {"local",           no_argument,       0, 'l'},
     {"verbose",         no_argument,       0, 'v'},
     {"get-idn",         no_argument,       0, 'i'},
+    {"selftest",        no_argument,       0, 'S'},
     {0, 0, 0, 0},
 };
 
@@ -66,14 +68,40 @@ usage(void)
 "  -l,--local              return instrument to local operation on exit\n"
 "  -v,--verbose            show protocol on stderr\n"
 "  -i,--get-idn            return instrument idn string\n"
+"  -S,--selftest           perform instrument self-test\n"
            , prog, addr ? addr : "no default");
     exit(1);
+}
+
+static void
+_dump_error_queue(gd_t gd)
+{
+    char tmpstr[128];
+    char *endptr;
+    int err;
+
+    do {
+        gpib_wrtf(gd, ":SYSTEM:ERROR?");
+        gpib_rdstr(gd, tmpstr, sizeof(tmpstr));
+        err = strtoul(tmpstr, &endptr, 10);
+        if (err)
+            fprintf(stderr, "%s: system error: %s\n", prog, endptr + 1);
+    } while (err);
 }
 
 static int
 _interpret_status(gd_t gd, unsigned char status, char *msg)
 {
     int err = 0;
+
+    if (status & A34401_STAT_RQS) {
+    }
+    if (status & A34401_STAT_SER) {
+    }
+    if (status & A34401_STAT_MAV) {
+    }
+    if (status & A34401_STAT_QDR) {
+    }
 
     return err;
 }
@@ -106,6 +134,7 @@ main(int argc, char *argv[])
     int todo = 0;
     int exit_val = 0;
     int get_idn = 0;
+    int selftest = 0;
 
     /*
      * Handle options.
@@ -131,6 +160,10 @@ main(int argc, char *argv[])
             get_idn = 1;
             todo++;
             break;
+        case 'S': /* --selftest */
+            selftest = 1;
+            todo++;
+            break;
         default:
             usage();
             break;
@@ -154,7 +187,6 @@ main(int argc, char *argv[])
     }
     gpib_set_verbose(gd, verbose);
 
-    /* clear instrument to default settings */
     if (clear) {
         gpib_clr(gd, 0);
         gpib_wrtf(gd, "*CLS");
@@ -167,8 +199,24 @@ main(int argc, char *argv[])
             goto done;
         }
     }
+    if (selftest) {
+        char buf[64];
 
-    /* return front panel if requested */
+        gpib_qry(gd, "*TST?", buf, sizeof(buf));
+        switch (strtoul(buf, NULL, 10)) {
+            case 0:
+                fprintf(stderr, "%s: self-test completed successfully\n", prog);
+                break;
+            case 1:
+                fprintf(stderr, "%s: self-test failed\n", prog);
+                break;
+            default:
+                fprintf(stderr, "%s: self-test returned unexpected response\n",
+                        prog);
+                break;
+        }
+    }
+
     if (local)
         gpib_loc(gd); 
 
