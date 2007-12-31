@@ -1,3 +1,17 @@
+2007-12-31 Jim Garlick <garlick.jim@gmail.com>
+
+	* src/hostlist.[ch], src/list.[ch], src/argv.[ch] : New, 
+	borrowed from powerman project.
+
+	* src/hp3488.c : Cleanup and restructuring:
+	- Added --shell option for powerman interface.
+	- Added --config option for setting slot configuration manually.
+	- Added --showconfig option to display slot configuration.
+	- Added --list to display valid channel addresses.
+	- Made --open,close,query accept lists and ranges of channel addreses.
+
+	* hp3488.1 : Updated to reflect interface changes.
+
 2007-12-01 Jim Garlick <garlick.jim@gmail.com>
 
 	* htdocs/vxi.html : Expanded a bit.

@@ -183,5 +183,25 @@ rfindstr(strtab_t *tab, char *str)
 }
 
 /*
+ * lsd_* functions are needed by list.[ch].
+ */
+
+void 
+lsd_fatal_error(char *file, int line, char *mesg)
+{
+    fprintf(stderr, "%s: fatal error: %s: %s::%d: %s", 
+                    prog, mesg, file, line, strerror(errno));
+    exit(1);
+}
+
+void *
+lsd_nomem_error(char *file, int line, char *mesg)
+{
+    fprintf(stderr, "%s: out of memory: %s: %s::%d", 
+                    prog, mesg, file, line);
+    exit(1);
+}
+
+/*
  * vi:tabstop=4 shiftwidth=4 expandtab
  */

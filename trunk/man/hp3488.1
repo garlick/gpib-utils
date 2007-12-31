@@ -32,9 +32,11 @@ hp3488 \- control HP 3488A switch/control unit
 clear
 perform self test
 list installed options
+list valid channels
 open channels
 close channels
 query channel states
+start shell
 local
 .PP
 If an action is not selected on the command line, it is not performed.
@@ -53,27 +55,66 @@ Enable front panel.
 \fB\-S\fR, \fB\-\-selftest\fR 
 Perform unit self test.
 .TP
-\fB\-L\fR, \fB\-\-list\fR
+\fB\-C\fR, \fB\-\-config\fR \fBm,m,m,m,m\fR
+Specify the card models installed in slots 1,2,3,4,5.  ``0'' indicates
+that the slot is empty.  
+See CARD OPTIONS for a list of valid model numbers.
+If this option is not used, 
+.B hp3488
+will probe the instrument for installed cards.  For models 44471, 44476,
+and 44477, this will result in momentary closure of channels 04 and 09 
+as this is the only way to tell those cards apart.
+.TP
+\fB\-x\fR, \fB\-\-showconfig\fR
 List the cards installed in each slot including model number, description, 
-and valid channel numbers.
-NOTE: This option may momentarily close channel 04 and 09 of a 44471 or 44477.
-See CAVEATS below.
+and the card's range of two-digit channel numbers.
 .TP
-\fB\-q\fR, \fB\-\-query\fR \fBcaddr[,caddr]\fR
+\fB\-L\fR, \fB\-\-list\fR
+List valid channel addresses.
+.TP
+\fB\-q\fR, \fB\-\-query\fR \fBchannels\fR
 Query the state of the specified channels.
-Channel addresses are three digits: slot number (1-5) followed by two
-digit channel number as reported by the \fB\-\-list\fR option.
-A single digit is interpreted as a slot number, in which case all
-channels for that slot are reported.  See CAVEATS below.
-.TP
-\fB\-0\fR, \fB\-\-open\fR \fBcaddr[,caddr]\fR
-Open the specified channels.
-.TP
-\fB\-1\fR, \fB\-\-close\fR \fBcaddr[,caddr]\fR
-Close the specified channels.
+See CHANNEL ADDRESSES below.
 .TP
 \fB\-Q\fR, \fB\-\-queryall\fR
-Query the state of all channels.  See CAVEATS below.
+Query the state of all channels.
+.TP
+\fB\-0\fR, \fB\-\-open\fR \fBchannels\fR
+Open the specified channels.
+See CHANNEL ADDRESSES below.
+.TP
+\fB\-1\fR, \fB\-\-close\fR \fBchannels\fR
+Close the specified channels.
+See CHANNEL ADDRESSES below.
+.TP
+\fB\-s\fR, \fB\-\-shell\fR
+Start an interactive shell. Type ? for help.
+.SH "CHANNEL ADDRESSES"
+Channel addresses are three digits: a single slot digit (1-5) and two
+channel digits.
+.PP
+Multiple channel addresses may be separated by commas (no spaces), e.g.
+``101,102,103,104'', or as a hyphenated range enclosed in square 
+brackets, e.g. ``[101-104]'', or a combination, e.g. ``[101-109],[201-209]''
+.SH "CARD OPTIONS"
+.TP
+44470 Relay Multiplexer
+.TP
+44471 General Purpose Relay
+.TP
+44472 Dual 4-1 VHF Switch
+.TP
+44473 4x4 Matrix Switch
+.TP
+44474 Digital I/O
+.TP
+44475 Breadboard
+.TP
+44476 Microwave Switch
+.TP
+44477 Form C Relay
+.TP
+44478 1.3GHz Multiplexer
 .SH "EXAMPLES"
 .nf
 # This script toggles a relay (slot 2 channel 01) on and off every 5s
@@ -84,16 +125,6 @@ while true; do
     sleep 5
 done
 .fi
-.SH "CAVEATS"
-The 3488 reports 44476 and 44477 cards as 44471.
-When it sees a 44471, the \fB\-\-list\fR option closes channel 
-04 and 09 and looks for errors to disambiguate the models, and 
-therefore will momentarily close channel 04 and 09 on the 44471, 
-and channel 04 on the 44477.  Other options such \fB\-\-query\fR 
-do not perform this disambiguation and treat the 4-channel 44476 
-and 7-channel 44477 as though it had 10 channels like the 44471.
-The 3488 will report these "phantom" channels as open, but will 
-return an error if you try to close them.
 .SH FILES
 /etc/gpib-utils.conf
 .SH "SEE ALSO"
