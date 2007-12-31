@@ -1,10 +1,12 @@
-CFLAGS=-Wall -Wno-unused -g $(CFLAGS_GPIB)
-LDADD=-lrpcsvc -lm -lpthread $(LDADD_GPIB)
+CFLAGS_LSD=-DWITH_LSD_NOMEM_ERROR_FUNC -DWITH_LSD_FATAL_ERROR_FUNC
+CFLAGS=-Wall -Wno-unused -g $(CFLAGS_GPIB) $(CFLAGS_LSD)
+LDADD=-lrpcsvc -lm -lpthread -lreadline $(LDADD_GPIB)
 
 PROGS=hp1630 hptopbm hptodino hp3457 hp3488 hp8656 \
       dg535 sr620 gpsh ics8065 a6032 a34410
-LIBOBJS=util.o gpib.o units.o vxi11_xdr.o vxi11_clnt.o \
-	ics.o ics8000_clnt.o ics8000_xdr.o vxi11intr_xdr.o vxi11intr_svc.o
+LIBOBJS=util.o gpib.o units.o argv.o list.o hostlist.o ics.o \
+	vxi11_xdr.o vxi11_clnt.o vxi11intr_xdr.o vxi11intr_svc.o \
+	ics8000_clnt.o ics8000_xdr.o
 TESTPROGS=testfreq testampl
 
 all: $(PROGS)

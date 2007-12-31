@@ -93,21 +93,20 @@
 #define HP3488_ERROR_LOGIC          0x8     /* logic failure */
 #define HP3488_ERROR_POWER          0x10    /* power supply failure */
 
-/* Valid channel addresses:
+/* Card model numbers, descriptions, and valid channel numbers.
+ * Note: 44477 and 44476 are reported as 44471 by CTYPE command.
  */
-#define CADDRTAB    {                                                   \
-    { 00000, "empty slot", NULL },                                      \
-    { 44470, "relay multiplexer", "00,01,02,03,04,05,06,07,08,09" },    \
-    { 44471, "general purpose relay", "00,01,02,03,04,05,06,07,08,09" },\
-    { 44472, "dual 4-1 VHF switch", "00,01,02,03,10,11,12,13" },        \
-    { 44473, "4x4 matrix switch",                                       \
-             "00,01,02,03,10,11,12,13,20,21,22,23,30,31,32,33" },       \
-    { 44474, "digital I/O",                                             \
-             "00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15" },       \
-    { 44475, "breadboard", NULL },                                      \
-    { 44476, "microwave switch", "00,01,02,03" },                       \
-    { 44477, "form C relay", "00,01,02,03,04,05,06" },                  \
-    { 44478, "1.3GHz multiplexer", "00,01,02,03,10,11,12,13" },         \
+#define MODELTAB    { \
+    { 00000, "empty slot",            NULL }, \
+    { 44470, "relay multiplexer",     "[00-09]" }, \
+    { 44471, "general purpose relay", "[00-09]" }, \
+    { 44472, "dual 4-1 VHF switch",   "[00-03,10-13]" }, \
+    { 44473, "4x4 matrix switch",     "[00-03,10-13,20-23,30-33]" }, \
+    { 44474, "digital I/O",           "[00-15]" }, \
+    { 44475, "breadboard",            NULL }, \
+    { 44476, "microwave switch",      "[00-03]" }, \
+    { 44477, "form C relay",          "[00-06]" }, \
+    { 44478, "1.3GHz multiplexer",    "[00-03,10-13]" }, \
 }
 
 /*
