@@ -453,6 +453,7 @@ shell_help(void)
     printf("   query [targets] - query specified channels (0=off,1=on)\n");
     printf("   list            - list valid caddrs\n");
     printf("   show            - show slot configuration\n");
+    printf("   id              - query instrument id\n");
     printf("   verbose         - toggle verbose flag\n");
     printf("   help            - display this help text\n");
     printf("   quit            - exit this shell\n");
@@ -465,13 +466,13 @@ docmd(gd_t gd, char **av)
     int rc = 0;
 
     if (av[0]) {
-        if (strcmp(av[0], "help") == 0)
+        if (strcmp(av[0], "help") == 0) {
             shell_help();
 
-        else if (strcmp(av[0], "quit") == 0)
+        } else if (strcmp(av[0], "quit") == 0) {
             rc = 1;
 
-        else if (strcmp(av[0], "on") == 0) {
+        } else if (strcmp(av[0], "on") == 0) {
             if (av[1] == NULL)
                 printf("Usage: on [targets]\n");
             else
@@ -494,6 +495,13 @@ docmd(gd_t gd, char **av)
                 printf("Usage: list\n");
             else
                 list_targets();
+
+        } else if (strcmp(av[0], "id") == 0) {
+            char tmpbuf[128];
+
+            gpib_wrtf(gd, "%s", HP3488_ID_QUERY);
+            gpib_rdstr(gd, tmpbuf, sizeof(tmpbuf));
+            printf("%s\n", tmpbuf);
 
         } else if (strcmp(av[0], "verbose") == 0) {
             if (av[1] != NULL)
