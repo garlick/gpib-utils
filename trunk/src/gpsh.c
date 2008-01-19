@@ -25,9 +25,11 @@
 #include <errno.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <assert.h>
 
 #include "gpib.h"
 #include "util.h"
+#include "argv.h"
 
 char *prog;
 
@@ -48,40 +50,19 @@ usage(void)
     exit(1);
 }
 
-static void
-_license(void)
-{
-    printf("=====================================================================\n");
-    printf("%s is part of gpib-utils.\n\n", prog);
-    printf("Copyright (C) 2007 Jim Garlick <garlick.jim@gmail.com>\n\n");
-    printf("gpib-utils is free software; you can redistribute it and/or modify\n");
-    printf("it under the terms of the GNU General Public License as published by\n");
-    printf("the Free Software Foundation; either version 2 of the License, or\n");
-    printf("(at your option) any later version.\n\n");
-    printf("gpib-utils is distributed in the hope that it will be useful,\n");
-    printf("but WITHOUT ANY WARRANTY; without even the implied warranty of\n");
-    printf("MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n");
-    printf("GNU General Public License for more details.\n\n");
-    printf("You should have received a copy of the GNU General Public License\n");
-    printf("along with gpib-utils; if not, write to the Free Software Foundation,\n");
-    printf("Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA\n");
-    printf("=====================================================================\n");
-}
-
 static void 
 _help(void)
 {
     printf("=====================================================================\n");
-    printf("#open name|addr   Open device using name or primary address.\n");
-    printf("#close            Close device.\n");
-    printf("#get              List parameter values.\n");
-    printf("#set [parm=val]   Set parameter to value/list parameter help.\n");
-    printf("#clr              Send GPIB device-clear message.\n");
-    printf("#loc              Send GPIB return-to-local message.\n");
-    printf("<string>          Send string to device.\n");
-    printf("?<string>         Send string to device, read response.\n");
-    printf("                  NOTE: special chars in strings: \\r, \\n, \\\\\n");
-    printf("Ctrl-d            Exit.\n");
+    printf("open name|addr   Open device using name or primary address.\n");
+    printf("close            Close device.\n");
+    printf("get              List parameter values.\n");
+    printf("set [parm=val]   Set parameter to value/list parameter help.\n");
+    printf("clr              Send GPIB device-clear message.\n");
+    printf("loc              Send GPIB return-to-local message.\n");
+    printf("write <string>   Send string to device.\n");
+    printf("read             Read string from device\n");
+    printf("quit             Exit.\n");
     printf("=====================================================================\n");
 }
 
@@ -237,66 +218,64 @@ _set_param(char *key, char *val)
 }
 
 
-static void
-_parse_line(char *line)
+static int
+docmd(char **av)
 {
-    char *a1 = NULL;
-    char *a2 = NULL;
+    int quit = 0;
 
-    switch (line[0]) {
-        case '#':
-            if (!strncmp(line, "#open", 5)) {
-                a1 = strtok(&line[5], " ");
-                _open(a1);
-            } else if (!strncmp(line, "#close", 6)) {
-                _close();
-            } else if (!strncmp(line, "#get", 6)) {
-                _get_params();
-            } else if (!strncmp(line, "#set", 4)) {
-                a1 = strtok(&line[4], " =");
-                a2 = strtok(NULL, " =");
-                _set_param(a1, a2);
-            } else if (!strcmp(line, "#clr")) {
-                if (gd)
-                    gpib_clr(gd, ibclrusec);
-                else {
-                    printf("please open a device first\n");
-                }
-            } else if (!strcmp(line, "#loc")) {
-                if (gd)
-                    gpib_loc(gd);
-                else {
-                    printf("please open a device first\n");
-                }
-            } else {
-                printf("unknown command: %s\n", line);
-            }
-            break;
-        case '?':
-            if (strlen(&line[1]) > 0)
-                _send(&line[1]);
-            _recv();
-            break;
-        default:
-            _send(line);
-            break;
+    assert(av[0] != NULL);
+    if (!strcmp(av[0], "?") || !strcmp(av[0], "help")) {
+        _help(); 
+    } else if (!strcmp(av[0], "open")) {
+        if (av[1] == NULL || av[2] != NULL)
+            printf("Usage: open device\n");
+        else 
+            _open(av[1]);
+    } else if (!strcmp(av[0], "close")) {
+        if (av[1] != NULL) 
+            printf("Usage: close\n");
+        else 
+            _close();
+    } else if (!strcmp(av[0], "clear")) {
+        if (av[1] != NULL)
+            printf("Usage: clear\n");
+        else if (!gd)
+            printf("Please open a device first\n");
+        else
+            gpib_clr(gd, ibclrusec);
+    } else if (!strcmp(av[0], "local")) {
+        if (av[1] != NULL)
+            printf("Usage: local\n");
+        else if (!gd)
+            printf("Please open a device first\n");
+        else
+            gpib_loc(gd);
+    } else if (!strcmp(av[0], "quit")) {
+        quit = 1;
+    } else {
+        printf("Unknown command: type \"?\" for a list\n");
     }
+    return quit;
 }
 
 static void
 _shell(void)
 {
     char *line;
+    char **av;
+    int quit = 0;
 
     /* disable readline file name completion */
     /*rl_bind_key ('\t', rl_insert); */
 
-    while ((line = readline("gpsh> "))) {
+    while (!quit && (line = readline("gpsh> "))) {
         if (strlen(line) > 0) {
             add_history(line); 
-            _parse_line(line);
-        } else
-            _help();
+            av = argv_create(line, "");
+            if (av[0] != NULL)
+                quit = docmd(av);
+            argv_destroy(av);
+        } 
         free(line);
     }
 }
@@ -321,8 +300,6 @@ main(int argc, char *argv[])
     if (optind < argc)
         usage();
 
-    _license();
-    printf("Type a carriage return for command help.\n");
     _shell();
 
     exit(0);
