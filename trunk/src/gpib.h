@@ -92,6 +92,9 @@ void gpib_clr(gd_t gd, unsigned long usec);
 void gpib_trg(gd_t gd);
 int gpib_rsp(gd_t gd, unsigned char *status);
 
+void gpib_abort(gd_t gd); /* VXI only */
+
+
 #define GPIB_DECODE_DLAB    1
 #define GPIB_DECODE_ILAB    2
 #define GPIB_VERIFY_DLAB    4

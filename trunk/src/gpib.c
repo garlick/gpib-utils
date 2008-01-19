@@ -132,6 +132,9 @@ _vxird(gd_t gd, char *buf, int len)
             gpib_fini(gd);
             exit(1);
         }
+        if (r->error != 0) {
+            fprintf(stderr, "%s: read returned error: %ld\n", prog, r->error);
+        }
         memcpy(buf + count, r->data.data_val, r->data.data_len);
         count += r->data.data_len;
     } while (count < len && r->reason == 0);
@@ -274,6 +277,10 @@ _vxiwrt(gd_t gd, char *buf, int len)
     if (r == NULL) {
         clnt_perror(gd->vxi_cli, prog);
         gpib_fini(gd);
+        exit(1);
+    }
+    if (r->error != 0) {
+        fprintf(stderr, "%s: write returned error: %ld\n", prog, r->error);
         exit(1);
     }
 }
@@ -991,15 +998,17 @@ _free_gpib(gd_t gd)
 
 /* Call to abort in-progress RPC on core channel.
  */
-static void
-_vxiabort(gd_t gd)
+void
+gpib_abort(gd_t gd)
 {
     Device_Error *r;
 
-    if ((r = device_abort_1(&gd->vxi_lid, gd->vxi_abrt)) == NULL)
-        clnt_perror(gd->vxi_abrt, prog); 
-    else if (r->error)
-        fprintf(stderr, "%s: device_abort: error %ld\n", prog, r->error);
+    if (gd->vxi_cli != NULL) {
+        if ((r = device_abort_1(&gd->vxi_lid, gd->vxi_abrt)) == NULL)
+            clnt_perror(gd->vxi_abrt, prog); 
+        else if (r->error)
+            fprintf(stderr, "%s: device_abort: error %ld\n", prog, r->error);
+    }
 }
 
 void
@@ -1164,7 +1173,6 @@ _init_vxi(char *host, char *device, spollfun_t sf, unsigned long retry)
     }
     new->vxi_lid = r->lid;
 
-#if 0
     /* open async connection to instrument for RPC abort */
     if (_get_sockaddr(host, r->abortPort, &addr) == -1) {
         gpib_fini(new);
@@ -1178,7 +1186,6 @@ _init_vxi(char *host, char *device, spollfun_t sf, unsigned long retry)
         gpib_fini(new);
         exit(1);
     }
-#endif
 
 #if 0
     /* start srq service thread */
