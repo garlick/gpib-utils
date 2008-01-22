@@ -1017,14 +1017,14 @@ gpib_fini(gd_t gd)
     Device_Error *r;
 
     assert(gd->magic == GPIB_DEVICE_MAGIC);
+    if (gd->vxi_abrt)
+        clnt_destroy(gd->vxi_abrt);
     if (gd->vxi_lid != -1) {
         if ((r = destroy_link_1(&gd->vxi_lid, gd->vxi_cli)) == NULL)
             clnt_perror(gd->vxi_cli, prog);
         else if (r->error)
             fprintf(stderr, "%s: destroy_link: error %ld\n", prog, r->error);
     }
-    if (gd->vxi_abrt)
-        clnt_destroy(gd->vxi_abrt);
     if (gd->vxi_cli)
         clnt_destroy(gd->vxi_cli);
     _free_gpib(gd);

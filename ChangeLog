@@ -1,9 +1,14 @@
+2008-01-21 Jim Garlick <garlick.jim@gmail.com>
+
+	* src/gpib.c : Tear down abort before destroying link to avoid
+	crashing ics8065 firmware.
+
+	* libvxi/* : New refactored VXI-11 code from gpib.c (not used yet).
+
 2008-01-19 Jim Garlick <garlick.jim@gmail.com>
 
 	* src/gpib.[ch] : Implement abort channel.  Fix some error handling.
 
-	* src/vxi11lib.[ch] : New, refactor gpib.c
-	
 2007-12-31 Jim Garlick <garlick.jim@gmail.com>
 
 	* src/hostlist.[ch], src/list.[ch], src/argv.[ch] : New, 
