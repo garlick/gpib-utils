@@ -1,6 +1,6 @@
 CFLAGS=-g -Wall -I..
 LDADD=-lrpcsvc -lm
-OBJS=../vxi11.o ../vxi11_xdr.o ../vxi11_clnt.o
+OBJS=../vxi11.o ../vxi11_xdr.o ../vxi11_clnt.o ../vxi11intr_xdr.o ../vxi11intr_svc.o
 
 PROGS = 1 2 3 4 5
 
