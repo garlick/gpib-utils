@@ -15,6 +15,7 @@
 
 #include "vxi11.h"
 #include "vxi11_private.h"
+#include "vxi11intr.h"
 
 #define VXI11_DEFAULT_EOS         0x0c
 #define VXI11_DEFAULT_REOS        1
@@ -27,6 +28,9 @@ struct vxi11_handle_struct {
     int             vxi_magic;
     CLIENT         *vxi_core_cli;   /* core channel */
     CLIENT         *vxi_abrt_cli;   /* abort channel */
+    SVCXPRT        *vxi_intr_svc;   /* intr service */
+    srq_fun_t       vxi_intr_fun;   /* intr callback */
+    void           *vxi_intr_arg;   /* opaque (to us) arg for callback */
     Device_Link     vxi_lid;        /* device link */
     unsigned long   vxi_maxrecvsize;/* max write device will accept */
     unsigned char   vxi_eos;        /* termchar used in read */
@@ -130,12 +134,11 @@ int
 vxi11_device_readall(vxi11_handle_t vp, char *buf, int len, long *errp)
 {
     int n, count = 0;
-    int reason, try; 
+    int reason;
 
     assert(vp->vxi_magic == VXI11_HANDLE_MAGIC);
     do {
-        try = MIN(len - count, 1024); /* rule B.6.3: client must accept 1024 */
-        n = vxi11_device_read(vp, buf + count, try, &reason, errp);
+        n = vxi11_device_read(vp, buf + count, len - count, &reason, errp);
         if (n == -1)
             return -1;
         count += n;
@@ -334,9 +337,9 @@ vxi11_device_docmd_sendcmds(vxi11_handle_t vp, char *cmds, int len, long *errp)
         RETURN_ERR(errp, _rpcerr(vp->vxi_core_cli), -1);
     if (r->error)
         RETURN_ERR(errp, r->error, -1);
-    if (r->data_out.data_out_len != len)
+    if (r->data_out.data_out_len != len) /* rule B.5.5 */
         RETURN_ERR(errp, VXI11_ERR_BADRESP, -1);
-    if (memcmp(r->data_out.data_out_val, cmds, len) != 0)
+    if (memcmp(r->data_out.data_out_val, cmds, len) != 0) /* rule B.5.5 */
         RETURN_ERR(errp, VXI11_ERR_BADRESP, -1);
     RETURN_OK(errp, 0);
 }
@@ -365,7 +368,7 @@ _device_docmd_16(vxi11_handle_t vp, int cmd, int in, int *outp, long *errp)
         RETURN_ERR(errp, _rpcerr(vp->vxi_core_cli), -1);
     if (r->error)
         RETURN_ERR(errp, r->error, -1);
-    if (r->data_out.data_out_len != 2)
+    if (r->data_out.data_out_len != 2) /* rule B.5.6, B.5.7, B.5.8 */
         RETURN_ERR(errp, VXI11_ERR_BADRESP, -1);
     if (outp)
         *outp = ntohs(*(uint16_t *)r->data_out.data_out_val);
@@ -443,7 +446,7 @@ vxi11_device_docmd_atn(vxi11_handle_t vp, int atn, long *errp)
 
     assert(vp->vxi_magic == VXI11_HANDLE_MAGIC);
     res = _device_docmd_16(vp, VXI11_DOCMD_ATN_CONTROL, atn, &outarg, errp);
-    if (res == 0 && outarg != atn)
+    if (res == 0 && outarg != atn) /* rule B.5.7 */
         RETURN_ERR(errp, VXI11_ERR_BADRESP, -1);
     return res;
 }
@@ -455,7 +458,7 @@ vxi11_device_docmd_ren(vxi11_handle_t vp, int ren, long *errp)
 
     assert(vp->vxi_magic == VXI11_HANDLE_MAGIC);
     res = _device_docmd_16(vp, VXI11_DOCMD_REN_CONTROL, ren, &outarg, errp);
-    if (res == 0 && outarg != ren)
+    if (res == 0 && outarg != ren) /* rule B.5.8 */
         RETURN_ERR(errp, VXI11_ERR_BADRESP, -1);
     return res;
 }
@@ -484,7 +487,7 @@ _device_docmd_32(vxi11_handle_t vp, int cmd, int in, int *outp, long *errp)
         RETURN_ERR(errp, _rpcerr(vp->vxi_core_cli), -1);
     if (r->error)
         RETURN_ERR(errp, r->error, -1);
-    if (r->data_out.data_out_len != 4)
+    if (r->data_out.data_out_len != 4) /* rule B.5.9, B.5.10 */
         RETURN_ERR(errp, VXI11_ERR_BADRESP, -1);
     if (outp)
         *outp = ntohl(*(uint32_t *)r->data_out.data_out_val);
@@ -498,7 +501,7 @@ vxi11_device_docmd_pass(vxi11_handle_t vp, int addr, long *errp)
 
     assert(vp->vxi_magic == VXI11_HANDLE_MAGIC);
     res = _device_docmd_32(vp, VXI11_DOCMD_PASS_CONTROL, addr, &outarg, errp);
-    if (res == 0 && outarg != addr)
+    if (res == 0 && outarg != addr) /* rule B.5.9 */
         RETURN_ERR(errp, VXI11_ERR_BADRESP, -1);
     return res;
 }
@@ -512,7 +515,7 @@ vxi11_device_docmd_addr(vxi11_handle_t vp, int addr, long *errp)
     if (addr < 0 || addr > 30)
         RETURN_ERR(errp, VXI11_ERR_PARAMETER, -1);
     res = _device_docmd_32(vp, VXI11_DOCMD_BUS_ADDRESS, addr, &outarg, errp);
-    if (res == 0 && outarg != addr)
+    if (res == 0 && outarg != addr) /* rule B.5.10 */
         RETURN_ERR(errp, VXI11_ERR_BADRESP, -1);
     return res;
 }
@@ -545,7 +548,7 @@ vxi11_device_docmd_ifc(vxi11_handle_t vp, long *errp)
         RETURN_ERR(errp, r->error, -1);
 #if 0
     /* ignore out of spec len=2 response from ics8065 */
-    if (r->data_out.data_out_len != 0)
+    if (r->data_out.data_out_len != 0) /* rule B.5.11 */
         RETURN_ERR(errp, VXI11_ERR_BADRESP, -1);
 #endif
     RETURN_OK(errp, 0);
@@ -565,6 +568,98 @@ vxi11_device_abort(vxi11_handle_t vp, long *errp)
     if (r->error)
         RETURN_ERR(errp, r->error, -1);
     RETURN_OK(errp, 0);
+}
+
+int
+vxi11_create_intr_chan(vxi11_handle_t vp, srq_fun_t fun, void *arg, long *errp)
+{
+    Device_RemoteFunc p;
+    Device_Error *r;
+    struct sockaddr_in sin;
+
+    assert(vp->vxi_magic == VXI11_HANDLE_MAGIC);
+    if (vp->vxi_core_cli == NULL)
+        RETURN_ERR(errp, VXI11_ERR_NOCHAN, -1);
+    if (!(vp->vxi_intr_svc = svctcp_create(RPC_ANYSOCK, 0, 0)))
+        RETURN_ERR(errp, VXI11_ERR_SVCTCP, -1);
+    if (!svc_register(vp->vxi_intr_svc, VXI11_INTR_SVC_PROGNUM, 
+                      VXI11_INTR_SVC_VERSION, device_intr_1, IPPROTO_TCP))
+        RETURN_ERR(errp, VXI11_ERR_SVCREG, -1);
+    vp->vxi_intr_fun = fun;
+    vp->vxi_intr_arg = arg;
+    p.hostAddr            = ntohl(vp->vxi_intr_svc->xp_raddr.sin_addr.s_addr);
+    p.hostPort            = ntohs(vp->vxi_intr_svc->xp_port);
+    p.progNum             = VXI11_INTR_SVC_PROGNUM; /* rule B.6.87 */
+    p.progVers            = VXI11_INTR_SVC_VERSION; /* rule B.6.88 */
+    p.progFamily          = DEVICE_TCP;
+    r = create_intr_chan_1(&p, vp->vxi_core_cli);
+    if (r == NULL)
+        RETURN_ERR(errp, _rpcerr(vp->vxi_core_cli), -1);
+    if (r->error)
+        RETURN_ERR(errp, r->error, -1);
+    RETURN_OK(errp, 0);
+}
+
+int
+vxi11_destroy_intr_chan(vxi11_handle_t vp, long *errp)
+{
+    Device_Error *r;
+
+    /* FIXME how to destroy the RPC service on this end? */
+
+    /* destroy callback passed into create function?  it could pthread_signal
+     * the service loop to terminate it?  
+     */
+
+    assert(vp->vxi_magic == VXI11_HANDLE_MAGIC);
+    if (vp->vxi_core_cli == NULL)
+        RETURN_ERR(errp, VXI11_ERR_NOCHAN, -1);
+    r = destroy_intr_chan_1(NULL, vp->vxi_core_cli);
+    if (r == NULL)
+        RETURN_ERR(errp, _rpcerr(vp->vxi_core_cli), -1);
+    if (r->error)
+        RETURN_ERR(errp, r->error, -1);
+    RETURN_OK(errp, 0);
+}
+
+int 
+vxi11_device_enable_srq(vxi11_handle_t vp, int enable, long *errp)
+{
+    Device_EnableSrqParms p;
+    Device_Error *r;
+
+    assert(vp->vxi_magic == VXI11_HANDLE_MAGIC);
+    if (vp->vxi_core_cli == NULL)
+        RETURN_ERR(errp, VXI11_ERR_NOCHAN, -1);
+    p.lid                 = vp->vxi_lid;
+    p.enable              = enable;
+    /* FIXME: encode vxi11_handle_t -> p.handle */
+    p.handle.handle_val   = NULL; /* not used */
+    p.handle.handle_len   = 0;
+    r = device_enable_srq_1(NULL, vp->vxi_core_cli);
+    if (r == NULL)
+        RETURN_ERR(errp, _rpcerr(vp->vxi_core_cli), -1);
+    if (r->error)
+        RETURN_ERR(errp, r->error, -1);
+    RETURN_OK(errp, 0);
+}
+
+/* called from device_intr_1 in vxi11intr_svc.c */
+void *
+device_intr_srq_1_svc(Device_SrqParms *p, struct svc_req *req)
+{
+    printf("device_intr_srq_1_svc called\n");
+    /* FIXME decode p->handle -> vxi11_handle_t, then call vxi_intr_fun */
+    return NULL;
+}
+
+int
+vxi11_intr_svc_run(vxi11_handle_t vp, long *errp)
+{
+    assert(vp->vxi_magic == VXI11_HANDLE_MAGIC);
+    /* FIXME: check preconditions */
+    svc_run();
+    RETURN_ERR(errp, VXI11_ERR_SVCRET, -1);
 }
 
 void
@@ -604,6 +699,7 @@ vxi11_open(char *host, char *device,
     vp->vxi_iotimeout   = VXI11_DEFAULT_IOTIMEOUT;
     vp->vxi_core_cli    = NULL;
     vp->vxi_abrt_cli    = NULL;
+    vp->vxi_intr_svc    = NULL;
 
     /* open core connection */
     vp->vxi_core_cli    = clnt_create(host, DEVICE_CORE, DEVICE_CORE_VERSION, 
@@ -626,16 +722,20 @@ vxi11_open(char *host, char *device,
         RETURN_ERR(errp, _rpcerr(vp->vxi_core_cli), NULL);
     }
     vp->vxi_lid         = r->lid;
+    if (r->maxRecvSize < 1024) { /* observation B.6.5 / rule B.6.3 */
+        vxi11_close(vp);
+        RETURN_ERR(errp, VXI11_ERR_BADRESP, NULL);
+    }
     vp->vxi_maxrecvsize = r->maxRecvSize;
 
     /* open abrt connection */
     if (doabort) {
-        struct sockaddr_in addr;
+        struct sockaddr_in sin;
         int sock = RPC_ANYSOCK;
 
-        clnt_control(vp->vxi_core_cli, CLGET_SERVER_ADDR, (char *)&addr);
-        addr.sin_port = htons(r->abortPort);
-        vp->vxi_abrt_cli = clnttcp_create(&addr, DEVICE_ASYNC, 
+        clnt_control(vp->vxi_core_cli, CLGET_SERVER_ADDR, (char *)&sin);
+        sin.sin_port = htons(r->abortPort);
+        vp->vxi_abrt_cli = clnttcp_create(&sin, DEVICE_ASYNC, 
                                           DEVICE_ASYNC_VERSION, &sock, 0, 0);
         if (vp->vxi_abrt_cli == NULL) {
             vxi11_close(vp);

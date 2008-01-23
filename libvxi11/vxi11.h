@@ -35,8 +35,13 @@ int vxi11_device_docmd_pass(vxi11_handle_t vp, int addr, long *errp);
 int vxi11_device_docmd_addr(vxi11_handle_t vp, int addr, long *errp);
 int vxi11_device_docmd_ifc(vxi11_handle_t vp, long *errp);
 int vxi11_device_abort(vxi11_handle_t vp, long *errp);
+typedef int (*srq_fun_t)(vxi11_handle_t vp, void *arg);
+int vxi11_create_intr_chan(vxi11_handle_t vp, srq_fun_t fun, void *arg,
+                           long *errp);
+int vxi11_destroy_intr_chan(vxi11_handle_t vp, long *errp);
+int vxi11_device_enable_srq(vxi11_handle_t vp, int enable, long *errp);
+int vxi11_intr_svc_run(vxi11_handle_t vp, long *errp);
 
-/* todo: intr channel calls */
 
 /* accessors */
 char         *vxi11_strerror(long err);
@@ -83,6 +88,9 @@ unsigned long vxi11_get_maxrecvsize(vxi11_handle_t vp);
 #define VXI11_ERR_ABRTINFO  100
 #define VXI11_ERR_TOOBIG    101
 #define VXI11_ERR_BADRESP   102
+#define VXI11_ERR_SVCTCP    103
+#define VXI11_ERR_SVCREG    104
+#define VXI11_ERR_SVCRET    105
 /* Errors with this bit set belong to sunrpc */
 #define VXI11_ERR_RPCERR    0x10000000
 
@@ -105,6 +113,9 @@ unsigned long vxi11_get_maxrecvsize(vxi11_handle_t vp);
     { VXI11_ERR_ABRTINFO,   "getaddrinfo on abort port failed" }, \
     { VXI11_ERR_TOOBIG,     "write buffer exceeds max receive size" }, \
     { VXI11_ERR_BADRESP,    "unexpected response to query" }, \
+    { VXI11_ERR_SVCTCP,     "error creating TCP RPC service" }, \
+    { VXI11_ERR_SVCREG,     "could not register RPC service" }, \
+    { VXI11_ERR_SVCRET,     "RPC service returned unexpectedly" }, \
     { 0, 0 }, \
 }
 
