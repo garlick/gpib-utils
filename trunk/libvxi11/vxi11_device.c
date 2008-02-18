@@ -242,7 +242,7 @@ vxi11_read(vxi11dev_t v, char *buf, int len, int *numreadp)
         gettimeofday(&t1, NULL);
         res = vxi11_device_read(v->vxi11_core, v->vxi11_lid, flags, 
                                 tmout, 0, v->vxi11_termChar, &reason, 
-                                buf, &len, try);
+                                buf, &try, len);
         gettimeofday(&t2, NULL);
         if (res == 0) {
             count += try;
@@ -254,8 +254,8 @@ vxi11_read(vxi11dev_t v, char *buf, int len, int *numreadp)
         }
     }
     if (v->vxi11_doLocking && (lres = vxi11_unlock(v)) != 0)
-        return lres;
         if (res == 0)
+            return lres;
 
     if (numreadp)
         *numreadp = count;
@@ -268,7 +268,7 @@ vxi11_readstr(vxi11dev_t v, char *str, int len)
     int res, count;
 
     res = vxi11_read(v, str, len - 1, &count);
-    if (res) {
+    if (res == 0) {
         assert(count < len);
         str[count] = '\0';
     }
@@ -435,11 +435,11 @@ vxi11_perror(vxi11dev_t v, int err, char *str)
             fprintf(stderr, "%s (%s): %s", str, v->vxi11_devname,
                     clnt_spcreateerror("abrt"));
             break;
-        case VXI11_ABRT_RPCERR:
+        case VXI11_CORE_RPCERR:
             fprintf(stderr, "%s (%s): %s", str, v->vxi11_devname, 
                     clnt_sperror(v->vxi11_core, "core"));
             break;
-        case VXI11_CORE_RPCERR:
+        case VXI11_ABRT_RPCERR:
             fprintf(stderr, "%s (%s): %s", str, v->vxi11_devname, 
                     clnt_sperror(v->vxi11_abrt, "abrt"));
             break;
