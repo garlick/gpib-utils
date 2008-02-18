@@ -28,7 +28,7 @@ vxi11_open_core_channel(char *host, CLIENT **corep)
 
     core = clnt_create_cached(host, DEVICE_CORE, DEVICE_CORE_VERSION, "tcp");
     if (!core)
-        return VXI11_CREATE_RPCERR;
+        return VXI11_CORE_CREATE;
     if (corep)
         *corep = core;
     return 0;
@@ -51,7 +51,7 @@ vxi11_open_abrt_channel(CLIENT *core, unsigned short abortPort, CLIENT **abrtp)
     sin.sin_port = htons(abortPort);
     if (!(abrt = clnttcp_create(&sin, DEVICE_ASYNC, DEVICE_ASYNC_VERSION, 
                                 &sock, 0, 0)))
-        return VXI11_CREATE_RPCERR;
+        return VXI11_ABRT_CREATE;
     if (abrtp)
         *abrtp = abrt;
     return 0;

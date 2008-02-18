@@ -6,7 +6,7 @@
 #include "vxi11_device.h"
 #include "test.h"
 
-#define TEST_DESC "3488 open/close with locking"
+#define TEST_DESC "3488 open/close of unknown host"
 
 int
 main(int argc, char *argv[])
@@ -26,14 +26,14 @@ main(int argc, char *argv[])
 		fprintf(stderr, "%s: vxi11_create failed\n", prog);
 		exit(1);
 	}
-	vxi11_set_lockpolicy(v, 1, 20000);
-	if ((res = vxi11_open(v, TEST_NAME, 0)) != 0) {
-		vxi11_perror(v, res, "vxi11_open");
+	res = vxi11_open(v, TEST_NAME_BADHOST, 0);
+	if (res == 0) {
+		fprintf(stderr, "%s: should have failed\n", prog);
 		exit_val = 1;
 		goto done;
 	}
-done:
 	vxi11_close(v);
+done:
 	vxi11_destroy(v);
 	exit(exit_val);
 }

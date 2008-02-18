@@ -3,28 +3,28 @@
 #include <stdlib.h>
 #include <libgen.h>
 
-#include "vxi11.h"
+#include "vxi11_device.h"
 #include "test.h"
+
+#define TEST_DESC "vxi11dev_t create/destroy"
 
 int
 main(int argc, char *argv[])
 {
 	char *prog = basename(argv[0]);
-	vxi11_handle_t vp;
-	long err;
+	vxi11dev_t v;
 
-	if (argc == 2) {
-		printf("%s: open and close the device by name\n", prog);
+	if (argc > 1) {
+		printf("%s\n", TEST_DESC);
 		exit(0);
 	}
 
-	vp = vxi11_open(TEST_GWNAME, TEST_DEVNAME, 0, 0, 0, 0, &err);
-	if (!vp) {
-		fprintf(stderr, "%s: open: %s\n", prog, vxi11_strerror(err));
+	v = vxi11_create();
+	if (!v) {
+		fprintf(stderr, "%s: vxi11_create failed\n", prog);
 		exit(1);
 	}
-
-	vxi11_close(vp);
+	vxi11_destroy(v);
 
 	exit(0);
 }

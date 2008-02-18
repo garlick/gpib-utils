@@ -1,0 +1,23 @@
+#!/bin/bash
+
+die ()
+{
+    echo "$*" >&2
+    exit 1
+}
+
+for test in $*; do
+    desc=$(./${test} desc)
+    printf "%-2.2d: %-60s" "${test}" "${desc}"
+    echo "===========" $(date) "===========" >>${test}.out
+    ./${test} >>${test}.out 2>&1
+    case $? in
+        0) echo ok
+           rm -f ${test}.out
+           ;;
+        1) echo fail
+           ;;
+        2) echo notrun
+           ;;
+    esac
+done

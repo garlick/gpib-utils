@@ -1,9 +1,11 @@
 CFLAGS=-g -Wall -Wno-unused
-LDADD=-lrpcsvc -lm
-OBJS=  vxi11_device.o vxi11_core.o rpccache.o vxi11_xdr.o vxi11_clnt.o
-OBJS+= vxi11intr_xdr.o vxi11intr_svc.o
+LDADD=-lrpcsvc -lm -fPIC
+LIBOBJS=  vxi11_device.o vxi11_core.o rpccache.o vxi11_xdr.o vxi11_clnt.o
+LIBOBJS+= vxi11intr_xdr.o vxi11intr_svc.o
+LIB=libvxi11.a
 
-all: $(OBJS)
+$(LIB): $(LIBOBJS)
+	  ar rv $@ $(LIBOBJS)
 
 vxi11_core.o vxi11_device.o: vxi11.h
 
