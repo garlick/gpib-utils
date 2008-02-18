@@ -26,6 +26,8 @@ main(int argc, char *argv[])
 		exit(0);
 	}
 
+	vxi11_set_device_debug(1);
+	memset(v, 0, sizeof(v));
 	for (i = 0; i < ITER; i++) {
 		v[i] = vxi11_create();
 		if (!v[i]) {
@@ -60,10 +62,12 @@ main(int argc, char *argv[])
 			goto done;
 		}
 	}
-	for (i = 0; i < ITER; i++) {
-		vxi11_close(v[i]);
-		vxi11_destroy(v[i]);
-	}
 done:
+	for (i = 0; i < ITER; i++) {
+		if (v[i]) {
+			vxi11_close(v[i]);
+			vxi11_destroy(v[i]);
+		}
+	}
 	exit(exit_val);
 }

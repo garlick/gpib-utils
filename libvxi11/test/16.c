@@ -27,6 +27,7 @@ main(int argc, char *argv[])
 		exit(0);
 	}
 
+	vxi11_set_device_debug(1);
 	for (i = 0; i < ITER; i++) {
 		v[i] = vxi11_create();
 		if (!v[i]) {

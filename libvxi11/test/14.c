@@ -34,6 +34,7 @@ main(int argc, char *argv[])
 		exit(0);
 	}
 
+	vxi11_set_device_debug(1);
 	v = vxi11_create();
 	if (!v) {
 		fprintf(stderr, "%s: vxi11_create failed\n", prog);

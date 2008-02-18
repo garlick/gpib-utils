@@ -29,6 +29,8 @@
 #define VXI11_NOLID             (-1)
 #define VXI11_NOTERMCHAR        0
 
+static int vxi11_device_debug = 0;
+
 struct vxi11_device_struct {
     int             vxi11_magic;
     char            vxi11_devname[MAXHOSTNAMELEN];
@@ -421,6 +423,12 @@ vxi11_set_endw(vxi11dev_t v, int doEndw)
 {
     assert(v->vxi11_magic == VXI11_MAGIC);
     v->vxi11_doEndw = doEndw;
+}
+
+void vxi11_set_device_debug(int doDebug)
+{
+    vxi11_set_core_debug(doDebug);
+    vxi11_device_debug = 1;
 }
 
 void 
