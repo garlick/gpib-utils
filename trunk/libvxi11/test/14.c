@@ -12,20 +12,6 @@
 
 #define TEST_DESC "abort an I/O before it can timeout (3s)"
 
-static unsigned long
-_timersubms(struct timeval *a, struct timeval *b)
-{
-	struct timeval t;
-
-	t.tv_sec =  a->tv_sec  - b->tv_sec;
-	t.tv_usec = a->tv_usec - b->tv_usec;
-	if (t.tv_usec < 0) {
-		t.tv_sec--;
-		t.tv_usec += 1000000;    
-	}
-	return (t.tv_usec / 1000 + t.tv_sec * 1000);
-}
-
 static vxi11dev_t v;
 
 void alarm_handler(int arg)
