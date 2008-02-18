@@ -40,6 +40,8 @@ void vxi11_set_termchar(vxi11dev_t v, int termChar);
 
 void vxi11_set_endw(vxi11dev_t v, int doEndw);
 
+void vxi11_set_device_debug(int doDebug);
+
 void vxi11_perror(vxi11dev_t v, int err, char *str);
 
 /*

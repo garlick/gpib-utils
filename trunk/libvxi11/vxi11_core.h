@@ -154,6 +154,8 @@ int vxi11_destroy_intr_chan(CLIENT *core);
 
 int vxi11_device_abort(CLIENT *abrt, long lid);
 
+void vxi11_set_core_debug(int doDebug);
+
 /*
  * vi:tabstop=4 shiftwidth=4 expandtab
  */
