@@ -6,18 +6,24 @@ die ()
     exit 1
 }
 
+pass=0
+total=0
 for test in $*; do
     desc=$(./${test} desc)
     printf "%-2.2d: %-60s" "${test}" "${desc}"
-    echo "===========" $(date) "===========" >>${test}.out
+    echo '===========' $(date) '===========' >>${test}.out
     ./${test} >>${test}.out 2>&1
     case $? in
         0) echo ok
            rm -f ${test}.out
+           pass=$((${pass} + 1))
            ;;
         1) echo fail
            ;;
         2) echo notrun
            ;;
     esac
+    total=$((${total} + 1))
 done
+echo '============' ${pass} of ${total} tests succeeded
+exit 0

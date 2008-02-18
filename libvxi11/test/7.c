@@ -27,13 +27,14 @@ main(int argc, char *argv[])
 		exit(1);
 	}
 	res = vxi11_open(v, TEST_NAME_BADDEV, 0);
-	if (res == 0) {
-		fprintf(stderr, "%s: should have failed\n", prog);
+	vxi11_perror(v, res, "vxi11_open");
+	if (res != 21) {
+		fprintf(stderr, "%s: should have failed on VXI11 err 21\n", prog);
 		exit_val = 1;
 		goto done;
 	}
-	vxi11_close(v);
 done:
+	vxi11_close(v);
 	vxi11_destroy(v);
 	exit(exit_val);
 }
