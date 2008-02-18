@@ -1,12 +1,14 @@
-/* VXI-11 RPCL definitions. Taken from appendix C of the VXI-11 specfication. */
-/* See http://www.vxi.org */
-
-/* VXI-11 flags */
+%
+%/* VXI-11 RPCL definitions. Taken from appendix C of the VXI-11 specfication.
+% * See http://www.vxi.org 
+% */
+%
+%/* VXI-11 flags */
 %#define VXI11_FLAG_WAITLOCK         0x01
 %#define VXI11_FLAG_ENDW             0x08
 %#define VXI11_FLAG_TERMCHRSET       0x80
-
-/* VXI-11 device_docmd 'cmd' values */
+%
+%/* VXI-11 device_docmd 'cmd' values */
 %#define VXI11_DOCMD_SEND_COMMAND    0x020000
 %#define VXI11_DOCMD_BUS_STATUS      0x020001
 %#define VXI11_DOCMD_ATN_CONTROL     0x020002
@@ -14,8 +16,8 @@
 %#define VXI11_DOCMD_PASS_CONTROL    0x020004
 %#define VXI11_DOCMD_BUS_ADDRESS     0x02000A
 %#define VXI11_DOCMD_IFC_CONTROL     0x020010
-
-/* VXI-11 device_docmd Bus Status values */
+%
+%/* VXI-11 device_docmd Bus Status values */
 %#define VXI11_DOCMD_STAT_REMOTE     1
 %#define VXI11_DOCMD_STAT_SRQ        2
 %#define VXI11_DOCMD_STAT_NDAC       3
@@ -24,6 +26,28 @@
 %#define VXI11_DOCMD_STAT_TALKER     6
 %#define VXI11_DOCMD_STAT_LISTENER   7
 %#define VXI11_DOCMD_STAT_BUSADDR    8
+%
+%/* VXI-11 device_read 'reason' bits */
+%#define VXI11_REASON_REQCNT 1   /* requested number of bytes read */
+%#define VXI11_REASON_CHR    2   /* read terminated by eos character */
+%#define VXI11_REASON_END    4   /* read terminated by EOI */
+%
+%/* VXI-11 errors */
+%#define VXI11_ERR_SUCCESS   0
+%#define VXI11_ERR_SYNTAX    1
+%#define VXI11_ERR_NODEVICE  3
+%#define VXI11_ERR_LINKINVAL 4
+%#define VXI11_ERR_PARAMETER 5
+%#define VXI11_ERR_NOCHAN    6
+%#define VXI11_ERR_NOTSUPP   8
+%#define VXI11_ERR_RESOURCES 9
+%#define VXI11_ERR_LOCKED    11
+%#define VXI11_ERR_NOLOCK    12
+%#define VXI11_ERR_IOTIMEOUT 15
+%#define VXI11_ERR_IOERROR   17
+%#define VXI11_ERR_ADDRINVAL 21
+%#define VXI11_ERR_ABORT     23
+%#define VXI11_ERR_CHANEST   29
 
 /* Types */
 typedef long Device_Link;
@@ -50,8 +74,11 @@ struct Create_LinkResp {
    Device_ErrorCode error;
    Device_Link lid;
    unsigned short abortPort; /* for the abort RPC */
-   unsigned long maxRecvSize; /* specifies max data size in bytes device will accept on a write */ };
-   struct Device_WriteParms { Device_Link lid; /* link id from create_link */
+   unsigned long maxRecvSize; /* specifies max data size in bytes device will accept on a write */ 
+};
+
+struct Device_WriteParms { 
+   Device_Link lid; /* link id from create_link */
    unsigned long io_timeout; /* time to wait for I/O */
    unsigned long lock_timeout; /* time to wait for lock */
    Device_Flags flags; opaque data<>; /* the data length and the data itself */
@@ -59,12 +86,16 @@ struct Create_LinkResp {
 
 struct Device_WriteResp {
    Device_ErrorCode error;
-   unsigned long size; /* Number of bytes written */ };
-   struct Device_ReadParms { Device_Link lid; /* link id from create_link */
+   unsigned long size; /* Number of bytes written */ 
+};
+
+struct Device_ReadParms { 
+   Device_Link lid; /* link id from create_link */
    unsigned long requestSize; /* Bytes requested */
    unsigned long io_timeout; /* time to wait for I/O */
    unsigned long lock_timeout; /* time to wait for lock */
-   Device_Flags flags; char termChar; /* valid if flags & termchrset */
+   Device_Flags flags; 
+   char termChar; /* valid if flags & termchrset */
 };
 
 struct Device_ReadResp {
