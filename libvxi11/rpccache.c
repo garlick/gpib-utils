@@ -60,7 +60,7 @@ clnt_create_cached(char *host, u_long prog, u_long vers, char *proto)
                 && cp->u.c.prog == prog && cp->u.c.vers == vers) {
             cp->usecount++;
             if (rpccache_debug)
-                fprintf(stderr, "XXX clnt_create_cached = %p (count=%d)\n", 
+                fprintf(stderr, "DBG clnt_create_cached = %p (count=%d)\n", 
                         cp->clnt, cp->usecount);
             return cp->clnt;
         }
@@ -80,11 +80,11 @@ clnt_create_cached(char *host, u_long prog, u_long vers, char *proto)
             new->next = clnt_cache;
             clnt_cache = new;
             if (rpccache_debug)
-                fprintf(stderr, "XXX clnt_create_cached = %p (new)\n", clnt);
+                fprintf(stderr, "DBG clnt_create_cached = %p (new)\n", clnt);
         }
     } else
         if (rpccache_debug)
-            fprintf(stderr, "XXX clnt_create_cached = NULL\n");
+            fprintf(stderr, "DBG clnt_create_cached = NULL\n");
     return clnt;
 }
 
@@ -106,7 +106,7 @@ clnttcp_create_cached(struct sockaddr_in *addr, u_long prog, u_long vers,
                 && cp->u.t.prog == prog && cp->u.t.vers == vers) {
             cp->usecount++;
             if (rpccache_debug)
-                fprintf(stderr, "XXX clnttcp_create_cached (addr=%s:%d, ...) "
+                fprintf(stderr, "DBG clnttcp_create_cached (addr=%s:%d, ...) "
                         " = %p (count=%d)\n", inet_ntoa(addr->sin_addr), 
                         ntohs(addr->sin_port), cp->clnt, cp->usecount);
             return cp->clnt;
@@ -128,13 +128,13 @@ clnttcp_create_cached(struct sockaddr_in *addr, u_long prog, u_long vers,
             new->next = clnt_cache;
             clnt_cache = new;
             if (rpccache_debug)
-                fprintf(stderr, "XXX clnttcp_create_cached (addr %s:%d, ...) "
+                fprintf(stderr, "DBG clnttcp_create_cached (addr %s:%d, ...) "
                         "= %p (new)\n", inet_ntoa(addr->sin_addr), 
                         htons(addr->sin_port), clnt);
         }
     } else
         if (rpccache_debug)
-            fprintf(stderr, "XXX clnttcp_create_cached (addr %s:%d, ...) = "
+            fprintf(stderr, "DBG clnttcp_create_cached (addr %s:%d, ...) = "
                     "NULL\n", inet_ntoa(addr->sin_addr), htons(addr->sin_port));
     return clnt;
 }
@@ -149,7 +149,7 @@ clnt_destroy_cached(CLIENT *clnt)
         if (cp->clnt == clnt) {
                 if (--cp->usecount == 0) {
                     if (rpccache_debug)
-                        printf("XXX clnt_destroy_cached (%p) (last use)\n", 
+                        printf("DBG clnt_destroy_cached (%p) (last use)\n", 
                                 clnt);
                     clnt_destroy(clnt);
                     if (prev == NULL)
@@ -160,14 +160,14 @@ clnt_destroy_cached(CLIENT *clnt)
                     free(cp);
                 } else
                     if (rpccache_debug)
-                        printf("XXX clnt_destroy_cached (%p) (count=%d)\n", 
+                        printf("DBG clnt_destroy_cached (%p) (count=%d)\n", 
                                 cp->clnt, cp->usecount);
                 return;
         }
         prev = cp;
     }
     if (rpccache_debug)
-        fprintf(stderr, "XXX clnt_destroy_cached (%p) (uncached)\n", clnt);
+        fprintf(stderr, "DBG clnt_destroy_cached (%p) (uncached)\n", clnt);
     clnt_destroy(clnt); /* non-cached */
 }
 

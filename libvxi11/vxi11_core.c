@@ -36,7 +36,7 @@ vxi11_open_core_channel(char *host, CLIENT **corep)
         res = 0;
     }
     if (vxi11_core_debug)
-        fprintf(stderr, "XXX vxi11_open_core_channel (host=%s, ...) = %d "
+        fprintf(stderr, "DBG vxi11_open_core_channel (host=%s, ...) = %d "
                 "core=%p\n", host, res, core);
     return res;
 }
@@ -46,7 +46,7 @@ vxi11_close_core_channel(CLIENT *core)
 {
     clnt_destroy_cached(core);
     if (vxi11_core_debug)
-        fprintf(stderr, "XXX vxi11_close_core_channel (core=%p)\n", core);
+        fprintf(stderr, "DBG vxi11_close_core_channel (core=%p)\n", core);
 }
 
 int 
@@ -66,7 +66,7 @@ vxi11_open_abrt_channel(CLIENT *core, unsigned short abortPort, CLIENT **abrtp)
         res = 0;
     }
     if (vxi11_core_debug)
-        fprintf(stderr, "XXX vxi11_open_abrt_channel (core=%p "
+        fprintf(stderr, "DBG vxi11_open_abrt_channel (core=%p "
                 "abortPort=%d, ...) = %d abrt=%p\n", 
                 core, abortPort, res, abrt);
     return res;
@@ -77,7 +77,7 @@ vxi11_close_abrt_channel(CLIENT *abrt)
 {
     clnt_destroy_cached(abrt);
     if (vxi11_core_debug)
-        fprintf(stderr, "XXX vxi11_close_abrt_channel (abrt=%p)\n", abrt);
+        fprintf(stderr, "DBG vxi11_close_abrt_channel (abrt=%p)\n", abrt);
 }
 
 int
@@ -103,7 +103,7 @@ vxi11_create_link(CLIENT *core, int clientId, int lockDevice,
         res = r->error;
     }
     if (vxi11_core_debug) {
-        fprintf(stderr, "XXX vxi11_create_link (core=%p, clientId=%d, "
+        fprintf(stderr, "DBG vxi11_create_link (core=%p, clientId=%d, "
                 "lockDevice=%d, lock_timeout=%lu, device=%s, ...) = %d ",
                 core, clientId, lockDevice, lock_timeout, device, res);
         if (r)
@@ -136,7 +136,7 @@ vxi11_device_write(CLIENT *core, long lid, long flags,
         res = r->error;
     }
     if (vxi11_core_debug) {
-        fprintf(stderr, "XXX vxi11_device_write (core=%p, lid=%ld, "
+        fprintf(stderr, "DBG vxi11_device_write (core=%p, lid=%ld, "
                 "flags=%ld io_timeout=%lu, lock_timeout=%lu, "
                 "..., data_len=%d, ...) = %d ",
                 core, lid, flags, io_timeout, lock_timeout, data_len, res);
@@ -174,7 +174,7 @@ vxi11_device_read(CLIENT *core, long lid, long flags,
         res = r->error;
     }
     if (vxi11_core_debug) {
-        fprintf(stderr, "XXX vxi11_device_read (core=%p, lid=%ld, "
+        fprintf(stderr, "DBG vxi11_device_read (core=%p, lid=%ld, "
                 "flags=%ld io_timeout=%lu, lock_timeout=%lu, "
                 "termChar=0x%x, ..., requestSize=%lu) = %d ",
                 core, lid, flags, io_timeout, lock_timeout, termChar,
@@ -207,7 +207,7 @@ vxi11_device_readstb(CLIENT *core, long lid, long flags,
         res = r->error;
     }
     if (vxi11_core_debug) {
-        fprintf(stderr, "XXX vxi11_device_readstb (core=%p, lid=%ld, "
+        fprintf(stderr, "DBG vxi11_device_readstb (core=%p, lid=%ld, "
                 "flags=%ld io_timeout=%lu, lock_timeout=%lu, ...) = %d ",
                 core, lid, flags, io_timeout, lock_timeout, res);
         if (r)
@@ -233,7 +233,7 @@ vxi11_device_trigger(CLIENT *core, long lid, long flags,
     if ((r = device_trigger_1(&p, core)))
         res = r->error;
     if (vxi11_core_debug)
-        fprintf(stderr, "XXX vxi11_device_trigger (core=%p, lid=%ld, "
+        fprintf(stderr, "DBG vxi11_device_trigger (core=%p, lid=%ld, "
                 "flags=%ld io_timeout=%lu, lock_timeout=%lu) = %d\n",
                 core, lid, flags, io_timeout, lock_timeout, res);
     return res;
@@ -254,7 +254,7 @@ vxi11_device_clear(CLIENT *core, long lid, long flags,
     if ((r = device_clear_1(&p, core)))
         res = r->error;
     if (vxi11_core_debug)
-        fprintf(stderr, "XXX vxi11_device_clear (core=%p, lid=%ld, "
+        fprintf(stderr, "DBG vxi11_device_clear (core=%p, lid=%ld, "
                 "flags=%ld io_timeout=%lu, lock_timeout=%lu) = %d\n",
                 core, lid, flags, io_timeout, lock_timeout, res);
     return res;
@@ -275,7 +275,7 @@ vxi11_device_remote(CLIENT *core, long lid, long flags,
     if ((r = device_remote_1(&p, core)))
         res = r->error;
     if (vxi11_core_debug)
-        fprintf(stderr, "XXX vxi11_device_remote (core=%p, lid=%ld, "
+        fprintf(stderr, "DBG vxi11_device_remote (core=%p, lid=%ld, "
                 "flags=%ld io_timeout=%lu, lock_timeout=%lu) = %d\n",
                 core, lid, flags, io_timeout, lock_timeout, res);
     return res;
@@ -296,7 +296,7 @@ vxi11_device_local(CLIENT *core, long lid, long flags,
     if ((r = device_local_1(&p, core)))
         res = r->error;
     if (vxi11_core_debug)
-        fprintf(stderr, "XXX vxi11_device_local (core=%p, lid=%ld, "
+        fprintf(stderr, "DBG vxi11_device_local (core=%p, lid=%ld, "
                 "flags=%ld io_timeout=%lu, lock_timeout=%lu) = %d\n",
                 core, lid, flags, io_timeout, lock_timeout, res);
     return res;
@@ -316,7 +316,7 @@ vxi11_device_lock(CLIENT *core, long lid, long flags,
     if ((r = device_lock_1(&p, core)))
         res = r->error;
     if (vxi11_core_debug)
-        fprintf(stderr, "XXX vxi11_device_lock (core=%p, lid=%ld, "
+        fprintf(stderr, "DBG vxi11_device_lock (core=%p, lid=%ld, "
                 "flags=%ld lock_timeout=%lu) = %d\n",
                 core, lid, flags, lock_timeout, res);
     return res;
@@ -331,7 +331,7 @@ vxi11_device_unlock(CLIENT *core, long lid)
     if ((r = device_unlock_1(&lid, core)))
         res = r->error;
     if (vxi11_core_debug)
-        fprintf(stderr, "XXX vxi11_device_unlock (core=%p, lid=%ld) = %d\n",
+        fprintf(stderr, "DBG vxi11_device_unlock (core=%p, lid=%ld) = %d\n",
                 core, lid, res);
     return res;
 }
@@ -351,7 +351,7 @@ vxi11_device_enable_srq(CLIENT *core, long lid, int enable, char *handle_val,
     if ((r = device_enable_srq_1(&p, core)))
         res = r->error;
     if (vxi11_core_debug)
-        fprintf(stderr, "XXX vxi11_device_enable_srq (core=%p, lid=%ld "
+        fprintf(stderr, "DBG vxi11_device_enable_srq (core=%p, lid=%ld "
                 "enable=%d, ..., handle_len=%d) = %d\n",
                 core, lid, enable, handle_len, res);
     return res;
@@ -385,7 +385,7 @@ vxi11_device_docmd(CLIENT *core, long lid, long flags,
         res = r->error;
     }
     if (vxi11_core_debug)
-        fprintf(stderr, "XXX vxi11_device_docmd (core=%p, lid=%ld, "
+        fprintf(stderr, "DBG vxi11_device_docmd (core=%p, lid=%ld, "
                 "flags=%ld, io_timeout=%lu, lock_timeout=%lu, cmd=%ld, "
                 "network_order=%d, datasize=%ld, ...,  data_in_len=%d, "
                 " ...) = %d\n",
@@ -403,7 +403,7 @@ vxi11_destroy_link(CLIENT *core, long lid)
     if ((r = destroy_link_1(&lid, core)))
         res = r->error;
     if (vxi11_core_debug)
-        fprintf(stderr, "XXX vxi11_destroy_link (core=%p, lid=%ld) = %d\n",
+        fprintf(stderr, "DBG vxi11_destroy_link (core=%p, lid=%ld) = %d\n",
                 core, lid, res);
     return res;
 }
@@ -427,7 +427,7 @@ vxi11_create_intr_chan(CLIENT *core, unsigned long hostAddr,
     if (vxi11_core_debug) {
         struct in_addr addr;
         addr.s_addr = htonl(hostAddr);
-        fprintf(stderr, "XXX vxi11_create_intr_chan (core=%p, "
+        fprintf(stderr, "DBG vxi11_create_intr_chan (core=%p, "
                 "hostAddr=%s, hostPort=%d, progNum=%lu, progVers=%lu, "
                 "progFamily=%d) = %d\n", core, inet_ntoa(addr), 
                 hostPort, progNum, progVers, progFamily, res);
@@ -444,7 +444,7 @@ vxi11_destroy_intr_chan(CLIENT *core)
     if ((r = destroy_intr_chan_1(NULL, core)))
         res = r->error;
     if (vxi11_core_debug)
-        fprintf(stderr, "XXX vxi11_destroy_intr_chan (core=%p) = %d\n", 
+        fprintf(stderr, "DBG vxi11_destroy_intr_chan (core=%p) = %d\n", 
                 core, res);
     return res;
 }
@@ -458,7 +458,7 @@ vxi11_device_abort(CLIENT *abrt, long lid)
     if ((r = device_abort_1(&lid, abrt)))
         res = r->error;
     if (vxi11_core_debug)
-        fprintf(stderr, "XXX vxi11_device_abort (abrt=%p, lid=%ld) = %d\n", 
+        fprintf(stderr, "DBG vxi11_device_abort (abrt=%p, lid=%ld) = %d\n", 
                 abrt, lid, res);
     return res;
 }
