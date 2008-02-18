@@ -1,7 +1,7 @@
 CFLAGS=-g -Wall -I..
 LDADD=-L.. -lvxi11 -lrpcsvc -lm
 
-PROGS = 1 2 3 4 5 6 7 8 9 10
+PROGS = 1 2 3 4 5 6 7 8 9 10 11 12 13 14
 
 all: $(PROGS)
 

@@ -27,13 +27,14 @@ main(int argc, char *argv[])
 		exit(1);
 	}
 	res = vxi11_open(v, TEST_NAME_BADHOST, 0);
-	if (res == 0) {
-		fprintf(stderr, "%s: should have failed\n", prog);
+	vxi11_perror(v, res, "vxi11_open");
+	if (res != (-3)) {
+		fprintf(stderr, "%s: should have failed core RPC create\n", prog);
 		exit_val = 1;
 		goto done;
 	}
-	vxi11_close(v);
 done:
+	vxi11_close(v);
 	vxi11_destroy(v);
 	exit(exit_val);
 }
