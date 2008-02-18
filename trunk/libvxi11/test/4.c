@@ -2,35 +2,37 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <libgen.h>
-#include <unistd.h>
 
-#include "vxi11.h"
+#include "vxi11_device.h"
 #include "test.h"
 
-#define TRIES 100
+#define TEST_DESC "3488 open/close with abort setup"
 
 int
 main(int argc, char *argv[])
 {
 	char *prog = basename(argv[0]);
-	vxi11_handle_t vp;
-	long err;
-	int i;
+	int res;
+	vxi11dev_t v;
+	int exit_val = 0;
 
-	if (argc == 2) {
-		printf("%s: open and close device %d times\n", prog, TRIES);
+	if (argc > 1) {
+		printf("%s\n", TEST_DESC);
 		exit(0);
 	}
 
-	for (i = 0; i < TRIES; i++) {
-		vp = vxi11_open(TEST_GWADDR, TEST_DEVNAME, 0, 0, 0, 0, &err);
-		if (!vp) {
-			fprintf(stderr, "%s: open(%d): %s\n", prog, i,
-							 vxi11_strerror(err));
-			exit(1);
-		}
-		vxi11_close(vp);
+	v = vxi11_create();
+	if (!v) {
+		fprintf(stderr, "%s: vxi11_create failed\n", prog);
+		exit(1);
 	}
-
-	exit(0);
+	if ((res = vxi11_open(v, TEST_NAME, 1)) != 0) {
+		vxi11_perror(v, res, "vxi11_open");
+		exit_val = 1;
+		goto done;
+	}
+done:
+	vxi11_close(v);
+	vxi11_destroy(v);
+	exit(exit_val);
 }

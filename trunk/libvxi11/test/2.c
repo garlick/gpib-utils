@@ -3,28 +3,37 @@
 #include <stdlib.h>
 #include <libgen.h>
 
-#include "vxi11.h"
+#include "vxi11_device.h"
 #include "test.h"
+
+#define TEST_DESC "3488 open/close"
 
 int
 main(int argc, char *argv[])
 {
 	char *prog = basename(argv[0]);
-	vxi11_handle_t vp;
-	long err;
+	int res;
+	vxi11dev_t v;
+	int exit_val = 0;
 
-	if (argc == 2) {
-		printf("%s: open and close the device by addr\n", prog);
+	if (argc > 1) {
+		printf("%s\n", TEST_DESC);
 		exit(0);
 	}
 
-	vp = vxi11_open(TEST_GWADDR, TEST_DEVNAME, 0, 0, 0, 0, &err);
-	if (!vp) {
-		fprintf(stderr, "%s: open: %s\n", prog, vxi11_strerror(err));
+	v = vxi11_create();
+	if (!v) {
+		fprintf(stderr, "%s: vxi11_create failed\n", prog);
 		exit(1);
 	}
-
-	vxi11_close(vp);
-
-	exit(0);
+	res = vxi11_open(v, TEST_NAME, 0);
+	if (res != 0) {
+		vxi11_perror(v, res, "vxi11_open");
+		exit_val = 1;
+		goto done;
+	}
+	vxi11_close(v);
+done:
+	vxi11_destroy(v);
+	exit(exit_val);
 }

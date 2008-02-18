@@ -1,5 +1,6 @@
 /* All functions return: 0 on success, <0 on RPC error, >0 on VXI-11 error */
-#define VXI11_CREATE_RPCERR (-3)
+#define VXI11_ABRT_CREATE   (-4)
+#define VXI11_CORE_CREATE   (-3)
 #define VXI11_ABRT_RPCERR   (-2)
 #define VXI11_CORE_RPCERR   (-1)
 
