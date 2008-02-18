@@ -25,5 +25,6 @@ for test in $*; do
     esac
     total=$((${total} + 1))
 done
-echo '============' ${pass} of ${total} tests succeeded
+echo '_____________________________'
+echo "Summary: ${pass} of ${total} tests passed"
 exit 0

@@ -7,7 +7,7 @@ LIB=libvxi11.a
 $(LIB): $(LIBOBJS)
 	  ar rv $@ $(LIBOBJS)
 
-vxi11_core.o vxi11_device.o: vxi11.h
+$(LIBOBJS): vxi11.h rpccache.h vxi11_core.h vxi11_device.h
 
 # VXI-11 core/async
 vxi11.h: vxi11.x
@@ -27,6 +27,6 @@ vxi11intr_svc.c:  vxi11intr.x vxi11intr.h
 	rm -f $@; rpcgen -o $@ -m vxi11intr.x
 
 clean:
-	rm -f *.o $(PROGS)
+	rm -f *.o *.a
 	rm -f vxi11.h vxi11_xdr.c vxi11_clnt.c vxi11_svc.c
 	rm -f vxi11intr.h vxi11intr_xdr.c vxi11intr_clnt.c vxi11intr_svc.c
