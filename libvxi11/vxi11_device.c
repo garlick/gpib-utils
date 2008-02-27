@@ -47,6 +47,34 @@ struct vxi11_device_struct {
     int             vxi11_clientId;
 };
 
+struct errtab_struct {
+    int num;
+    char *desc;
+};
+
+static struct errtab_struct  errtab[] = {
+    { VXI11_CORE_CREATE, "create core RPC channel" },
+    { VXI11_ABRT_CREATE, "create abrt RPC channel" },
+    { VXI11_CORE_RPCERR, "error on core RPC channel" },
+    { VXI11_ABRT_RPCERR, "error on abrt RPC channel" },
+    { VXI11_ERR_SUCCESS, "success" },
+    { VXI11_ERR_SYNTAX, "syntax error" },
+    { VXI11_ERR_NODEVICE, "no device" },
+    { VXI11_ERR_LINKINVAL,"invalid link" },
+    { VXI11_ERR_PARAMETER, "parameter error" },
+    { VXI11_ERR_NOCHAN, "channel not established" },
+    { VXI11_ERR_NOTSUPP, "unsupported operation" },
+    { VXI11_ERR_RESOURCES, "insufficent resources" },
+    { VXI11_ERR_LOCKED, "device locked" },
+    { VXI11_ERR_NOLOCK, "device unlocked" },
+    { VXI11_ERR_IOTIMEOUT, "I/O timeout" },
+    { VXI11_ERR_IOERROR, "I/O error" },
+    { VXI11_ERR_ADDRINVAL, "address invalid" },
+    { VXI11_ERR_ABORT, "I/O operation aborted" },
+    { VXI11_ERR_CHANEST, "channel already established" },
+    { 0, NULL }
+};
+
 void 
 vxi11_destroy(vxi11dev_t v)
 {
@@ -431,9 +459,26 @@ void vxi11_set_device_debug(int doDebug)
     vxi11_device_debug = 1;
 }
 
+static char *
+_lookup_err(int err)
+{
+    int i;
+    char *desc = NULL;
+
+    for (i = 0; errtab[i].desc != NULL; i++) {
+        if (errtab[i].num == err) {
+            desc = errtab[i].desc;
+            break;
+        }
+    }
+    return desc ? desc : "unknown error";
+}    
+
 void 
 vxi11_perror(vxi11dev_t v, int err, char *str)
 {
+    char *desc = _lookup_err(err);
+
     switch (err) {
         case VXI11_CORE_CREATE:
             fprintf(stderr, "%s (%s): %s", str, v->vxi11_devname,
@@ -451,62 +496,8 @@ vxi11_perror(vxi11dev_t v, int err, char *str)
             fprintf(stderr, "%s (%s): %s", str, v->vxi11_devname, 
                     clnt_sperror(v->vxi11_abrt, "abrt"));
             break;
-        case VXI11_ERR_SUCCESS:
-            fprintf(stderr, "%s (%s): success\n", str, v->vxi11_devname);
-            break;
-        case VXI11_ERR_SYNTAX:
-            fprintf(stderr, "%s (%s): syntax error\n", str, v->vxi11_devname);
-            break;
-        case VXI11_ERR_NODEVICE:
-            fprintf(stderr, "%s (%s): no device\n", str, v->vxi11_devname);
-            break;
-        case VXI11_ERR_LINKINVAL:
-            fprintf(stderr, "%s (%s): invalid link\n", str, v->vxi11_devname);
-            break;
-        case VXI11_ERR_PARAMETER:
-            fprintf(stderr, "%s (%s): parameter error \n", 
-                    str, v->vxi11_devname);
-            break;
-        case VXI11_ERR_NOCHAN:
-            fprintf(stderr, "%s (%s): channel not established\n", 
-                    str, v->vxi11_devname);
-            break;
-        case VXI11_ERR_NOTSUPP:
-            fprintf(stderr, "%s (%s): unsupported operation\n", 
-                    str, v->vxi11_devname);
-            break;
-        case VXI11_ERR_RESOURCES:
-            fprintf(stderr, "%s (%s): out of resources\n", 
-                    str, v->vxi11_devname);
-            break;
-        case VXI11_ERR_LOCKED:
-            fprintf(stderr, "%s (%s): device locked\n", str, v->vxi11_devname);
-            break;
-        case VXI11_ERR_NOLOCK:
-            fprintf(stderr, "%s (%s): device not locked\n", 
-                    str, v->vxi11_devname);
-            break;
-        case VXI11_ERR_IOTIMEOUT:
-            fprintf(stderr, "%s (%s): I/O timeout\n", str, v->vxi11_devname);
-            break;
-        case VXI11_ERR_IOERROR:
-            fprintf(stderr, "%s (%s): I/O error\n", str, v->vxi11_devname);
-            break;
-        case VXI11_ERR_ADDRINVAL:
-            fprintf(stderr, "%s (%s): invalid address\n", 
-                    str, v->vxi11_devname);
-            break;
-        case VXI11_ERR_ABORT:
-            fprintf(stderr, "%s (%s): I/O operation aborted\n", 
-                    str, v->vxi11_devname);
-            break;
-        case VXI11_ERR_CHANEST:
-            fprintf(stderr, "%s (%s): channel already established\n", 
-                    str, v->vxi11_devname);
-            break;
-        default: 
-            fprintf(stderr, "%s (%s): unknown error (%d)\n", 
-                    str, v->vxi11_devname, err);
+        default:
+            fprintf(stderr, "%s (%s): %s\n", str, v->vxi11_devname, desc);
             break;
     }
 }
