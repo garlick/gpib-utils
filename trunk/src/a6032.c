@@ -286,7 +286,6 @@ _restore_setup(gd_t gd)
 static int
 _print_screen(gd_t gd, char *fmt, char *palette)
 {
-    double tmout = gpib_get_timeout(gd);
     unsigned char *buf = xmalloc(IMAGE_SIZE);
     int len;
     char qry[64];

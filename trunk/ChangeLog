@@ -1,3 +1,18 @@
+2008-04-09 Jim Garlick <garlick.jim@gmail.com>
+
+	* src/ics8065.c : Renamed get/set netmask opt from -k/K to -n/N.
+	Renamed keepalive opt from -v/V to -k/K.
+
+	* src/ics8064.c : New.
+		
+2008-04-07 Jim Garlick <garlick.jim@gmail.com>
+
+	* src/gpsh.c : Removed.
+
+	* : moved ics support routines to libics subdirectory.
+
+	* src/gpib.c : Integrate libvxi.
+
 2008-01-21 Jim Garlick <garlick.jim@gmail.com>
 
 	* src/gpib.c : Tear down abort before destroying link to avoid

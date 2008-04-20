@@ -22,8 +22,7 @@
 #include <pthread.h>
 
 #include "gpib.h"
-#include "vxi11.h"
-#include "vxi11intr.h"
+#include "vxi11_device.h"
 #include "util.h"
 
 #define GPIB_DEVICE_MAGIC 0x43435334
@@ -35,16 +34,7 @@ struct gpib_device {
     spollfun_t      sf_fun;    /* app-specific serial poll function */
     int             sf_level;  /* serial poll recursion detection */
     unsigned long   sf_retry;  /* backoff factor for serial poll retry (uS) */
-    int             vxi_eos;   /* end of string character */
-    int             vxi_reos;  /* flag: terminate receive on eos */
-    int             vxi_xeos;  /* flag: automatically append eos */
-    int             vxi_eot;   /* flag: assert EOT on last char of write */
-    int             vxi_bin;   /* flag: use 8 bits to match eos */
-    int             vxi_timeout;/* timeout in milliseconds */
-    CLIENT         *vxi_cli;   /* vxi client handle */
-    CLIENT         *vxi_abrt;  /* vxi abort handle */
-    Device_Link     vxi_lid;   /* vxi logical device handle */
-    pthread_t       vxi_srqthread;
+    vxi11dev_t      vxi11_handle;
 };
 
 extern char *prog;
@@ -115,31 +105,11 @@ _ibrd(gd_t gd, char *buf, int len)
 static int
 _vxird(gd_t gd, char *buf, int len)
 {
-    Device_ReadParms p;
-    Device_ReadResp *r;
-    int count = 0;
+    int err, count;
 
-    do {
-        p.lid = gd->vxi_lid;
-        p.requestSize = len - count;
-        p.io_timeout = gd->vxi_timeout;
-        p.lock_timeout = gd->vxi_timeout;
-        p.flags = gd->vxi_reos ? VXI_TERMCHRSET : 0;
-        p.termChar = gd->vxi_eos;
-        r = device_read_1(&p, gd->vxi_cli);
-        if (r == NULL) {
-            clnt_perror(gd->vxi_cli, prog);
-            gpib_fini(gd);
-            exit(1);
-        }
-        if (r->error != 0) {
-            fprintf(stderr, "%s: read returned error: %ld\n", prog, r->error);
-        }
-        memcpy(buf + count, r->data.data_val, r->data.data_len);
-        count += r->data.data_len;
-    } while (count < len && r->reason == 0);
-    if (r->reason == 0) {
-        fprintf(stderr, "%s: read buffer too small\n", prog);
+    err = vxi11_read(gd->vxi11_handle, buf, len, &count);
+    if (err) {
+        vxi11_perror(gd->vxi11_handle, err, prog);
         gpib_fini(gd);
         exit(1);
     }
@@ -153,11 +123,11 @@ gpib_rd(gd_t gd, void *buf, int len)
 
     assert(gd->magic == GPIB_DEVICE_MAGIC);
 #if HAVE_GPIB
-    if (gd->vxi_cli == NULL)
+    if (gd->vxi11_handle == NULL)
         count = _ibrd(gd, buf, len);
     else
 #endif
-        count = _vxird(gd, buf, len);
+    count = _vxird(gd, buf, len);
     if (gd->verbose)
         fprintf(stderr, "R: [%d bytes]\n", count);
     _serial_poll(gd, "gpib_rd");
@@ -181,11 +151,11 @@ gpib_rdstr(gd_t gd, char *buf, int len)
 
     assert(gd->magic == GPIB_DEVICE_MAGIC);
 #if HAVE_GPIB
-    if (gd->vxi_cli == NULL)
+    if (gd->vxi11_handle == NULL)
         count = _ibrd(gd, buf, len - 1);
     else
 #endif
-        count = _vxird(gd, buf, len - 1);
+    count = _vxird(gd, buf, len - 1);
     assert(count < len);
     buf[count] = '\0';
     _zap_trailing_terminators(buf);
@@ -209,11 +179,11 @@ gpib_rdf(gd_t gd, char *fmt, ...)
 
     assert(gd->magic == GPIB_DEVICE_MAGIC);
 #if HAVE_GPIB
-    if (gd->vxi_cli == NULL)
+    if (gd->vxi11_handle == NULL)
         count = _ibrd(gd, buf, sizeof(buf) - 1);
     else
 #endif
-        count = _vxird(gd, buf, sizeof(buf) - 1);
+    count = _vxird(gd, buf, sizeof(buf) - 1);
     assert(count < sizeof(buf) - 1);
     buf[count] = '\0';
     _zap_trailing_terminators(buf);
@@ -255,32 +225,12 @@ _ibwrt(gd_t gd, void *buf, int len)
 static void 
 _vxiwrt(gd_t gd, char *buf, int len)
 {
-    Device_WriteParms p;
-    Device_WriteResp *r;
-    char *nbuf = NULL;
+    int err;
 
-    if (gd->vxi_xeos && buf[len - 1] != gd->vxi_eos) {
-        nbuf = xmalloc(len + 1);
-        memcpy(nbuf, buf, len);
-        nbuf[len] = gd->vxi_eos;
-    }
-    p.lid = gd->vxi_lid;
-    p.io_timeout = gd->vxi_timeout;
-    p.lock_timeout = gd->vxi_timeout;
-    p.flags = gd->vxi_eot ? VXI_ENDW : 0;
-    /* XXX: can we handle arbitrarily large buffer here? */
-    p.data.data_val = nbuf ? nbuf : buf;
-    p.data.data_len = nbuf ? len + 1 : len;
-    r = device_write_1(&p, gd->vxi_cli);
-    if (nbuf)
-        free(nbuf);
-    if (r == NULL) {
-        clnt_perror(gd->vxi_cli, prog);
+    err = vxi11_write(gd->vxi11_handle, buf, len);
+    if (err) {
+        vxi11_perror(gd->vxi11_handle, err, prog);
         gpib_fini(gd);
-        exit(1);
-    }
-    if (r->error != 0) {
-        fprintf(stderr, "%s: write returned error: %ld\n", prog, r->error);
         exit(1);
     }
 }
@@ -290,11 +240,11 @@ gpib_wrt(gd_t gd, void *buf, int len)
 {
     assert(gd->magic == GPIB_DEVICE_MAGIC);
 #if HAVE_GPIB
-    if (gd->vxi_cli == NULL)
+    if (gd->vxi11_handle == NULL)
         _ibwrt(gd, buf, len);
     else
 #endif
-        _vxiwrt(gd, buf, len);
+    _vxiwrt(gd, buf, len);
     if (gd->verbose)
         fprintf(stderr, "T: [%d bytes]\n", len);
     _serial_poll(gd, "gpib_wrt");
@@ -305,11 +255,11 @@ gpib_wrtstr(gd_t gd, char *str)
 {
     assert(gd->magic == GPIB_DEVICE_MAGIC);
 #if HAVE_GPIB
-    if (gd->vxi_cli == NULL)
+    if (gd->vxi11_handle == NULL)
         _ibwrt(gd, str, strlen(str));
     else
 #endif
-        _vxiwrt(gd, str, strlen(str));
+    _vxiwrt(gd, str, strlen(str));
     if (gd->verbose) {
         char *cpy = xstrcpyprint(str);
 
@@ -336,11 +286,11 @@ gpib_wrtf(gd_t gd, char *fmt, ...)
         exit(1);
     }
 #if HAVE_GPIB
-    if (gd->vxi_cli == NULL)
+    if (gd->vxi11_handle == NULL)
         _ibwrt(gd, s, strlen(s));
     else
 #endif
-        _vxiwrt(gd, s, strlen(s));
+    _vxiwrt(gd, s, strlen(s));
     if (gd->verbose) {
         char *cpy = xstrcpyprint(s);
 
@@ -360,11 +310,11 @@ gpib_qry(gd_t gd, char *str, void *buf, int len)
 
     assert(gd->magic == GPIB_DEVICE_MAGIC);
 #if HAVE_GPIB
-    if (gd->vxi_cli == NULL)
+    if (gd->vxi11_handle == NULL)
         _ibwrt(gd, str, strlen(str));
     else
 #endif
-        _vxiwrt(gd, str, strlen(str));
+    _vxiwrt(gd, str, strlen(str));
     if (gd->verbose) {
         char *cpy = xstrcpyprint(str);
 
@@ -372,11 +322,11 @@ gpib_qry(gd_t gd, char *str, void *buf, int len)
         free(cpy);
     }
 #if HAVE_GPIB
-    if (gd->vxi_cli == NULL)
+    if (gd->vxi11_handle == NULL)
         count = _ibrd(gd, buf, len);
     else
 #endif
-        count = _vxird(gd, buf, len);
+    count = _vxird(gd, buf, len);
     if (count < len && ((char *)buf)[count - 1] != '\0')
         ((char *)buf)[count++] = '\0';
     if (gd->verbose) { 
@@ -410,20 +360,13 @@ _ibloc(gd_t gd)
 static void
 _vxiloc(gd_t gd)
 {
-    Device_GenericParms p;
-    Device_Error *r;
+    int err;
 
-    p.lid = gd->vxi_lid;
-    p.flags = 0;
-    p.io_timeout = gd->vxi_timeout;
-    p.lock_timeout = gd->vxi_timeout;
-    if ((r = device_local_1(&p, gd->vxi_cli)) == NULL) {
-        clnt_perror(gd->vxi_cli, prog);
-        gpib_fini(gd);
+    err = vxi11_local(gd->vxi11_handle);
+    if (err) {
+        vxi11_perror(gd->vxi11_handle, err, prog);
         exit(1);
     }
-    if (r->error)
-        fprintf(stderr, "%s: device_local: error %ld\n", prog, r->error);
 }
 
 void
@@ -431,11 +374,11 @@ gpib_loc(gd_t gd)
 {
     assert(gd->magic == GPIB_DEVICE_MAGIC);
 #if HAVE_GPIB
-    if (gd->vxi_cli == NULL)
+    if (gd->vxi11_handle == NULL)
         _ibloc(gd);
     else
 #endif
-        _vxiloc(gd);
+    _vxiloc(gd);
     if (gd->verbose)
         fprintf(stderr, "T: [ibloc]\n");
     _serial_poll(gd, "gpib_loc");
@@ -443,7 +386,7 @@ gpib_loc(gd_t gd)
 
 #if HAVE_GPIB
 static void 
-_ibclr(gd_t gd, unsigned long usec)
+_ibclr(gd_t gd)
 {
     ibclr(gd->d);
     if (ibsta & TIMO) {
@@ -460,22 +403,15 @@ _ibclr(gd_t gd, unsigned long usec)
 #endif
 
 static void 
-_vxiclr(gd_t gd, unsigned long usec)
+_vxiclr(gd_t gd)
 {
-    Device_GenericParms p;
-    Device_Error *r;
+    int err;
 
-    p.lid = gd->vxi_lid;
-    p.flags = 0;
-    p.io_timeout = gd->vxi_timeout;
-    p.lock_timeout = gd->vxi_timeout;
-    if ((r = device_clear_1(&p, gd->vxi_cli)) == NULL) {
-        clnt_perror(gd->vxi_cli, prog);
-        gpib_fini(gd);
+    err = vxi11_clear(gd->vxi11_handle);
+    if (err) {
+        vxi11_perror(gd->vxi11_handle, err, prog);
         exit(1);
     }
-    if (r->error)
-        fprintf(stderr, "%s: device_clear: error %ld\n", prog, r->error);
 }
 
 void 
@@ -483,11 +419,11 @@ gpib_clr(gd_t gd, unsigned long usec)
 {
     assert(gd->magic == GPIB_DEVICE_MAGIC);
 #if HAVE_GPIB
-    if (gd->vxi_cli == NULL)
-        _ibclr(gd, usec);
+    if (gd->vxi11_handle == NULL)
+        _ibclr(gd);
     else
 #endif
-        _vxiclr(gd, usec);
+    _vxiclr(gd);
     if (gd->verbose)
         fprintf(stderr, "T: [ibclr]\n");
     usleep(usec);
@@ -510,20 +446,13 @@ _ibtrg(gd_t gd)
 static void
 _vxitrg(gd_t gd)
 {
-    Device_GenericParms p;
-    Device_Error *r;
+    int err;
 
-    p.lid = gd->vxi_lid;
-    p.flags = 0;
-    p.io_timeout = gd->vxi_timeout;
-    p.lock_timeout = gd->vxi_timeout;
-    if ((r = device_trigger_1(&p, gd->vxi_cli)) == NULL) {
-        clnt_perror(gd->vxi_cli, prog);
-        gpib_fini(gd);
+    err = vxi11_trigger(gd->vxi11_handle);
+    if (err) {
+        vxi11_perror(gd->vxi11_handle, err, prog);
         exit(1);
     }
-    if (r->error)
-        fprintf(stderr, "%s: device_trigger: error %ld\n", prog, r->error);
 }
 
 void
@@ -531,11 +460,11 @@ gpib_trg(gd_t gd)
 {
     assert(gd->magic == GPIB_DEVICE_MAGIC);
 #if HAVE_GPIB
-    if (gd->vxi_cli == NULL)
+    if (gd->vxi11_handle == NULL)
         _ibtrg(gd);
     else
 #endif
-        _vxitrg(gd);
+    _vxitrg(gd);
     if (gd->verbose)
         fprintf(stderr, "T: [ibtrg]\n");
     _serial_poll(gd, "gpib_trg");
@@ -559,21 +488,13 @@ _ibrsp(gd_t gd, unsigned char *status)
 static int
 _vxirsp(gd_t gd, unsigned char *status)
 {
-    Device_GenericParms p;
-    Device_ReadStbResp *r;
+    int err;
 
-    p.lid = gd->vxi_lid;
-    p.flags = 0;
-    p.lock_timeout = gd->vxi_timeout;
-    p.io_timeout = gd->vxi_timeout;
-    r = device_readstb_1(&p, gd->vxi_cli);
-    if (r == NULL) {
-        clnt_perror(gd->vxi_cli, prog);
-        gpib_fini(gd);
+    err = vxi11_readstb(gd->vxi11_handle, status);
+    if (err) {
+        vxi11_perror(gd->vxi11_handle, err, prog);
         exit(1);
     }
-    if (status)
-        *status = r->stb;
     return 0;
 }
 
@@ -584,42 +505,14 @@ gpib_rsp(gd_t gd, unsigned char *status)
 
     assert(gd->magic == GPIB_DEVICE_MAGIC);
 #if HAVE_GPIB
-    if (gd->vxi_cli == NULL)
+    if (gd->vxi11_handle == NULL)
         res = _ibrsp(gd, status);
     else
 #endif
-        res = _vxirsp(gd, status);
+    res = _vxirsp(gd, status);
     if (gd->verbose)
         fprintf(stderr, "T: [ibrsp] R: 0x%x\n", (unsigned int)*status);
     return res;
-}
-
-#if HAVE_GPIB
-static int
-_ibgetreos(gd_t gd)
-{
-    int flag;
-
-    ibask(gd->d, IbaEOSrd, &flag);
-    if ((ibsta & ERR)) {
-        fprintf(stderr, "%s: ibask IbaEOSrd failed: %d\n", prog, iberr);
-        gpib_fini(gd);
-        exit(1);
-    }
-
-    return (flag & REOS) ? 1 : 0;
-}
-#endif
-
-int
-gpib_get_reos(gd_t gd)
-{
-    assert(gd->magic == GPIB_DEVICE_MAGIC);
-#if HAVE_GPIB
-    if (gd->vxi_cli == NULL)
-        return _ibgetreos(gd);
-#endif
-    return gd->vxi_reos;
 }
 
 #if HAVE_GPIB
@@ -640,145 +533,11 @@ gpib_set_reos(gd_t gd, int flag)
 {
     assert(gd->magic == GPIB_DEVICE_MAGIC);
 #if HAVE_GPIB
-    if (gd->vxi_cli == NULL)
+    if (gd->vxi11_handle == NULL)
         _ibsetreos(gd, flag);
+    else
 #endif
-    gd->vxi_reos = flag;
-}
-
-#if HAVE_GPIB
-static int
-_ibgetxeos(gd_t gd)
-{
-    int flag;
-
-    ibask(gd->d, IbaEOSwrt, &flag);
-    if ((ibsta & ERR)) {
-        fprintf(stderr, "%s: ibask IbaEOSwrt failed: %d\n", prog, iberr);
-        gpib_fini(gd);
-        exit(1);
-    }
-
-    return (flag & XEOS) ? 1 : 0;
-}
-#endif
-
-int
-gpib_get_xeos(gd_t gd)
-{
-    assert(gd->magic == GPIB_DEVICE_MAGIC);
-#if HAVE_GPIB
-    if (gd->vxi_cli == NULL)
-        return _ibgetxeos(gd);
-#endif
-    return gd->vxi_xeos;
-
-    return 0;
-}
-
-#if HAVE_GPIB
-static void
-_ibsetxeos(gd_t gd, int flag)
-{
-    ibconfig(gd->d, IbcEOSwrt, flag ? XEOS : 0);
-    if ((ibsta & ERR)) {
-        fprintf(stderr, "%s: ibconfig IbcEOSwrt failed: %d\n", prog, iberr);
-        gpib_fini(gd);
-        exit(1);
-    }
-}
-#endif
-
-void
-gpib_set_xeos(gd_t gd, int flag)
-{
-    assert(gd->magic == GPIB_DEVICE_MAGIC);
-#if HAVE_GPIB
-    if (gd->vxi_cli == NULL)
-        _ibsetxeos(gd, flag);
-#endif
-    gd->vxi_xeos = flag;
-}
-
-#if HAVE_GPIB
-static int
-_ibgetbin(gd_t gd)
-{
-    int flag;
-
-    ibask(gd->d, IbaEOScmp, &flag);
-    if ((ibsta & ERR)) {
-        fprintf(stderr, "%s: ibask IbaEOScmp failed: %d\n", prog, iberr);
-        gpib_fini(gd);
-        exit(1);
-    }
-
-    return (flag & BIN) ? 1 : 0;
-}
-#endif
-
-int
-gpib_get_bin(gd_t gd)
-{
-    assert(gd->magic == GPIB_DEVICE_MAGIC);
-#if HAVE_GPIB
-    if (gd->vxi_cli == NULL)
-        return _ibgetbin(gd);
-#endif
-    return gd->vxi_bin;
-    return 0;
-}
-
-#if HAVE_GPIB
-static void
-_ibsetbin(gd_t gd, int flag)
-{
-    ibconfig(gd->d, IbcEOScmp, flag ? BIN : 0);
-    if ((ibsta & ERR)) {
-        fprintf(stderr, "%s: ibconfig IbcEOScmp failed: %d\n", prog, iberr);
-        gpib_fini(gd);
-        exit(1);
-    }
-}
-#endif
-
-void
-gpib_set_bin(gd_t gd, int flag)
-{
-    assert(gd->magic == GPIB_DEVICE_MAGIC);
-#if HAVE_GPIB
-    if (gd->vxi_cli == NULL)
-        _ibsetbin(gd, flag);
-#endif
-    gd->vxi_bin = flag;        
-}
-
-#if HAVE_GPIB
-static int
-_ibgeteot(gd_t gd)
-{
-    int flag;
-
-    ibask(gd->d, IbaEOT, &flag);
-    if ((ibsta & ERR)) {
-        fprintf(stderr, "%s: ibask IbaEOT failed: %d\n", prog, iberr);
-        gpib_fini(gd);
-        exit(1);
-    }
-
-    return flag;
-}
-#endif
-
-int
-gpib_get_eot(gd_t gd)
-{
-    assert(gd->magic == GPIB_DEVICE_MAGIC);
-#if HAVE_GPIB
-    if (gd->vxi_cli == NULL)
-        return _ibgeteot(gd);
-#endif
-    return gd->vxi_eot;
+    vxi11_set_termcharset(gd->vxi11_handle, flag);
 }
 
 #if HAVE_GPIB
@@ -799,38 +558,11 @@ gpib_set_eot(gd_t gd, int flag)
 {
     assert(gd->magic == GPIB_DEVICE_MAGIC);
 #if HAVE_GPIB
-    if (gd->vxi_cli == NULL)
+    if (gd->vxi11_handle == NULL)
         _ibseteot(gd, flag);
+    else
 #endif
-    gd->vxi_eot = flag;
-}
-
-#if HAVE_GPIB
-static int
-_ibgeteos(gd_t gd)
-{
-    int c;
-
-    ibask(gd->d, IbaEOSchar, &c);
-    if ((ibsta & ERR)) {
-        fprintf(stderr, "%s: ibask IbaEOSchar failed: %d\n", prog, iberr);
-        gpib_fini(gd);
-        exit(1);
-    }
-
-    return c;
-}
-#endif
-
-int
-gpib_get_eos(gd_t gd)
-{
-    assert(gd->magic == GPIB_DEVICE_MAGIC);
-#if HAVE_GPIB
-    if (gd->vxi_cli == NULL)
-        return _ibgeteos(gd);
-#endif
-    return gd->vxi_eos;
+    vxi11_set_endw(gd->vxi11_handle, flag);
 }
 
 #if HAVE_GPIB
@@ -851,58 +583,11 @@ gpib_set_eos(gd_t gd, int c)
 {
     assert(gd->magic == GPIB_DEVICE_MAGIC);
 #if HAVE_GPIB
-    if (gd->vxi_cli == NULL)
+    if (gd->vxi11_handle == NULL)
         _ibseteos(gd, c);
+    else
 #endif
-    gd->vxi_eos = c;
-}
-
-#if HAVE_GPIB
-static double
-_ibgettmo(gd_t gd)
-{
-    int result;
-    double sec = 0;
-
-    ibask(gd->d, IbaTMO, &result);
-    if ((ibsta & ERR)) {
-        fprintf(stderr, "%s: ibask failed: %d\n", prog, iberr);
-        gpib_fini(gd);
-        exit(1);
-    }
-    switch (result) {
-        case TNONE:     sec = 0; break;
-        case T10us:     sec = 0.00001; break;
-        case T30us:     sec = 0.00003; break;
-        case T100us:    sec = 0.00010; break;
-        case T300us:    sec = 0.00030; break;
-        case T1ms:      sec = 0.00100; break;
-        case T3ms:      sec = 0.00300; break;
-        case T10ms:     sec = 0.01000; break;
-        case T30ms:     sec = 0.03000; break;
-        case T100ms:    sec = 0.10000; break;
-        case T300ms:    sec = 0.30000; break;
-        case T1s:       sec = 1.00000; break;
-        case T3s:       sec = 3.00000; break;
-        case T10s:      sec = 10.0000; break;
-        case T30s:      sec = 30.0000; break;
-        case T100s:     sec = 100.000; break;
-        case T300s:     sec = 300.000; break;
-        case T1000s:    sec = 1000.00; break;
-    }
-    return sec;
-}
-#endif
-
-double
-gpib_get_timeout(gd_t gd)
-{
-    assert(gd->magic == GPIB_DEVICE_MAGIC);
-#if HAVE_GPIB
-    if (gd->vxi_cli == NULL)
-        return _ibgettmo(gd);
-#endif
-    return 1000.0*gd->vxi_timeout;
+    vxi11_set_termchar(gd->vxi11_handle, c);
 }
 
 #if HAVE_GPIB
@@ -968,10 +653,11 @@ gpib_set_timeout(gd_t gd, double sec)
 {
     assert(gd->magic == GPIB_DEVICE_MAGIC);
 #if HAVE_GPIB
-    if (gd->vxi_cli == NULL)
+    if (gd->vxi11_handle == NULL)
         _ibtmo(gd, sec);
+    else
 #endif
-    gd->vxi_timeout = sec / 1000.0;
+        vxi11_set_iotimeout(gd->vxi11_handle, sec * 1000.0);
 }
 
 void
@@ -979,14 +665,6 @@ gpib_set_verbose(gd_t gd, int flag)
 {
     assert(gd->magic == GPIB_DEVICE_MAGIC);
     gd->verbose = flag;
-}
-
-int
-gpib_get_verbose(gd_t gd)
-{
-    assert(gd->magic == GPIB_DEVICE_MAGIC);
-
-    return gd->verbose;
 }
 
 static void
@@ -1001,32 +679,23 @@ _free_gpib(gd_t gd)
 void
 gpib_abort(gd_t gd)
 {
-    Device_Error *r;
+    int err;
 
-    if (gd->vxi_cli != NULL) {
-        if ((r = device_abort_1(&gd->vxi_lid, gd->vxi_abrt)) == NULL)
-            clnt_perror(gd->vxi_abrt, prog); 
-        else if (r->error)
-            fprintf(stderr, "%s: device_abort: error %ld\n", prog, r->error);
+    if (gd->vxi11_handle) {
+        err = vxi11_abort(gd->vxi11_handle);
+        if (err) /* N.B. non-fatal */
+            vxi11_perror(gd->vxi11_handle, err, prog);
     }
 }
 
 void
 gpib_fini(gd_t gd)
 {
-    Device_Error *r;
-
     assert(gd->magic == GPIB_DEVICE_MAGIC);
-    if (gd->vxi_abrt)
-        clnt_destroy(gd->vxi_abrt);
-    if (gd->vxi_lid != -1) {
-        if ((r = destroy_link_1(&gd->vxi_lid, gd->vxi_cli)) == NULL)
-            clnt_perror(gd->vxi_cli, prog);
-        else if (r->error)
-            fprintf(stderr, "%s: destroy_link: error %ld\n", prog, r->error);
+    if (gd->vxi11_handle) {
+        vxi11_close(gd->vxi11_handle);
+        vxi11_destroy(gd->vxi11_handle);
     }
-    if (gd->vxi_cli)
-        clnt_destroy(gd->vxi_cli);
     _free_gpib(gd);
 }
 
@@ -1041,16 +710,7 @@ _new_gpib(void)
     new->sf_fun = NULL;
     new->sf_level = 0;
     new->sf_retry = 1;
-    new->vxi_cli = NULL;
-    new->vxi_abrt = NULL;
-    new->vxi_lid = -1;
-    new->vxi_timeout = 30000; /* 30s */
-    new->vxi_eot = 1;
-    new->vxi_bin = 0;
-    new->vxi_reos = 0;
-    new->vxi_xeos = 0;
-    new->vxi_eos = 0xa;
-    new->vxi_srqthread;
+    new->vxi11_handle = NULL;
 
     return new;
 }
@@ -1074,145 +734,37 @@ _ibdev(int pad, spollfun_t sf, unsigned long retry)
 }
 #endif
 
-/* SRQ service function */
-void *
-device_intr_srq_1_svc(Device_SrqParms *p, struct svc_req *rq)
+static gd_t
+_init_vxi(char *name, spollfun_t sf, unsigned long retry)
 {
-    char *tmpstr = xmalloc(p->handle.handle_len + 1);
-
-    memcpy(tmpstr, p->handle.handle_val, p->handle.handle_len);
-    tmpstr[p->handle.handle_len] = '\0';
-    fprintf(stderr, "%s: SRQ received for handle '%s'\n", prog, tmpstr);
-            
-    return NULL;
-}
-
-extern void device_intr_1(struct svc_req *, register SVCXPRT *);
-
-static void *
-_vxisrq_thread(void *arg)
-{
-    SVCXPRT *transp;
-    
-    pmap_unset(DEVICE_INTR, DEVICE_INTR_VERSION);
-    
-    transp = svcudp_create(RPC_ANYSOCK);
-    if (transp == NULL) {
-        fprintf(stderr, "%s: cannot create udp SRQ service\n", prog);
-        return NULL;
-    }
-    if (!svc_register(transp, DEVICE_INTR, DEVICE_INTR_VERSION, 
-                device_intr_1, IPPROTO_UDP)) {
-        fprintf(stderr, "%s: unable to register udp SRQ service\n", prog);
-        return NULL;
-    }
-    
-    transp = svctcp_create(RPC_ANYSOCK, 0, 0);
-    if (transp == NULL) {
-        fprintf(stderr, "%s: cannot create tcp SRQ service\n", prog);
-        return NULL;
-    }
-    if (!svc_register(transp, DEVICE_INTR, DEVICE_INTR_VERSION, 
-                device_intr_1, IPPROTO_TCP)) {
-        fprintf(stderr, "%s: unable to register tcp SRQ service\n", prog);
-        return NULL;
-    }
-    svc_run ();
-    fprintf(stderr, "%s: error: SRQ svc_run returned\n", prog);
-    return NULL;
-}
-
-
-static int
-_get_sockaddr(char *host, int p, struct sockaddr_in *sap)
-{
-    struct addrinfo *aip;
-    char port[16];
+    gd_t gd = _new_gpib();
     int err;
 
-    snprintf(port, sizeof(port), "%d", p);
-    if ((err = getaddrinfo(host, port, NULL, &aip))) {
-        fprintf(stderr, "%s: getaddrinfo: %s\n", prog, gai_strerror(err));
-        return -1;
-    }
-    assert(sizeof (struct sockaddr_in) == sizeof(struct sockaddr));
-    memcpy(sap, aip->ai_addr, sizeof(struct sockaddr));
-    freeaddrinfo(aip);
-    return 0;
-}
+    gd->sf_fun = sf;
+    gd->sf_retry = retry;
+    gd->vxi11_handle = vxi11_create();
 
-static gd_t
-_init_vxi(char *host, char *device, spollfun_t sf, unsigned long retry)
-{
-    gd_t new = _new_gpib();
-    Create_LinkParms p;
-    Create_LinkResp *r;
-    struct sockaddr_in addr;
-    int sock;
-
-    new->sf_fun = sf;
-    new->sf_retry = retry;
-
-    /* open core connection */
-    new->vxi_cli = clnt_create(host, DEVICE_CORE, DEVICE_CORE_VERSION, "tcp");
-    if (new->vxi_cli == NULL) {
-        clnt_pcreateerror(prog);
+    //vxi11_set_device_debug(1);
+    err = vxi11_open(gd->vxi11_handle, name, 0);
+    if (err) {
+        vxi11_perror(gd->vxi11_handle, err, prog);
         exit(1);
     }
-
-    /* establish link to instrument */
-    p.clientId = 0;
-    p.lockDevice = 0;
-    p.lock_timeout = 10000; /* not used */
-    p.device = device;
-    r = create_link_1(&p, new->vxi_cli);
-    if (r == NULL) {
-        clnt_perror(new->vxi_cli, prog);
-        gpib_fini(new);
-        exit(1);
-    }
-    new->vxi_lid = r->lid;
-
-    /* open async connection to instrument for RPC abort */
-    if (_get_sockaddr(host, r->abortPort, &addr) == -1) {
-        gpib_fini(new);
-        exit(1);
-    }
-    sock = RPC_ANYSOCK;
-    new->vxi_abrt = clnttcp_create(&addr, DEVICE_ASYNC, DEVICE_ASYNC_VERSION, 
-            &sock, 0, r->maxRecvSize);
-    if (new->vxi_abrt == NULL) {
-        clnt_pcreateerror(prog);
-        gpib_fini(new);
-        exit(1);
-    }
-
-#if 0
-    /* start srq service thread */
-    if (pthread_create(&new->vxi_srqthread, NULL, _vxisrq_thread, NULL) != 0)
-        fprintf(stderr, "%s: pthread_create _vxisrq_thread failed\n", prog);
-#endif
-    return new;
+    return gd;
 }
 
 gd_t
 gpib_init(char *addr, spollfun_t sf, unsigned long retry)
 {
-    gd_t res = NULL;
+    gd_t gd = NULL;
 
-    if (strchr(addr, ':') != NULL) {
-        char *cpy = xstrdup(addr);
-        char *p = strchr(cpy, ':');
-
-        *p++ = '\0';
-        res = _init_vxi(cpy, p, sf, retry);
-        free(cpy);
-    } else { 
 #if HAVE_GPIB
-        res = _ibdev(strtoul(addr, NULL, 10), sf, retry);
+    if (strchr(addr, ':') == NULL) {
+        gd = _ibdev(strtoul(addr, NULL, 10), sf, retry);
+    else
 #endif
-    }
-    return res;
+    gd = _init_vxi(addr, sf, retry);
+    return gd;
 }
 
 static char *

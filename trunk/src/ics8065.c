@@ -29,7 +29,7 @@
 
 #define INSTRUMENT "ics8065"
 
-#define OPTIONS "a:cfCriejJ:tT:mM:sS:zZ:kK:gG:vV:qQ:wW:"
+#define OPTIONS "a:cfCriejJ:tT:mM:sS:zZ:kK:gG:qQ:wW:nN:"
 static struct option longopts[] = {
         {"address",             required_argument,  0, 'a'},
         {"get-interface-name",  no_argument,        0, 'j'},
@@ -40,12 +40,12 @@ static struct option longopts[] = {
         {"set-static-ip-mode",  required_argument,  0, 'S'},
         {"get-ip-number",       no_argument,        0, 'z'},
         {"set-ip-number",       required_argument,  0, 'Z'},
-        {"get-netmask",         no_argument,        0, 'k'},
-        {"set-netmask",         required_argument,  0, 'K'},
+        {"get-netmask",         no_argument,        0, 'n'},
+        {"set-netmask",         required_argument,  0, 'N'},
         {"get-gateway",         no_argument,        0, 'g'},
         {"set-gateway",         required_argument,  0, 'G'},
-        {"get-keepalive",       no_argument,        0, 'v'},
-        {"set-keepalive",       required_argument,  0, 'V'},
+        {"get-keepalive",       no_argument,        0, 'k'},
+        {"set-keepalive",       required_argument,  0, 'K'},
         {"get-gpib-address",    no_argument,        0, 'q'},
         {"set-gpib-address",    required_argument,  0, 'Q'},
         {"get-system-controller",no_argument,       0, 'w'},
@@ -80,12 +80,12 @@ usage(void)
   "  -S,--set-static-ip-mode   set static IP mode (0=disabled, 1=enabled)\n"
   "  -z,--get-ip-number        get IP number (a.b.c.d)\n"
   "  -Z,--set-ip-number        set IP number (a.b.c.d)\n"
-  "  -k,--get-netmask          get netmask (a.b.c.d)\n"
-  "  -K,--set-netmask          set netmask (a.b.c.d)\n"
+  "  -n,--get-netmask          get netmask (a.b.c.d)\n"
+  "  -N,--set-netmask          set netmask (a.b.c.d)\n"
   "  -g,--get-gateway          get gateway (a.b.c.d)\n"
   "  -G,--set-gateway          set gateway (a.b.c.d)\n"
-  "  -v,--get-keepalive        get keepalive time (in seconds)\n"
-  "  -V,--set-keepalive        set keepalive time (in seconds)\n"
+  "  -k,--get-keepalive        get keepalive time (in seconds)\n"
+  "  -K,--set-keepalive        set keepalive time (in seconds)\n"
   "  -q,--get-gpib-address     get gpib address\n"
   "  -Q,--set-gpib-address     set gpib address\n"
 "  -w,--get-system-controller get sys controller mode (0=disabled, 1=enabled)\n"
@@ -176,11 +176,11 @@ main(int argc, char *argv[])
                 set_ip_number = optarg;
                 todo++;
                 break;
-            case 'k' :  /* --get-netmask */
+            case 'n' :  /* --get-netmask */
                 get_netmask = 1;
                 todo++;
                 break;
-            case 'K' :  /* --set-netmask */
+            case 'N' :  /* --set-netmask */
                 set_netmask = optarg;
                 todo++;
                 break;
@@ -192,11 +192,11 @@ main(int argc, char *argv[])
                 set_gateway = optarg;
                 todo++;
                 break;
-            case 'v' :  /* --get-keepalive */
+            case 'k' :  /* --get-keepalive */
                 get_keepalive = 1;
                 todo++;
                 break;
-            case 'V' :  /* --set-keepalive */
+            case 'K' :  /* --set-keepalive */
                 set_keepalive = strtoul(optarg, NULL, 0);
                 todo++;
                 break;

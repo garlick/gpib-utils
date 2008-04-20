@@ -27,6 +27,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <assert.h>
+#include <stdlib.h>
 #include "util.h"
 
 /* make a copy of the first word in str and advance str past it */

@@ -18,8 +18,12 @@
 #include "vxi11_core.h"
 #include "vxi11_device.h"
 
+/* Set to 1 to work around old ICS 8064 firmware (see comment below) */
+#define ICS8064_OLDFW_WORKAROUND 1
+
 
 #define VXI11_DFLT_TERMCHAR     0x0a
+#define VXI11_DFLT_TERMCHARSET  0
 #define VXI11_DFLT_DOLOCKING    0
 #define VXI11_DFLT_DOENDW       1
 #define VXI11_DFLT_LOCK_TIMEOUT 30000 /* 30s */
@@ -27,7 +31,6 @@
 
 #define VXI11_MAGIC             0x343422aa
 #define VXI11_NOLID             (-1)
-#define VXI11_NOTERMCHAR        0
 
 static int vxi11_device_debug = 0;
 
@@ -39,6 +42,7 @@ struct vxi11_device_struct {
     long            vxi11_lid;
     unsigned short  vxi11_abortPort;
     int             vxi11_termChar;
+    int             vxi11_termCharSet;
     int             vxi11_doEndw;
     int             vxi11_doLocking;
     unsigned long   vxi11_lock_timeout;
@@ -99,6 +103,7 @@ vxi11_create(void)
         v->vxi11_lid          = VXI11_NOLID;
         v->vxi11_abortPort    = 0;
         v->vxi11_termChar     = VXI11_DFLT_TERMCHAR;
+        v->vxi11_termCharSet  = VXI11_DFLT_TERMCHARSET;
         v->vxi11_doEndw       = VXI11_DFLT_DOENDW;
         v->vxi11_doLocking    = VXI11_DFLT_DOLOCKING;
         v->vxi11_lock_timeout = VXI11_DFLT_LOCK_TIMEOUT;
@@ -221,6 +226,10 @@ vxi11_write(vxi11dev_t v, char *buf, int len)
                                  tmout, 0, buf, try, &size);
         gettimeofday(&t2, NULL);
         if (res == 0) {
+#if ICS8064_OLDFW_WORKAROUND
+            if (size == 0)   /* ICS 8064 Rev X0.00 Ver 08.01.22 */
+                size = try;  /*  size = 0 on success, which violates B.6.21 */
+#endif
             buf -= size;
             len -= size;
             tmout -= _timersubms(&t2, &t1);
@@ -262,7 +271,7 @@ vxi11_read(vxi11dev_t v, char *buf, int len, int *numreadp)
         return VXI11_ERR_NOCHAN;
     if (v->vxi11_lid == VXI11_NOLID)
         return VXI11_ERR_LINKINVAL;
-    if (v->vxi11_termChar != VXI11_NOTERMCHAR)
+    if (v->vxi11_termCharSet)
         flags |= VXI11_FLAG_TERMCHRSET;
 
     if (v->vxi11_doLocking && (lres = vxi11_lock(v)) != 0)
@@ -444,6 +453,13 @@ vxi11_set_termchar(vxi11dev_t v, int termChar)
 {
     assert(v->vxi11_magic == VXI11_MAGIC);
     v->vxi11_termChar = termChar;
+}
+
+void
+vxi11_set_termcharset(vxi11dev_t v, int termCharSet)
+{
+    assert(v->vxi11_magic == VXI11_MAGIC);
+    v->vxi11_termCharSet = termCharSet;
 }
 
 void

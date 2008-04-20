@@ -1,12 +1,13 @@
 CFLAGS_LSD=-DWITH_LSD_NOMEM_ERROR_FUNC -DWITH_LSD_FATAL_ERROR_FUNC
+CFLAGS_LSD+=-DWANT_RECKLESS_HOSTRANGE_EXPANSION
 CFLAGS=-Wall -Wno-unused -g $(CFLAGS_GPIB) $(CFLAGS_LSD)
 LDADD=-lrpcsvc -lm -lpthread -lreadline $(LDADD_GPIB)
+CFLAGS+=-I../libics -I../libvxi11
+LDADD+=-L../libics -lics -L../libvxi11 -lvxi11
 
 PROGS=hp1630 hptopbm hptodino hp3457 hp3488 hp8656 \
-      dg535 sr620 gpsh ics8065 a6032 a34401
-LIBOBJS=util.o gpib.o units.o argv.o list.o hostlist.o ics.o \
-	vxi11_xdr.o vxi11_clnt.o vxi11intr_xdr.o vxi11intr_svc.o \
-	ics8000_clnt.o ics8000_xdr.o
+      dg535 sr620 ics8065 ics8064 a6032 a34401
+LIBOBJS=util.o gpib.o units.o argv.o list.o hostlist.o
 TESTPROGS=testfreq testampl
 
 all: $(PROGS)
@@ -28,45 +29,14 @@ sr620: sr620.o $(LIBOBJS)
 	$(CC) -o $@ sr620.o $(LIBOBJS) $(LDADD)
 hp3488: hp3488.o $(LIBOBJS)
 	$(CC) -o $@ hp3488.o $(LIBOBJS) $(LDADD)
-gpsh: gpsh.o $(LIBOBJS)
-	$(CC) -o $@ gpsh.o $(LIBOBJS) $(LDADD) -lreadline -ltermcap
-ics8065: ics8065.o $(LIBOBJS)
-	$(CC) -o $@ ics8065.o $(LIBOBJS) $(LDADD)
-ics.o: ics8000.h
 a6032: a6032.o $(LIBOBJS)
 	$(CC) -o $@ a6032.o $(LIBOBJS) $(LDADD)
 a34401: a34401.o $(LIBOBJS)
 	$(CC) -o $@ a34401.o $(LIBOBJS) $(LDADD)
-
-# VXI-11 core/async
-gpib.o: vxi11.h
-vxi11.h: vxi11.x
-	rm -f $@; rpcgen -o $@ -h vxi11.x
-vxi11_xdr.c: vxi11.x vxi11.h
-	rm -f $@; rpcgen -o $@ -c vxi11.x
-vxi11_clnt.c: vxi11.x vxi11.h
-	rm -f $@; rpcgen -o $@ -l vxi11.x
-vxi11_svc.c:  vxi11.x vxi11.h
-	rm -f $@; rpcgen -o $@ -m vxi11.x
-# VXI-11 intr
-gpib.o: vxi11intr.h
-vxi11intr.h: vxi11intr.x
-	rm -f $@; rpcgen -o $@ -h vxi11intr.x
-vxi11intr_xdr.c: vxi11intr.x vxi11intr.h
-	rm -f $@; rpcgen -o $@ -c vxi11intr.x
-vxi11intr_clnt.c: vxi11intr.x vxi11intr.h
-	rm -f $@; rpcgen -o $@ -l vxi11intr.x
-vxi11intr_svc.c:  vxi11intr.x vxi11intr.h
-	rm -f $@; rpcgen -o $@ -m vxi11intr.x
-# VXI-11 extension for ICS 8000 series
-ics8000.h: ics8000.x
-	rm -f $@; rpcgen -o $@ -h ics8000.x
-ics8000_xdr.c: ics8000.x ics8000.h
-	rm -f $@; rpcgen -o $@ -c ics8000.x
-ics8000_clnt.c: ics8000.x ics8000.h
-	rm -f $@; rpcgen -o $@ -l ics8000.x
-ics8000_svc.c:  ics8000.x ics8000.h
-	rm -f $@; rpcgen -o $@ -m ics8000.x
+ics8065: ics8065.o $(LIBOBJS)
+	$(CC) -o $@ ics8065.o $(LIBOBJS) $(LDADD)
+ics8064: ics8064.o $(LIBOBJS)
+	$(CC) -o $@ ics8064.o $(LIBOBJS) $(LDADD)
 
 # test programs
 testampl: units.c
@@ -81,9 +51,4 @@ install:
 	done
 
 clean:
-	rm -f *.o $(PROGS)
-	rm -f $(TESTPROGS)
-	rm -f vxi11.h vxi11_xdr.c vxi11_clnt.c vxi11_svc.c
-	rm -f vxi11intr.h vxi11intr_xdr.c vxi11intr_clnt.c vxi11intr_svc.c
-	rm -f ics8000.h ics8000_xdr.c ics8000_clnt.c ics8000_svc.c
-
+	rm -f *.o $(PROGS) $(TESTPROGS)
