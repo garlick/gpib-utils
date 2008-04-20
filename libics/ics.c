@@ -29,15 +29,17 @@
 
 #include "ics8000.h"
 #include "ics.h"
-#include "util.h"
-
-extern char *prog;
 
 #define ICS_MAGIC 0x23434666
 struct ics_struct {
     int         ics_magic;
     CLIENT     *ics_clnt;
 };
+
+typedef struct {
+    int     num;
+    char   *str;
+} strtab_t;
 
 static strtab_t errtab[] = {
     { 0,    "success" },
@@ -47,10 +49,31 @@ static strtab_t errtab[] = {
 };
 
 static char *
+findstr(strtab_t *tab, int num)
+{
+    strtab_t *tp;
+    static char tmpbuf[64];
+    char *res = tmpbuf;
+
+    (void)sprintf(tmpbuf, "unknown code %d", num);
+    for (tp = &tab[0]; tp->str; tp++) {
+        if (tp->num == num) {
+            res = tp->str;
+            break;
+        }
+    }
+    return res;
+}
+
+static char *
 _mkstr(char *data, u_int len)
 {
-    char *new = xmalloc(len + 1);
+    char *new = malloc(len + 1);
 
+    if (!new) {
+        fprintf(stderr, "libics: out of memory\n");
+        exit(1);
+    }
     memcpy(new, data, len);
     new[len] = '\0';
     return new;
@@ -68,9 +91,15 @@ static char *
 _ip2str(unsigned int ip)
 {
     struct in_addr in;
+    char *cpy;
 
     in.s_addr = _reverse(htonl(ip));
-    return xstrdup(inet_ntoa(in));
+    cpy = strdup(inet_ntoa(in));
+    if (!cpy) {
+        fprintf(stderr, "libics: out of memory\n");
+        exit(1);
+    }
+    return cpy;
 }
 
 static int
@@ -79,7 +108,7 @@ _str2ip(char *str, unsigned int *ipp)
     struct in_addr in;
 
     if (inet_aton(str, &in) == 0) {
-        fprintf(stderr, "%s: invalid ip number\n", prog);
+        fprintf(stderr, "libics: invalid ip number\n");
         return 1;
     }
     *ipp = ntohl(_reverse(in.s_addr));
@@ -97,12 +126,11 @@ ics_get_interface_name(ics_t ics, char **strp)
     p.name.name_len = 0;
     r = interface_name_1(&p, ics->ics_clnt);
     if (r == NULL) {
-        clnt_perror(ics->ics_clnt, prog);
+        clnt_perror(ics->ics_clnt, "libics");
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "%s: interface_name: %s\n", prog, 
-                findstr(errtab, r->error));
+        fprintf(stderr, "libics: interface_name: %s\n", findstr(errtab, r->error));
         return r->error;
     }
     *strp = _mkstr(r->name.name_val, r->name.name_len);
@@ -121,12 +149,11 @@ ics_set_interface_name(ics_t ics, char *str)
     p.name.name_len = strlen(str);
     r = interface_name_1(&p, ics->ics_clnt);
     if (r == NULL) {
-        clnt_perror(ics->ics_clnt, prog);
+        clnt_perror(ics->ics_clnt, "libics");
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "%s: interface_name: %s\n", prog, 
-                findstr(errtab, r->error));
+        fprintf(stderr, "libics: interface_name: %s\n", findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -142,12 +169,11 @@ ics_get_comm_timeout(ics_t ics, unsigned int *timeoutp)
     p.action = ICS_READ;
     r = comm_timeout_1(&p, ics->ics_clnt);
     if (r == NULL) {
-        clnt_perror(ics->ics_clnt, prog);
+        clnt_perror(ics->ics_clnt, "libics");
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "%s: comm_timeout: %s\n", prog, 
-                findstr(errtab, r->error));
+        fprintf(stderr, "libics: comm_timeout: %s\n", findstr(errtab, r->error));
         return r->error;
     }
     *timeoutp = r->timeout;
@@ -165,12 +191,11 @@ ics_set_comm_timeout(ics_t ics, unsigned int timeout)
     p.timeout = timeout;
     r = comm_timeout_1(&p, ics->ics_clnt);
     if (r == NULL) {
-        clnt_perror(ics->ics_clnt, prog);
+        clnt_perror(ics->ics_clnt, "libics");
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "%s: comm_timeout: %s\n", prog, 
-                findstr(errtab, r->error));
+        fprintf(stderr, "libics: comm_timeout: %s\n", findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -186,12 +211,11 @@ ics_get_static_ip_mode(ics_t ics, int *flagp)
     p.action = ICS_READ;
     r = static_ip_mode_1(&p, ics->ics_clnt);
     if (r == NULL) {
-        clnt_perror(ics->ics_clnt, prog);
+        clnt_perror(ics->ics_clnt, "libics");
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "%s: static_ip_mode: %s\n", prog, 
-                findstr(errtab, r->error));
+        fprintf(stderr, "libics: static_ip_mode: %s\n", findstr(errtab, r->error));
         return r->error;
     }
     *flagp = r->mode;
@@ -209,12 +233,11 @@ ics_set_static_ip_mode(ics_t ics, int flag)
     p.mode = flag;
     r = static_ip_mode_1(&p, ics->ics_clnt);
     if (r == NULL) {
-        clnt_perror(ics->ics_clnt, prog);
+        clnt_perror(ics->ics_clnt, "libics");
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "%s: static_ip_mode: %s\n", prog, 
-                findstr(errtab, r->error));
+        fprintf(stderr, "libics: static_ip_mode: %s\n", findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -230,12 +253,11 @@ ics_get_ip_number(ics_t ics, char **ipstrp)
     p.action = ICS_READ;
     r = ip_number_1(&p, ics->ics_clnt);
     if (r == NULL) {
-        clnt_perror(ics->ics_clnt, prog);
+        clnt_perror(ics->ics_clnt, "libics");
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "%s: ip_number: %s\n", prog, 
-                findstr(errtab, r->error));
+        fprintf(stderr, "libics: ip_number: %s\n", findstr(errtab, r->error));
         return r->error;
     }
     *ipstrp = _ip2str(r->ip);
@@ -254,12 +276,11 @@ ics_set_ip_number(ics_t ics, char *ipstr)
         return 1;
     r = ip_number_1(&p, ics->ics_clnt);
     if (r == NULL) {
-        clnt_perror(ics->ics_clnt, prog);
+        clnt_perror(ics->ics_clnt, "libics");
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "%s: ip_number: %s\n", prog, 
-                findstr(errtab, r->error));
+        fprintf(stderr, "libics: ip_number: %s\n", findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -275,12 +296,11 @@ ics_get_netmask(ics_t ics, char **ipstrp)
     p.action = ICS_READ;
     r = netmask_1(&p, ics->ics_clnt);
     if (r == NULL) {
-        clnt_perror(ics->ics_clnt, prog);
+        clnt_perror(ics->ics_clnt, "libics");
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "%s: netmask: %s\n", prog, 
-                findstr(errtab, r->error));
+        fprintf(stderr, "libics: netmask: %s\n", findstr(errtab, r->error));
         return r->error;
     }
     *ipstrp = _ip2str(r->ip);
@@ -299,12 +319,11 @@ ics_set_netmask(ics_t ics, char *ipstr)
         return 1;
     r = netmask_1(&p, ics->ics_clnt);
     if (r == NULL) {
-        clnt_perror(ics->ics_clnt, prog);
+        clnt_perror(ics->ics_clnt, "libics");
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "%s: netmask: %s\n", prog, 
-                findstr(errtab, r->error));
+        fprintf(stderr, "libics: netmask: %s\n", findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -320,12 +339,11 @@ ics_get_gateway(ics_t ics, char **ipstrp)
     p.action = ICS_READ;
     r = gateway_1(&p, ics->ics_clnt);
     if (r == NULL) {
-        clnt_perror(ics->ics_clnt, prog);
+        clnt_perror(ics->ics_clnt, "libics");
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "%s: gateway: %s\n", prog, 
-                findstr(errtab, r->error));
+        fprintf(stderr, "libics: gateway: %s\n", findstr(errtab, r->error));
         return r->error;
     }
     *ipstrp = _ip2str(r->ip);
@@ -344,12 +362,11 @@ ics_set_gateway(ics_t ics, char *ipstr)
         return 1;
     r = gateway_1(&p, ics->ics_clnt);
     if (r == NULL) {
-        clnt_perror(ics->ics_clnt, prog);
+        clnt_perror(ics->ics_clnt, "libics");
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "%s: gateway: %s\n", prog, 
-                findstr(errtab, r->error));
+        fprintf(stderr, "libics: gateway: %s\n", findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -365,12 +382,11 @@ ics_get_keepalive(ics_t ics, unsigned int *timep)
     p.action = ICS_READ;
     r = keepalive_1(&p, ics->ics_clnt);
     if (r == NULL) {
-        clnt_perror(ics->ics_clnt, prog);
+        clnt_perror(ics->ics_clnt, "libics");
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "%s: keepalive: %s\n", prog, 
-                findstr(errtab, r->error));
+        fprintf(stderr, "libics: keepalive: %s\n", findstr(errtab, r->error));
         return r->error;
     }
     *timep = r->time;
@@ -388,12 +404,11 @@ ics_set_keepalive(ics_t ics, unsigned int time)
     p.time = time;
     r = keepalive_1(&p, ics->ics_clnt);
     if (r == NULL) {
-        clnt_perror(ics->ics_clnt, prog);
+        clnt_perror(ics->ics_clnt, "libics");
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "%s: keepalive: %s\n", prog, 
-                findstr(errtab, r->error));
+        fprintf(stderr, "libics: keepalive: %s\n", findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -409,12 +424,11 @@ ics_get_gpib_address(ics_t ics, unsigned int *addrp)
     p.action = ICS_READ;
     r = gpib_address_1(&p, ics->ics_clnt);
     if (r == NULL) {
-        clnt_perror(ics->ics_clnt, prog);
+        clnt_perror(ics->ics_clnt, "libics");
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "%s: gpib_address: %s\n", prog, 
-                findstr(errtab, r->error));
+        fprintf(stderr, "libics: gpib_address: %s\n", findstr(errtab, r->error));
         return r->error;
     }
     *addrp = r->address;
@@ -432,12 +446,11 @@ ics_set_gpib_address(ics_t ics, unsigned int addr)
     p.address = addr;
     r = gpib_address_1(&p, ics->ics_clnt);
     if (r == NULL) {
-        clnt_perror(ics->ics_clnt, prog);
+        clnt_perror(ics->ics_clnt, "libics");
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "%s: gpib_address: %s\n", prog, 
-                findstr(errtab, r->error));
+        fprintf(stderr, "libics: gpib_address: %s\n", findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -453,12 +466,11 @@ ics_get_system_controller(ics_t ics, int *flagp)
     p.action = ICS_READ;
     r = system_controller_1(&p, ics->ics_clnt);
     if (r == NULL) {
-        clnt_perror(ics->ics_clnt, prog);
+        clnt_perror(ics->ics_clnt, "libics");
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "%s: system_controller: %s\n", prog, 
-                findstr(errtab, r->error));
+        fprintf(stderr, "libics: system_controller: %s\n", findstr(errtab, r->error));
         return r->error;
     }
     *flagp = r->controller;
@@ -476,12 +488,11 @@ ics_set_system_controller(ics_t ics, int flag)
     p.controller = flag;
     r = system_controller_1(&p, ics->ics_clnt);
     if (r == NULL) {
-        clnt_perror(ics->ics_clnt, prog);
+        clnt_perror(ics->ics_clnt, "libics");
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "%s: system_controller: %s\n", prog, 
-                findstr(errtab, r->error));
+        fprintf(stderr, "libics: system_controller: %s\n", findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -497,12 +508,11 @@ ics_get_ren_mode(ics_t ics, int *flagp)
     p.action = ICS_READ;
     r = ren_mode_1(&p, ics->ics_clnt);
     if (r == NULL) {
-        clnt_perror(ics->ics_clnt, prog);
+        clnt_perror(ics->ics_clnt, "libics");
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "%s: ren_mode: %s\n", prog, 
-                findstr(errtab, r->error));
+        fprintf(stderr, "libics: ren_mode: %s\n", findstr(errtab, r->error));
         return r->error;
     }
     *flagp = r->ren;
@@ -520,12 +530,11 @@ ics_set_ren_mode(ics_t ics, int flag)
     p.ren = flag;
     r = ren_mode_1(&p, ics->ics_clnt);
     if (r == NULL) {
-        clnt_perror(ics->ics_clnt, prog);
+        clnt_perror(ics->ics_clnt, "libics");
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "%s: ren_mode: %s\n", prog, 
-                findstr(errtab, r->error));
+        fprintf(stderr, "libics: ren_mode: %s\n", findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -539,12 +548,11 @@ ics_reload_config(ics_t ics)
     assert(ics->ics_magic == ICS_MAGIC);
     r = reload_config_1(NULL, ics->ics_clnt);
     if (r == NULL) {
-        clnt_perror(ics->ics_clnt, prog);
+        clnt_perror(ics->ics_clnt, "libics");
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "%s: reload_config: %s\n", 
-                prog, findstr(errtab, r->error));
+        fprintf(stderr, "libics: reload_config: %s\n", findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -558,12 +566,11 @@ ics_reload_factory(ics_t ics)
     assert(ics->ics_magic == ICS_MAGIC);
     r = reload_factory_1(NULL, ics->ics_clnt);
     if (r == NULL) {
-        clnt_perror(ics->ics_clnt, prog);
+        clnt_perror(ics->ics_clnt, "libics");
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "%s: reload_factory: %s\n", 
-                prog, findstr(errtab, r->error));
+        fprintf(stderr, "libics: reload_factory: %s\n", findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -577,12 +584,11 @@ ics_commit_config(ics_t ics)
     assert(ics->ics_magic == ICS_MAGIC);
     r = commit_config_1(NULL, ics->ics_clnt);
     if (r == NULL) {
-        clnt_perror(ics->ics_clnt, prog);
+        clnt_perror(ics->ics_clnt, "libics");
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "%s: commit_config: %s\n", 
-                prog, findstr(errtab, r->error));
+        fprintf(stderr, "libics: commit_config: %s\n", findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -596,12 +602,11 @@ ics_reboot(ics_t ics)
     assert(ics->ics_magic == ICS_MAGIC);
     r = reboot_1(NULL, ics->ics_clnt);
     if (r == NULL) {
-        clnt_perror(ics->ics_clnt, prog);
+        clnt_perror(ics->ics_clnt, "libics");
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "%s: reboot: %s\n", 
-                prog, findstr(errtab, r->error));
+        fprintf(stderr, "libics: reboot: %s\n", findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -615,12 +620,11 @@ ics_idn_string(ics_t ics, char **strp)
     assert(ics->ics_magic == ICS_MAGIC);
     r = idn_string_1(NULL, ics->ics_clnt);
     if (r == NULL) {
-        clnt_perror(ics->ics_clnt, prog);
+        clnt_perror(ics->ics_clnt, "libics");
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "%s: idn_string: %s\n", 
-                prog, findstr(errtab, r->error));
+        fprintf(stderr, "libics: idn_string: %s\n", findstr(errtab, r->error));
         return r->error;
     }
     *strp = _mkstr(r->idn.idn_val, r->idn.idn_len);
@@ -635,15 +639,19 @@ ics_error_logger(ics_t ics, unsigned int **errp, int *countp)
     assert(ics->ics_magic == ICS_MAGIC);
     r = error_logger_1(NULL, ics->ics_clnt);
     if (r == NULL) {
-        clnt_perror(ics->ics_clnt, prog);
+        clnt_perror(ics->ics_clnt, "libics");
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "%s: error_logger: %s\n", prog, 
+        fprintf(stderr, "libics: error_logger: %s\n",
                 findstr(errtab, r->error));
         return r->error;
     }
-    *errp = xmalloc(r->count * sizeof(unsigned int));
+    *errp = malloc(r->count * sizeof(unsigned int));
+    if (!*errp) {
+        fprintf(stderr, "libics: out of memory\n");
+        exit(1);
+    }
     memcpy(*errp, r->errors, r->count * sizeof(unsigned int));
     *countp = r->count;
     return 0;
@@ -663,13 +671,22 @@ ics_t
 ics_init (char *host)
 {
     ics_t new;
+    char *p, hostcpy[64];
 
-    new = xmalloc(sizeof(struct ics_struct));
+    /* strip ':instrument' off of host, if any */
+    snprintf(hostcpy, sizeof(hostcpy), "%s", host);
+    if ((p = strchr(hostcpy, ':')))
+        *p = '\0';
+    new = malloc(sizeof(struct ics_struct));
+    if (!new) {
+        fprintf(stderr, "libics: out of memory\n");
+        exit(1);
+    }
     new->ics_magic = ICS_MAGIC;
 
-    new->ics_clnt = clnt_create(host, ICSCONFIG, ICSCONFIG_VERSION, "tcp");
+    new->ics_clnt = clnt_create(hostcpy, ICSCONFIG, ICSCONFIG_VERSION, "tcp");
     if (new->ics_clnt == NULL) {
-        clnt_pcreateerror(prog);
+        clnt_pcreateerror("libics");
         ics_fini(new);
         new = NULL;
     }

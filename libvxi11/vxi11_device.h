@@ -36,8 +36,13 @@ void vxi11_set_iotimeout(vxi11dev_t v, unsigned long timeout);
 
 void vxi11_set_lockpolicy(vxi11dev_t v, int useLocking, unsigned long timeout);
 
+/* Sets the EOS character */
 void vxi11_set_termchar(vxi11dev_t v, int termChar);
 
+/* Sets whether reads are automatically terminated by EOS */
+void vxi11_set_termcharset(vxi11dev_t v, int termCharSet);
+
+/* Sets whether last char of write will assert EOI */
 void vxi11_set_endw(vxi11dev_t v, int doEndw);
 
 void vxi11_set_device_debug(int doDebug);

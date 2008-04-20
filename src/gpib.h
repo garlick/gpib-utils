@@ -37,44 +37,27 @@ char *gpib_default_addr(char *name);
 gd_t gpib_init(char *addr, spollfun_t sf, unsigned long retry);
 void gpib_fini(gd_t gd);
 
-/* Get/set the gpib timeout in seconds.
+/* Set the gpib timeout in seconds.
  */
-double gpib_get_timeout(gd_t gd);
 void gpib_set_timeout(gd_t gd, double sec);
 
-/* Get/set flag that determines whether "telemetry" is displayed on
+/* Set flag that determines whether "telemetry" is displayed on
  * stderr as reads/writes are processed on the gpib.
  */
-int gpib_get_verbose(gd_t gd);
 void gpib_set_verbose(gd_t gd, int flag);
 
-/* Get/set flag that determines whether EOI is set on the last byte
+/* Set flag that determines whether EOI is set on the last byte
  * of every write.
  */
-int gpib_get_eot(gd_t gd);
 void gpib_set_eot(gd_t gd, int flag);
 
-/* Get/set flag that determines whether reads are terminated when
+/* Set flag that determines whether reads are terminated when
  * end-of-string is read.
  */
-int gpib_get_reos(gd_t gd);
 void gpib_set_reos(gd_t gd, int flag);
 
-/* Get/set flag that determines whether EOI is transmitted whenever
- * end-of-string character is sent.
+/* Set character to be used as end-of-string terminator.
  */
-int gpib_get_xeos(gd_t gd);
-void gpib_set_xeos(gd_t gd, int flag);
-
-/* Get/set flag that determines whether 7 (false) or 8 (true) bits 
- * are compared when looking for end-of-string character.
- */
-int gpib_get_bin(gd_t gd);
-void gpib_set_bin(gd_t gd, int flag);
-
-/* Get/set character to be used as end-of-string terminator.
- */
-int gpib_get_eos(gd_t gd);
 void gpib_set_eos(gd_t gd, int c);
 
 int gpib_rd(gd_t gd, void *buf, int len);

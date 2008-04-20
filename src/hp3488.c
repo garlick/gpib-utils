@@ -55,7 +55,7 @@ char *prog = "";
 static int lerr_flag = 1;   /* logic errors: 0=ignored, 1=fatal */
                             /*   See: disambiguate_ctype() */
 
-#define OPTIONS "a:clSvL0:1:q:QsC:x"
+#define OPTIONS "a:clSvL0:1:q:QIC:x"
 static struct option longopts[] = {
     {"address",         required_argument, 0, 'a'},
     {"clear",           no_argument,       0, 'c'},
@@ -69,7 +69,7 @@ static struct option longopts[] = {
     {"query",           required_argument, 0, 'q'},
     {"queryall",        no_argument,       0, 'Q'},
     {"config",          required_argument, 0, 'C'},
-    {"shell",           no_argument,       0, 's'},
+    {"shell",           no_argument,       0, 'I'},
     {0, 0, 0, 0},
 };
 
@@ -90,7 +90,7 @@ usage(void)
 "  -1,--close [targets]          close contacts for specified channels\n"
 "  -q,--query [targets]          view state of specified channels\n"
 "  -Q,--queryall                 view state of all channels\n"
-"  -s,--shell                    start interactive shell\n"
+"  -I,--shell                    start interactive shell\n"
 "  -x,--showconfig               list installed cards\n"
 "  -C,--config m,m,m,m,m         specify model card in slots 1,2,3,4,5 where\n"
 "    model is 44470|44471|44472|44473|44474|44475|44476|44477|44478 (0=empty)\n"
@@ -504,13 +504,15 @@ docmd(gd_t gd, char **av)
             printf("%s\n", tmpbuf);
 
         } else if (strcmp(av[0], "verbose") == 0) {
-            if (av[1] != NULL)
-                printf("Usage: verbose\n");
+            if (av[1] == NULL || av[2] != NULL)
+                printf("Usage: verbose 1|0\n");
             else {
-                int state = gpib_get_verbose(gd);
-
-                gpib_set_verbose(gd, !state);
-                printf("verbose mode is %s\n", !state ? "on" : "off");
+                if (!strcmp(av[1], "1"))
+                    gpib_set_verbose(gd, 1);
+                else if (!strcmp(av[1], "0"))
+                    gpib_set_verbose(gd, 0);
+                else
+                    printf("Usage: verbose 1|0\n");
             }
 
         } else
@@ -613,7 +615,7 @@ main(int argc, char *argv[])
             selftest = 1;
             todo++;
             break;
-        case 's': /* --shell */
+        case 'I': /* --shell */
             shell = 1;
             need_valid_targets++;
             todo++;
