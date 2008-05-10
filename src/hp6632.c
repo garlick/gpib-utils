@@ -39,8 +39,25 @@
 
 #define INSTRUMENT "hp6632"
 
-char *prog = "";
-static int verbose = 0;
+/* status, astatus, fault, mask reg bit definitions */
+#define HP6032_STAT_CV      1       /* constant voltage mode */
+#define HP6032_STAT_CC      2       /* positive constant current mode */
+#define HP6032_STAT_UNR     4       /* output unregulated */
+#define HP6032_STAT_OV      8       /* overvoltage protection tripped */
+#define HP6032_STAT_OT      16      /* over-temperature protection tripped */
+#define HP6032_STAT_OC      64      /* overcurrent protection tripped */
+#define HP6032_STAT_ERR     128     /* programming error */
+#define HP6032_STAT_INH     256     /* remote inhibit */
+#define HP6032_STAT_NCC     512     /* negative constant current mode */
+#define HP6032_STAT_FAST    1024    /* output in fast operating mode */
+#define HP6032_STAT_NORM    2048    /* output in normal operating mode */
+
+/* serial poll reg */
+#define HP6032_SPOLL_FAU    1
+#define HP6032_SPOLL_PON    2
+#define HP6032_SPOLL_RDY    16
+#define HP6032_SPOLL_ERR    32
+#define HP6032_SPOLL_RQS    64
 
 /* programming errors */
 static strtab_t petab[] = {
@@ -98,25 +115,8 @@ static strtab_t sttab[] = {
     { 0, NULL }
 };
 
-/* status, astatus, fault, mask reg bit definitions */
-#define HP6032_STAT_CV      1       /* constant voltage mode */
-#define HP6032_STAT_CC      2       /* positive constant current mode */
-#define HP6032_STAT_UNR     4       /* output unregulated */
-#define HP6032_STAT_OV      8       /* overvoltage protection tripped */
-#define HP6032_STAT_OT      16      /* over-temperature protection tripped */
-#define HP6032_STAT_OC      64      /* overcurrent protection tripped */
-#define HP6032_STAT_ERR     128     /* programming error */
-#define HP6032_STAT_INH     256     /* remote inhibit */
-#define HP6032_STAT_NCC     512     /* negative constant current mode */
-#define HP6032_STAT_FAST    1024    /* output in fast operating mode */
-#define HP6032_STAT_NORM    2048    /* output in normal operating mode */
-
-/* serial poll reg */
-#define HP6032_SPOLL_FAU    1
-#define HP6032_SPOLL_PON    2
-#define HP6032_SPOLL_RDY    16
-#define HP6032_SPOLL_ERR    32
-#define HP6032_SPOLL_RQS    64
+char *prog = "";
+static int verbose = 0;
 
 #define OPTIONS "a:clviSI:V:o:O:C:r"
 static struct option longopts[] = {
@@ -135,7 +135,6 @@ static struct option longopts[] = {
     {0, 0, 0, 0},
 };
 
-
 static void 
 usage(void)
 {
@@ -147,7 +146,7 @@ usage(void)
 "  -c,--clear              initialize instrument to default values\n"
 "  -l,--local              return instrument to local operation on exit\n"
 "  -v,--verbose            show protocol on stderr\n"
-"  -i,--ident              return instrument model and ROM version\n"
+"  -i,--ident              print instrument model and ROM version\n"
 "  -S,--selftest           run selftest\n"
 "  -I,--iset               set current\n"
 "  -V,--vset               set voltage\n"
@@ -163,11 +162,11 @@ static int
 _interpret_status(gd_t gd, unsigned char status, char *msg)
 {
     int err = 0;
+    int e;
 
     if (status & HP6032_SPOLL_FAU) {
         fprintf(stderr, "%s: device fault\n", prog);
-        /* FIXME: check FAULT? */
-        /* FIXME: check ASTS? */
+        /* FIXME: check FAULT? and/or ASTS? but only if unmasked */
         err = 1;
     }
     if (status & HP6032_SPOLL_PON) {
@@ -176,11 +175,16 @@ _interpret_status(gd_t gd, unsigned char status, char *msg)
     if (status & HP6032_SPOLL_RDY) {
     }
     if (status & HP6032_SPOLL_ERR) {
-        fprintf(stderr, "%s: programming error\n", prog);
-        /* FIXME: check ERR? */
+        gpib_wrtstr(gd, "ERR?\n");
+        if (gpib_rdf(gd, "%d", &e) != 1)
+            fprintf(stderr, "%s: prog error and error querying ERR?\n", prog);
+        else
+            fprintf(stderr, "%s: prog error: %s\n", prog, findstr(petab, e));
+        err = 1;
     }
     if (status & HP6032_SPOLL_RQS) {
         fprintf(stderr, "%s: device is requesting service\n", prog);
+        err = 1; /* it shouldn't be unless we tell it to */
     }
     return err;
 }
