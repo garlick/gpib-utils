@@ -12,7 +12,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-#include <rpc/pmap_clnt.h>
+//#include <rpc/pmap_clnt.h>
 #if HAVE_GPIB
 #include <gpib/ib.h>
 #endif

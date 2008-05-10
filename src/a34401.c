@@ -34,18 +34,40 @@
 #include <math.h>
 #include <stdint.h>
 
-#include "dg535.h"
 #include "units.h"
 #include "gpib.h"
 #include "util.h"
-#include "a34401.h"
 
 #define INSTRUMENT "a34401"
+
+/* Status byte values
+ */
+#define A34401_STAT_RQS  64      /* device is requesting service */
+#define A34401_STAT_SER  32      /* bits are set in std. event register */
+#define A34401_STAT_MAV  16      /* message(s) available in the output buffer */
+#define A34401_STAT_QDR  8       /* bits are set in quest. data register */
+
+/* Standard event register values.
+ */
+#define A34401_SER_PON   128     /* power on */
+#define A34401_SER_CME   32      /* command error */
+#define A34401_SER_EXE   16      /* execution error */
+#define A34401_SER_DDE   8       /* device dependent error */
+#define A34401_SER_QYE   4       /* query error */
+#define A34401_SER_OPC   1       /* operation complete */
+
+/* Questionable data register.
+ */
+#define A34401_QDR_LFH   4096    /* limit fail HI */
+#define A34401_QDR_LFL   2048    /* limit fail LO */
+#define A34401_QDR_ROL   512     /* ohms overload */
+#define A34401_QDR_AOL   2       /* current overload */
+#define A34401_QDR_VOL   1       /* voltage overload */
 
 char *prog = "";
 static int verbose = 0;
 
-#define OPTIONS "n:clvisrpf:P:dS"
+#define OPTIONS "a:clviS"
 static struct option longopts[] = {
     {"address",         required_argument, 0, 'a'},
     {"clear",           no_argument,       0, 'c'},
@@ -145,9 +167,6 @@ main(int argc, char *argv[])
         case 'a': /* --address */
             addr = optarg;
             break;
-        case 'v': /* --verbose */
-            verbose = 1;
-            break;
         case 'c': /* --clear */
             clear = 1;
             todo++;
@@ -155,6 +174,9 @@ main(int argc, char *argv[])
         case 'l': /* --local */
             local = 1;
             todo++;
+            break;
+        case 'v': /* --verbose */
+            verbose = 1;
             break;
         case 'i': /* --get-idn */
             get_idn = 1;

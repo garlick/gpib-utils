@@ -33,11 +33,9 @@
 #include <math.h>
 #include <stdint.h>
 
-#include "dg535.h"
 #include "units.h"
 #include "gpib.h"
 #include "util.h"
-#include "a6032.h"
 
 #define PATH_DATE "/bin/date"
 
@@ -46,10 +44,31 @@
 #define SETUP_STR_SIZE  3000
 #define IMAGE_SIZE      6000000
 
+/* Status byte values
+ */
+#define A6032_STAT_OPER	128	/* an enabled condition in OPER has occurred */
+#define A6032_STAT_RQS  32	/* device is requesting service */
+#define A6032_STAT_ESB  16	/* an enabled condition in ESR has occurred */
+#define A6032_STAT_MAV	8	/* message(s) available in the output queue */
+#define A6032_STAT_MSG	4	/* advisory has been displayed on the scope */
+#define A6032_STAT_USR	2	/* an enabled user event has occurred */
+#define A6032_STAT_TRG	1	/* trigger has occurred */
+
+/* Event status register values
+ */
+#define A6032_ESR_PON	128	/* power on */
+#define A6032_ESR_URQ	64	/* user request */
+#define A6032_ESR_CME	32	/* command error */
+#define A6032_ESR_EXE	16	/* execution error */
+#define A6032_ESR_DDE	8	/* device dependent error */
+#define A6032_ESR_QYE	4	/* query error */
+#define A6032_ESR_RQL	2	/* request control */
+#define A6032_ESR_OPC	1	/* operation complete */
+
 char *prog = "";
 static int verbose = 0;
 
-#define OPTIONS "n:clvisrpf:P:d"
+#define OPTIONS "a:clvisrpf:P:d"
 static struct option longopts[] = {
     {"address",         required_argument, 0, 'a'},
     {"clear",           no_argument,       0, 'c'},
