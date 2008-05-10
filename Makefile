@@ -7,11 +7,13 @@ all: all-nogpib all-other
 all-gpib:
 	make clean
 	make -C libics
+	make -C libvxi11
 	make -C src all CFLAGS_GPIB=-DHAVE_GPIB=1 LDADD_GPIB=-lgpib
 # VXI-11 only
 all-nogpib:
 	make clean
 	make -C libics
+	make -C libvxi11
 	make -C src all
 
 all-other:
@@ -25,6 +27,7 @@ install:
 
 clean:
 	make -C libics clean
+	make -C libvxi11 clean
 	make -C src clean
 	make -C examples clean
 	make -C htdocs clean

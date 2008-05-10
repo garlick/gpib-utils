@@ -7,7 +7,7 @@ LDADD+=-L../libics -lics -L../libvxi11 -lvxi11
 
 PROGS=hp6632 hp1630 hptopbm hptodino hp3457 hp3488 hp8656 \
       dg535 sr620 ics8065 ics8064 a6032 a34401
-LIBOBJS=util.o gpib.o units.o argv.o list.o hostlist.o
+LIBOBJS=util.o gpib.o argv.o list.o hostlist.o
 TESTPROGS=testfreq testampl
 
 all: $(PROGS)
@@ -41,9 +41,9 @@ hp6632: hp6632.o $(LIBOBJS)
 	$(CC) -o $@ hp6632.o $(LIBOBJS) $(LDADD)
 
 # test programs
-testampl: units.c
+testampl: util.c
 	$(CC) -o $@ -DAMPLMAIN $< -lm
-testfreq: units.c
+testfreq: util.c
 	$(CC) -o $@ -DFREQMAIN $< -lm
 
 install:

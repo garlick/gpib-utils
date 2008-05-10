@@ -34,7 +34,7 @@
 #include <time.h>
 
 #include "hp1630.h"
-#include "units.h"
+#include "util.h"
 #include "hpcrc.h"
 
 struct pods {

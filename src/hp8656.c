@@ -31,7 +31,7 @@
 #include <math.h>
 
 #include "hp8656.h"
-#include "units.h"
+#include "util.h"
 #include "gpib.h"
 
 #define INSTRUMENT "hp8656"

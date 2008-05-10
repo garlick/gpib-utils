@@ -32,7 +32,6 @@
 #include <stdint.h>
 
 #include "dg535.h"
-#include "units.h"
 #include "gpib.h"
 #include "util.h"
 
