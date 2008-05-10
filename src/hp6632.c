@@ -42,17 +42,6 @@
 char *prog = "";
 static int verbose = 0;
 
-#define OPTIONS "a:clviS"
-static struct option longopts[] = {
-    {"address",         required_argument, 0, 'a'},
-    {"clear",           no_argument,       0, 'c'},
-    {"local",           no_argument,       0, 'l'},
-    {"verbose",         no_argument,       0, 'v'},
-    {"get-idn",         no_argument,       0, 'i'},
-    {"selftest",        no_argument,       0, 'S'},
-    {0, 0, 0, 0},
-};
-
 /* programming errors */
 static strtab_t petab[] = {
     { 0, "Success" },
@@ -129,6 +118,24 @@ static strtab_t sttab[] = {
 #define HP6032_SPOLL_ERR    32
 #define HP6032_SPOLL_RQS    64
 
+#define OPTIONS "a:clviSI:V:o:O:C:r"
+static struct option longopts[] = {
+    {"address",         required_argument, 0, 'a'},
+    {"clear",           no_argument,       0, 'c'},
+    {"local",           no_argument,       0, 'l'},
+    {"verbose",         no_argument,       0, 'v'},
+    {"ident",           no_argument,       0, 'i'},
+    {"selftest",        no_argument,       0, 'S'},
+    {"iset",            required_argument, 0, 'I'},
+    {"vset",            required_argument, 0, 'V'},
+    {"out",             required_argument, 0, 'o'},
+    {"ovset",           required_argument, 0, 'O'},
+    {"ocp",             required_argument, 0, 'C'},
+    {"read",            no_argument,       0, 'r'},
+    {0, 0, 0, 0},
+};
+
+
 static void 
 usage(void)
 {
@@ -140,8 +147,14 @@ usage(void)
 "  -c,--clear              initialize instrument to default values\n"
 "  -l,--local              return instrument to local operation on exit\n"
 "  -v,--verbose            show protocol on stderr\n"
-"  -i,--get-idn            return instrument idn string\n"
+"  -i,--ident              return instrument model and ROM version\n"
 "  -S,--selftest           run selftest\n"
+"  -I,--iset               set current\n"
+"  -V,--vset               set voltage\n"
+"  -o,--out                enable/disable output (0|1)\n"
+"  -O,--ovset              set overvoltage threshold\n"
+"  -C,--ocp                enable/disable overcurrent protection (0|1)\n"
+"  -r,--read               read actual current and voltage\n"
            , prog, addr ? addr : "no default");
     exit(1);
 }
@@ -185,12 +198,30 @@ _get_idn(gd_t gd)
     gpib_wrtstr(gd, "ROM?\n");
     gpib_rdstr(gd, rom, sizeof(rom));
     fprintf(stderr, "%s: %s, %s\n", prog, model, rom);
-    if (strcmp(model, "6032") != 0 && strcmp(model, "6033") != 0
-                                   && strcmp(model, "6034") != 0) {
-        fprintf(stderr, "%s: not a supported model\n", prog);
-        rc = 1;
-    }
+
     return rc;
+}
+
+/* Read current and voltage at output and print in a form
+ * suitable for gnuplot usage.
+ */
+static int 
+_read(gd_t gd)
+{
+    float i, v;
+
+    gpib_wrtstr(gd, "VOUT?\n");
+    if (gpib_rdf(gd, "%f", &v) != 1) {
+        fprintf(stderr, "%s: error reading VOUT? result\n", prog);
+        return -1;
+    }
+    gpib_wrtstr(gd, "IOUT?\n");
+    if (gpib_rdf(gd, "%f", &i) != 1) {
+        fprintf(stderr, "%s: error reading IOUT? result\n", prog);
+        return -1;
+    }
+    printf("%f\t%f\n", i, v);
+    return 0;
 }
 
 /* Run instrument self-test.
@@ -210,13 +241,19 @@ _selftest(gd_t gd)
     return rc;
 }
 
-/* Cheat sheet:
- * OUT 0;RST;CLR
- * VSET %f;ISET %f;OVSET %f;OCP %d
- * VSET %f
- * IOUT?
- * VOUT?
- */
+static int
+_str2float(char *str, float *fp)
+{
+    char *endptr;
+
+    errno = 0;
+    *fp = strtof(str, &endptr);
+    if (errno || *endptr != '\0') {
+        fprintf(stderr, "%s: error parsing float value\n", prog);
+        return 1;
+    }
+    return 0;
+}
 
 int
 main(int argc, char *argv[])
@@ -230,6 +267,13 @@ main(int argc, char *argv[])
     int exit_val = 0;
     int get_idn = 0;
     int selftest = 0;
+    int iset = 0;
+    int vset = 0;
+    int ovset = 0;
+    float ovset_val, iset_val, vset_val;
+    int ocp = 0;
+    int ocp_val;
+    int ropt = 0;
 
     /*
      * Handle options.
@@ -257,6 +301,40 @@ main(int argc, char *argv[])
             break;
         case 'S': /* --selftest */
             selftest = 1;
+            todo++;
+            break;
+        case 'I': /* --iset */
+            iset = 1;
+            if (_str2float(optarg, &iset_val))
+                exit(1);
+            todo++;
+            break;
+        case 'V': /* --vset */
+            vset = 1;
+            if (_str2float(optarg, &vset_val))
+                exit(1);
+            todo++;
+            break;
+        case 'O': /* --ovset */
+            ovset = 1;
+            if (_str2float(optarg, &ovset_val))
+                exit(1);
+            todo++;
+            break;
+        case 'o': /* --ocp */
+            ocp = 1;
+            if (*optarg == '0')
+                ocp_val = 0;
+            else if (*optarg == '1')
+                ocp_val = 1;
+            else {
+                fprintf(stderr, "%s: error parsing --ocp argument\n", prog);
+                exit(1);
+            }
+            todo++;
+            break;
+        case 'r': /* --read */
+            ropt = 1;
             todo++;
             break;
         default:
@@ -292,6 +370,18 @@ main(int argc, char *argv[])
         goto done;
     }
     if (selftest && _selftest(gd) != 0) {
+        exit_val = 1;
+        goto done;
+    }
+    if (ovset)
+        gpib_wrtf(gd, "OVSET %f\n", ovset_val);
+    if (iset)
+        gpib_wrtf(gd, "ISET %f\n", iset_val);
+    if (vset)
+        gpib_wrtf(gd, "VSET %f\n", vset_val);
+    if (ocp)
+        gpib_wrtf(gd, "OCP %d\n", ocp_val);
+    if (ropt && _read(gd) != 0) {
         exit_val = 1;
         goto done;
     }
