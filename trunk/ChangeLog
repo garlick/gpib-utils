@@ -1,3 +1,9 @@
+2008-05-10 Jim Garlick <garlick.jim@gmail.com>
+
+	* src/hp6632.c : New.
+
+	* src/util.[ch] : Merge with units.[ch].
+
 2008-04-09 Jim Garlick <garlick.jim@gmail.com>
 
 	* src/ics8065.c : Renamed get/set netmask opt from -k/K to -n/N.

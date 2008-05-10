@@ -34,7 +34,6 @@
 #include <math.h>
 #include <stdint.h>
 
-#include "units.h"
 #include "gpib.h"
 #include "util.h"
 
@@ -129,7 +128,7 @@ _interpret_status(gd_t gd, unsigned char status, char *msg)
 }
 
 
-/* Print scope idn string.
+/* Print instrument idn string.
  */
 static int
 _get_idn(gd_t gd)

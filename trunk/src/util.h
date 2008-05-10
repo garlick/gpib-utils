@@ -35,6 +35,16 @@ typedef struct {
 char *findstr(strtab_t *tab, int num);
 int rfindstr(strtab_t *tab, char *str);
 
+int     amplstr(char *str, double *ampl);
+double  dbmtov(double a);
+
+int     freqstr(char *str, double *freq);
+
+#define FREQ_UNITS      "hz, khz, mhz, ghz"
+#define PERIOD_UNITS    "s, ms, us, ns, ps"
+#define AMPL_LOG_UNITS  "dbm, dbf, dbv, dbmv, dbuv, dbemfv, dbemfmv, dbemfuv"
+#define AMPL_LIN_UNITS  "v, mv, uv, emfv, emfmv, emfuv"
+
 /*
  * vi:tabstop=4 shiftwidth=4 expandtab
  */

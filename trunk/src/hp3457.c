@@ -31,7 +31,7 @@
 #include <stdint.h>
 
 #include "hp3457.h"
-#include "units.h"
+#include "util.h"
 #include "gpib.h"
 
 #define INSTRUMENT "hp3457"
