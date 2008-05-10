@@ -206,7 +206,7 @@ _get_idn(gd_t gd)
 }
 
 /* Read current and voltage at output and print in a form
- * suitable for gnuplot usage.
+ * suitable for gnuplot usage: "current<tab>voltage"
  */
 static int 
 _read(gd_t gd)
