@@ -5,7 +5,7 @@ LDADD=-lrpcsvc -lm -lpthread -lreadline $(LDADD_GPIB)
 CFLAGS+=-I../libics -I../libvxi11
 LDADD+=-L../libics -lics -L../libvxi11 -lvxi11
 
-PROGS=hp1630 hptopbm hptodino hp3457 hp3488 hp8656 \
+PROGS=hp6632 hp1630 hptopbm hptodino hp3457 hp3488 hp8656 \
       dg535 sr620 ics8065 ics8064 a6032 a34401
 LIBOBJS=util.o gpib.o units.o argv.o list.o hostlist.o
 TESTPROGS=testfreq testampl
@@ -37,6 +37,8 @@ ics8065: ics8065.o $(LIBOBJS)
 	$(CC) -o $@ ics8065.o $(LIBOBJS) $(LDADD)
 ics8064: ics8064.o $(LIBOBJS)
 	$(CC) -o $@ ics8064.o $(LIBOBJS) $(LDADD)
+hp6632: hp6632.o $(LIBOBJS)
+	$(CC) -o $@ hp6632.o $(LIBOBJS) $(LDADD)
 
 # test programs
 testampl: units.c
