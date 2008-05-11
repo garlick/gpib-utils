@@ -7,10 +7,10 @@ Group: Application/Engineering
 Url: http://sourceforge.net/projects/gpib-utils/
 Source0: %{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-root-%(%{__id_u} -n)
-BuildRequires: linux-gpib
+#BuildRequires: linux-gpib
 
 %description
-GPIB Instrument utilities for various electronic instruments.
+Utilities for controlling various electronic instruments over GPIB.
 
 %prep
 %setup

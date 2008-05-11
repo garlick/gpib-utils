@@ -4,7 +4,7 @@
 
 	* src/util.[ch] : Merge with units.[ch].
 
-	* : Integrated automake.
+	* : Integrated automake/autoconf.
 
 2008-04-09 Jim Garlick <garlick.jim@gmail.com>
 
