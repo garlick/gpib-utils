@@ -17,4 +17,5 @@ AC_OUTPUT([\
 	libvxi11/Makefile \
 	libics/Makefile \
 	src/Makefile
+	man/Makefile
 ])

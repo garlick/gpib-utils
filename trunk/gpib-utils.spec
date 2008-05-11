@@ -1,6 +1,3 @@
-# set to 1 if building with linux-gpib, otherwise 0
-%define buildgpib 0
-
 Name: gpib-utils
 Version: 1.3
 Release: 1
@@ -10,9 +7,7 @@ Group: Application/Engineering
 Url: http://sourceforge.net/projects/gpib-utils/
 Source0: %{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-root-%(%{__id_u} -n)
-%if %{buildgpib}
-Requires: linux-gpib
-%endif
+BuildRequires: linux-gpib
 
 %description
 GPIB Instrument utilities for various electronic instruments.
@@ -21,24 +16,19 @@ GPIB Instrument utilities for various electronic instruments.
 %setup
 
 %build
-%if %{buildgpib}
-make all-gpib
-%else
-make all-nogpib
-%endif
+%configure
+make
 
 %install
 mkdir -p $RPM_BUILD_ROOT/{%{_bindir},%{_mandir}/man1,%{_sysconfdir}}
-make -e install \
-   BINDIR=$RPM_BUILD_ROOT/%{_bindir} MANDIR=$RPM_BUILD_ROOT/%{_mandir}/man1 
-cp etc/gpib-utils.conf $RPM_BUILD_ROOT/%{_sysconfdir}/
+make install DESTDIR=$RPM_BUILD_ROOT
 
 %clean
 
 %files
 %defattr(-,root,root)
 %doc ChangeLog COPYING
-# %doc examples 
+%doc examples 
 %{_bindir}/*
 %{_mandir}/man1/*
-%config %{_sysconfdir}/gpib-utils.conf
+#%config %{_sysconfdir}/gpib-utils.conf
