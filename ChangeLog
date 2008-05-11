@@ -4,6 +4,8 @@
 
 	* src/util.[ch] : Merge with units.[ch].
 
+	* : Integrated automake.
+
 2008-04-09 Jim Garlick <garlick.jim@gmail.com>
 
 	* src/ics8065.c : Renamed get/set netmask opt from -k/K to -n/N.

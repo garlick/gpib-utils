@@ -1,7 +1,6 @@
-#ifndef HAVE_GPIB
-#define HAVE_GPIB 0
+#if HAVE_CONFIG_H
+#include "config.h"
 #endif
-
 #define _GNU_SOURCE /* for vasprintf */
 #include <stdio.h>
 #include <assert.h>
@@ -12,8 +11,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-//#include <rpc/pmap_clnt.h>
-#if HAVE_GPIB
+#if HAVE_LIBGPIB
 #include <gpib/ib.h>
 #endif
 #include <errno.h>
@@ -73,7 +71,7 @@ _serial_poll(gd_t gd, char *str)
     gd->sf_level--;
 }
 
-#if HAVE_GPIB
+#if HAVE_LIBGPIB
 static int
 _ibrd(gd_t gd, char *buf, int len)
 {
@@ -122,7 +120,7 @@ gpib_rd(gd_t gd, void *buf, int len)
     int count; 
 
     assert(gd->magic == GPIB_DEVICE_MAGIC);
-#if HAVE_GPIB
+#if HAVE_LIBGPIB
     if (gd->vxi11_handle == NULL)
         count = _ibrd(gd, buf, len);
     else
@@ -150,7 +148,7 @@ gpib_rdstr(gd_t gd, char *buf, int len)
     int count;
 
     assert(gd->magic == GPIB_DEVICE_MAGIC);
-#if HAVE_GPIB
+#if HAVE_LIBGPIB
     if (gd->vxi11_handle == NULL)
         count = _ibrd(gd, buf, len - 1);
     else
@@ -178,7 +176,7 @@ gpib_rdf(gd_t gd, char *fmt, ...)
     int n;
 
     assert(gd->magic == GPIB_DEVICE_MAGIC);
-#if HAVE_GPIB
+#if HAVE_LIBGPIB
     if (gd->vxi11_handle == NULL)
         count = _ibrd(gd, buf, sizeof(buf) - 1);
     else
@@ -203,7 +201,7 @@ gpib_rdf(gd_t gd, char *fmt, ...)
     return n;
 }
 
-#if HAVE_GPIB
+#if HAVE_LIBGPIB
 static void 
 _ibwrt(gd_t gd, void *buf, int len)
 {
@@ -239,7 +237,7 @@ void
 gpib_wrt(gd_t gd, void *buf, int len)
 {
     assert(gd->magic == GPIB_DEVICE_MAGIC);
-#if HAVE_GPIB
+#if HAVE_LIBGPIB
     if (gd->vxi11_handle == NULL)
         _ibwrt(gd, buf, len);
     else
@@ -254,7 +252,7 @@ void
 gpib_wrtstr(gd_t gd, char *str)
 {
     assert(gd->magic == GPIB_DEVICE_MAGIC);
-#if HAVE_GPIB
+#if HAVE_LIBGPIB
     if (gd->vxi11_handle == NULL)
         _ibwrt(gd, str, strlen(str));
     else
@@ -285,7 +283,7 @@ gpib_wrtf(gd_t gd, char *fmt, ...)
         gpib_fini(gd);
         exit(1);
     }
-#if HAVE_GPIB
+#if HAVE_LIBGPIB
     if (gd->vxi11_handle == NULL)
         _ibwrt(gd, s, strlen(s));
     else
@@ -309,7 +307,7 @@ gpib_qry(gd_t gd, char *str, void *buf, int len)
     int count; 
 
     assert(gd->magic == GPIB_DEVICE_MAGIC);
-#if HAVE_GPIB
+#if HAVE_LIBGPIB
     if (gd->vxi11_handle == NULL)
         _ibwrt(gd, str, strlen(str));
     else
@@ -321,7 +319,7 @@ gpib_qry(gd_t gd, char *str, void *buf, int len)
         fprintf(stderr, "T: \"%s\"\n", cpy);
         free(cpy);
     }
-#if HAVE_GPIB
+#if HAVE_LIBGPIB
     if (gd->vxi11_handle == NULL)
         count = _ibrd(gd, buf, len);
     else
@@ -344,7 +342,7 @@ gpib_qry(gd_t gd, char *str, void *buf, int len)
     return count;
 }
 
-#if HAVE_GPIB
+#if HAVE_LIBGPIB
 static void
 _ibloc(gd_t gd)
 {
@@ -373,7 +371,7 @@ void
 gpib_loc(gd_t gd)
 {
     assert(gd->magic == GPIB_DEVICE_MAGIC);
-#if HAVE_GPIB
+#if HAVE_LIBGPIB
     if (gd->vxi11_handle == NULL)
         _ibloc(gd);
     else
@@ -384,7 +382,7 @@ gpib_loc(gd_t gd)
     _serial_poll(gd, "gpib_loc");
 }
 
-#if HAVE_GPIB
+#if HAVE_LIBGPIB
 static void 
 _ibclr(gd_t gd)
 {
@@ -418,7 +416,7 @@ void
 gpib_clr(gd_t gd, unsigned long usec)
 {
     assert(gd->magic == GPIB_DEVICE_MAGIC);
-#if HAVE_GPIB
+#if HAVE_LIBGPIB
     if (gd->vxi11_handle == NULL)
         _ibclr(gd);
     else
@@ -430,7 +428,7 @@ gpib_clr(gd_t gd, unsigned long usec)
     _serial_poll(gd, "gpib_clr");
 }
 
-#if HAVE_GPIB
+#if HAVE_LIBGPIB
 static void
 _ibtrg(gd_t gd)
 {
@@ -459,7 +457,7 @@ void
 gpib_trg(gd_t gd)
 {
     assert(gd->magic == GPIB_DEVICE_MAGIC);
-#if HAVE_GPIB
+#if HAVE_LIBGPIB
     if (gd->vxi11_handle == NULL)
         _ibtrg(gd);
     else
@@ -470,7 +468,7 @@ gpib_trg(gd_t gd)
     _serial_poll(gd, "gpib_trg");
 }
 
-#if HAVE_GPIB
+#if HAVE_LIBGPIB
 static int
 _ibrsp(gd_t gd, unsigned char *status)
 {
@@ -504,7 +502,7 @@ gpib_rsp(gd_t gd, unsigned char *status)
     int res;
 
     assert(gd->magic == GPIB_DEVICE_MAGIC);
-#if HAVE_GPIB
+#if HAVE_LIBGPIB
     if (gd->vxi11_handle == NULL)
         res = _ibrsp(gd, status);
     else
@@ -515,7 +513,7 @@ gpib_rsp(gd_t gd, unsigned char *status)
     return res;
 }
 
-#if HAVE_GPIB
+#if HAVE_LIBGPIB
 static void
 _ibsetreos(gd_t gd, int flag)
 {
@@ -532,7 +530,7 @@ void
 gpib_set_reos(gd_t gd, int flag)
 {
     assert(gd->magic == GPIB_DEVICE_MAGIC);
-#if HAVE_GPIB
+#if HAVE_LIBGPIB
     if (gd->vxi11_handle == NULL)
         _ibsetreos(gd, flag);
     else
@@ -540,7 +538,7 @@ gpib_set_reos(gd_t gd, int flag)
     vxi11_set_termcharset(gd->vxi11_handle, flag);
 }
 
-#if HAVE_GPIB
+#if HAVE_LIBGPIB
 static void
 _ibseteot(gd_t gd, int flag)
 {
@@ -557,7 +555,7 @@ void
 gpib_set_eot(gd_t gd, int flag)
 {
     assert(gd->magic == GPIB_DEVICE_MAGIC);
-#if HAVE_GPIB
+#if HAVE_LIBGPIB
     if (gd->vxi11_handle == NULL)
         _ibseteot(gd, flag);
     else
@@ -565,7 +563,7 @@ gpib_set_eot(gd_t gd, int flag)
     vxi11_set_endw(gd->vxi11_handle, flag);
 }
 
-#if HAVE_GPIB
+#if HAVE_LIBGPIB
 static void
 _ibseteos(gd_t gd, int c)
 {
@@ -582,7 +580,7 @@ void
 gpib_set_eos(gd_t gd, int c)
 {
     assert(gd->magic == GPIB_DEVICE_MAGIC);
-#if HAVE_GPIB
+#if HAVE_LIBGPIB
     if (gd->vxi11_handle == NULL)
         _ibseteos(gd, c);
     else
@@ -590,7 +588,7 @@ gpib_set_eos(gd_t gd, int c)
     vxi11_set_termchar(gd->vxi11_handle, c);
 }
 
-#if HAVE_GPIB
+#if HAVE_LIBGPIB
 static void
 _ibtmo(gd_t gd, double sec)
 {
@@ -652,7 +650,7 @@ void
 gpib_set_timeout(gd_t gd, double sec)
 {
     assert(gd->magic == GPIB_DEVICE_MAGIC);
-#if HAVE_GPIB
+#if HAVE_LIBGPIB
     if (gd->vxi11_handle == NULL)
         _ibtmo(gd, sec);
     else
@@ -715,7 +713,7 @@ _new_gpib(void)
     return new;
 }
 
-#if HAVE_GPIB
+#if HAVE_LIBGPIB
 static gd_t
 _ibdev(int pad, spollfun_t sf, unsigned long retry)
 {
@@ -758,10 +756,10 @@ gpib_init(char *addr, spollfun_t sf, unsigned long retry)
 {
     gd_t gd = NULL;
 
-#if HAVE_GPIB
-    if (strchr(addr, ':') == NULL) {
+#if HAVE_LIBGPIB
+    if (strchr(addr, ':') == NULL) { 
         gd = _ibdev(strtoul(addr, NULL, 10), sf, retry);
-    else
+    } else
 #endif
     gd = _init_vxi(addr, sf, retry);
     return gd;
