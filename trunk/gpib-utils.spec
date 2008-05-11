@@ -20,8 +20,10 @@ GPIB Instrument utilities for various electronic instruments.
 make
 
 %install
-mkdir -p $RPM_BUILD_ROOT/{%{_bindir},%{_mandir}/man1,%{_sysconfdir}}
+mkdir -p $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
+mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}
+cp etc/gpib-utils.conf $RPM_BUILD_ROOT/%{_sysconfdir}/gpib-utils.conf
 
 %clean
 
@@ -31,4 +33,4 @@ make install DESTDIR=$RPM_BUILD_ROOT
 %doc examples 
 %{_bindir}/*
 %{_mandir}/man1/*
-#%config %{_sysconfdir}/gpib-utils.conf
+%config %{_sysconfdir}/gpib-utils.conf
