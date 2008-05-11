@@ -1,14 +1,33 @@
-CFLAGS=-g -Wall -Wno-unused
-LDADD=-lrpcsvc -lm -fPIC
-LIBOBJS=  vxi11_device.o vxi11_core.o rpccache.o vxi11_xdr.o vxi11_clnt.o
-LIBOBJS+= vxi11intr_xdr.o vxi11intr_svc.o
-LIB=libvxi11.a
+noinst_LIBRARIES = libvxi11.a
 
-$(LIB): $(LIBOBJS)
-	  ar rv $@ $(LIBOBJS)
+AM_CFLAGS = -Wall -Wno-unused
 
-$(LIBOBJS): vxi11.h rpccache.h vxi11_core.h vxi11_device.h
+libvxi11_a_SOURCES = \
+	vxi11_device.c \
+	vxi11_core.c \
+	rpccache.c \
+	vxi11_xdr.c \
+	vxi11_clnt.c \
+	vxi11intr_xdr.c \
+	vxi11intr_svc.c \
+	vxi11.h \
+	rpccache.h  \
+	vxi11_core.h  \
+	vxi11_device.h  \
+	vxi11.h  \
+	vxi11intr.h
 
+CLEANFILES = \
+	vxi11.h \
+	vxi11_xdr.c \
+	vxi11_clnt.c \
+	vxi11_svc.c \
+	vxi11intr.h \
+	vxi11intr_xdr.c \
+	vxi11intr_clnt.c \
+	vxi11intr_svc.c
+
+vxi11_core.c vxi11_device.c: vxi11.h
 # VXI-11 core/async
 vxi11.h: vxi11.x
 	rm -f $@; rpcgen -o $@ -h vxi11.x
@@ -26,7 +45,3 @@ vxi11intr_xdr.c: vxi11intr.x vxi11intr.h
 vxi11intr_svc.c:  vxi11intr.x vxi11intr.h
 	rm -f $@; rpcgen -o $@ -m vxi11intr.x
 
-clean:
-	rm -f *.o *.a
-	rm -f vxi11.h vxi11_xdr.c vxi11_clnt.c vxi11_svc.c
-	rm -f vxi11intr.h vxi11intr_xdr.c vxi11intr_clnt.c vxi11intr_svc.c

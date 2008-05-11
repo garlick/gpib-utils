@@ -1,0 +1,13 @@
+#!/bin/sh
+
+set -x
+
+mkdir -p config
+
+aclocal && \
+  libtoolize --copy --force && \
+  autoheader && \
+  autoconf && \
+  automake -a -c
+
+rm -rf autom4te.cache

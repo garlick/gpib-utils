@@ -91,7 +91,7 @@ static strtab_t petab[] = {
 
 /* selftest failures */
 static strtab_t sttab[] = {
-    { 0, "Self-test passed" },
+    { 0, "Passed" },
     { 1, "ROM checksum failure" },
     { 2, "RAM test failure" },
     { 3, "HP-IB chip failure" },
@@ -152,7 +152,7 @@ usage(void)
 "  -o,--out                enable/disable output (0|1)\n"
 "  -O,--ovset              set overvoltage threshold\n"
 "  -C,--ocp                enable/disable overcurrent protection (0|1)\n"
-"  -r,--read               read actual current and voltage\n"
+"  -r,--read               read and display I and V (in \"I<tab>V\" format)\n"
            , prog, addr ? addr : "no default");
     exit(1);
 }
@@ -277,6 +277,8 @@ main(int argc, char *argv[])
     int ocp = 0;
     int ocp_val;
     int ropt = 0;
+    int out = 0;
+    int out_val;
 
     /*
      * Handle options.
@@ -324,7 +326,19 @@ main(int argc, char *argv[])
                 exit(1);
             todo++;
             break;
-        case 'o': /* --ocp */
+        case 'o': /* --out */
+            out = 1;
+            if (*optarg == '0')
+                out_val = 0;
+            else if (*optarg == '1')
+                out_val = 1;
+            else {
+                fprintf(stderr, "%s: error parsing --out argument\n", prog);
+                exit(1);
+            }
+            todo++;
+            break;
+        case 'C': /* --ocp */
             ocp = 1;
             if (*optarg == '0')
                 ocp_val = 0;
@@ -384,6 +398,8 @@ main(int argc, char *argv[])
         gpib_wrtf(gd, "VSET %f\n", vset_val);
     if (ocp)
         gpib_wrtf(gd, "OCP %d\n", ocp_val);
+    if (out)
+        gpib_wrtf(gd, "OUT %d\n", out_val);
     if (ropt && _read(gd) != 0) {
         exit_val = 1;
         goto done;
