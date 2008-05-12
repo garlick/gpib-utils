@@ -210,10 +210,9 @@ static void
 _query_digital(gd_t gd)
 {
     char tmpstr[64];
-    int len;
 
     gpib_wrtstr(gd, "STAT:QUES:COND?\n");
-    gpib_rdstr(gd, tmpstr, len);
+    gpib_rdstr(gd, tmpstr, sizeof(tmpstr));
     fprintf(stderr, "%s: %s\n", prog, tmpstr);
 }
 
@@ -221,7 +220,6 @@ static void
 _query_relays(gd_t gd)
 {
     char tmpstr[128];
-    int len;
 
     gpib_wrtstr(gd, "ROUTE:CLOSE:STATE?\n");
     gpib_rdstr(gd, tmpstr, sizeof(tmpstr));

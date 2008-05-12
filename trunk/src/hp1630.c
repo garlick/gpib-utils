@@ -141,9 +141,9 @@ static void
 _getdate(int *month, char *datestr, int len)
 {
 	FILE *pipe;
-    char *cmd;
+    char cmd[80];
 
-    if (asprintf(&cmd, "%s +'%%m%%d%%Y%%H%%M%%S'", PATH_DATE) < 0) {
+    if (snprintf(cmd, sizeof(cmd), "%s +'%%m%%d%%Y%%H%%M%%S'", PATH_DATE) < 0) {
         fprintf(stderr, "%s: out of memory", prog);
         exit(1);
     }
@@ -160,7 +160,6 @@ _getdate(int *month, char *datestr, int len)
 		perror("pclose");
 		exit(1);
 	}
-    free(cmd);
 }
 
 /* Set the date on the analyzer to match the UNIX date.

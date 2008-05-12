@@ -213,19 +213,19 @@ _get_idn(gd_t gd)
 static int 
 _read(gd_t gd)
 {
-    float i, v;
+    double i, v;
 
     gpib_wrtstr(gd, "VOUT?\n");
-    if (gpib_rdf(gd, "%f", &v) != 1) {
+    if (gpib_rdf(gd, "%lf", &v) != 1) {
         fprintf(stderr, "%s: error reading VOUT? result\n", prog);
         return -1;
     }
     gpib_wrtstr(gd, "IOUT?\n");
-    if (gpib_rdf(gd, "%f", &i) != 1) {
+    if (gpib_rdf(gd, "%lf", &i) != 1) {
         fprintf(stderr, "%s: error reading IOUT? result\n", prog);
         return -1;
     }
-    printf("%f\t%f\n", i, v);
+    printf("%lf\t%lf\n", i, v);
     return 0;
 }
 
@@ -247,12 +247,12 @@ _selftest(gd_t gd)
 }
 
 static int
-_str2float(char *str, float *fp)
+_str2float(char *str, double *fp)
 {
     char *endptr;
 
     errno = 0;
-    *fp = strtof(str, &endptr);
+    *fp = strtod(str, &endptr);
     if (errno || *endptr != '\0') {
         fprintf(stderr, "%s: error parsing float value\n", prog);
         return 1;
@@ -275,12 +275,12 @@ main(int argc, char *argv[])
     int iset = 0;
     int vset = 0;
     int ovset = 0;
-    float ovset_val, iset_val, vset_val;
+    double ovset_val, iset_val, vset_val;
     int ocp = 0;
-    int ocp_val;
+    int ocp_val = 0;
     int ropt = 0;
     int out = 0;
-    int out_val;
+    int out_val = 0;
 
     /*
      * Handle options.
@@ -393,11 +393,11 @@ main(int argc, char *argv[])
         goto done;
     }
     if (ovset)
-        gpib_wrtf(gd, "OVSET %f\n", ovset_val);
+        gpib_wrtf(gd, "OVSET %lf\n", ovset_val);
     if (iset)
-        gpib_wrtf(gd, "ISET %f\n", iset_val);
+        gpib_wrtf(gd, "ISET %lf\n", iset_val);
     if (vset)
-        gpib_wrtf(gd, "VSET %f\n", vset_val);
+        gpib_wrtf(gd, "VSET %lf\n", vset_val);
     if (ocp)
         gpib_wrtf(gd, "OCP %d\n", ocp_val);
     if (out)

@@ -1,3 +1,7 @@
+2008-05-12 Jim Garlick <garlick.jim@gmail.com>
+
+	* : More autoconf/portability hacking.
+
 2008-05-10 Jim Garlick <garlick.jim@gmail.com>
 
 	* src/hp6632.c : New.
