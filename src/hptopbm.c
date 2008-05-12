@@ -20,6 +20,10 @@
 /* Convert Hewlett Packard instrument screen dump bitmap to Portable BitMap
  * (PBM) file format.
  */
+
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>

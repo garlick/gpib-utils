@@ -1,6 +1,6 @@
-noinst_LIBRARIES = libvxi11.a
-
 AM_CFLAGS = -Wall -Wno-unused
+
+noinst_LIBRARIES = libvxi11.a
 
 libvxi11_a_SOURCES = \
 	vxi11_device.c \

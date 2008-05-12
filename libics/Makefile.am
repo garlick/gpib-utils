@@ -1,3 +1,5 @@
+AM_CFLAGS =  -Wall -Wno-unused
+
 noinst_LIBRARIES = libics.a
 
 libics_a_SOURCES = \
@@ -5,8 +7,6 @@ libics_a_SOURCES = \
 	ics8000_clnt.c \
 	ics8000_xdr.c \
 	ics8000.h
-
-AM_CFLAGS =  -Wall -Wno-unused
 
 CLEANFILES = ics8000.h ics8000_xdr.c ics8000_clnt.c ics8000_svc.c
 

@@ -19,7 +19,9 @@
 
 /* HP 6632A (25V, 4A); 6633A (50V, 2A); 6634A (100V, 1A) power supplies */
 
-#define _GNU_SOURCE /* for asprintf */
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
