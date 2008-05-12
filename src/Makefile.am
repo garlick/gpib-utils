@@ -1,8 +1,9 @@
 AM_CFLAGS = -Wall
 
 noinst_LIBRARIES = libgpibutils.a
-libgpibutils_a_SOURCES = util.c gpib.c list.c argv.c hostlist.c hpcrc.c \
-	util.h gpib.h list.h argv.h hostlist.h hpcrc.h
+libgpibutils_a_SOURCES = \
+	util.c gpib.c list.c argv.c hostlist.c hpcrc.c hprintf.c \
+	util.h gpib.h list.h argv.h hostlist.h hpcrc.h hprintf.h
 
 AM_CPPFLAGS = -I$(top_srcdir)/libvxi11 -I$(top_srcdir)/libics
 LDADD = libgpibutils.a $(top_builddir)/libvxi11/libvxi11.a \

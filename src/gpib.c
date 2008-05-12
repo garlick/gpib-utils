@@ -1,8 +1,6 @@
 #if HAVE_CONFIG_H
 #include "config.h"
 #endif
-#define _GNU_SOURCE /* for vasprintf */
-#include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -17,11 +15,13 @@
 #include <errno.h>
 #include <string.h>
 #include <ctype.h>
-#include <pthread.h>
+#define __USE_ISOC99 /* activate vsscanf prototype in stdio.h */
+#include <stdio.h>
 
 #include "gpib.h"
 #include "vxi11_device.h"
 #include "util.h"
+#include "hprintf.h"
 
 #define GPIB_DEVICE_MAGIC 0x43435334
 struct gpib_device {
@@ -187,7 +187,11 @@ gpib_rdf(gd_t gd, char *fmt, ...)
     _zap_trailing_terminators(buf);
 
     va_start(ap, fmt);
+#if HAVE_VSSCANF
     n = vsscanf(buf, fmt, ap);
+#else
+#error vsscanf is unavailable
+#endif
     va_end(ap);
 
     if (gd->verbose) {
@@ -267,22 +271,16 @@ gpib_wrtstr(gd_t gd, char *str)
     _serial_poll(gd, "gpib_wrtstr");
 }
 
-int
+void
 gpib_wrtf(gd_t gd, char *fmt, ...)
 {
     va_list ap;
     char *s;
-    int n;
 
     assert(gd->magic == GPIB_DEVICE_MAGIC);
     va_start(ap, fmt);
-    n = vasprintf(&s, fmt, ap);
+    s = hvsprintf(fmt, ap);
     va_end(ap);
-    if (n == -1) {
-        fprintf(stderr, "%s: out of memory\n", prog);
-        gpib_fini(gd);
-        exit(1);
-    }
 #if HAVE_LIBGPIB
     if (gd->vxi11_handle == NULL)
         _ibwrt(gd, s, strlen(s));
@@ -297,8 +295,6 @@ gpib_wrtf(gd_t gd, char *fmt, ...)
     }
     free(s);
     _serial_poll(gd, "gpib_wrtf");
-
-    return n;
 }
 
 int 
@@ -768,7 +764,7 @@ gpib_init(char *addr, spollfun_t sf, unsigned long retry)
 static char *
 _parse_line(char *buf, char *key)
 {
-    char *k, *v;
+    char *k;
 
     for (k = buf; *k != '\0'; k++)
         if (*k == '#')

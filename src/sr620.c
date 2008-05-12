@@ -227,9 +227,9 @@ static double
 _decode125(int i)
 {
     switch (i % 3) {
-        case 0: return exp10(i / 3) * 1;
-        case 1: return exp10(i / 3) * 2;
-        case 2: return exp10(i / 3) * 5;
+        case 0: return pow(10.0, i / 3) * 1;
+        case 1: return pow(10.0, i / 3) * 2;
+        case 2: return pow(10.0, i / 3) * 5;
     }
     /*NOTREACHED*/
     return 0;
@@ -250,16 +250,6 @@ _decode_scanpt(int i)
     return 0;
 }
 
-/* random query to force prior commands to be processed */
-static void
-_debugmarker(gd_t gd, char *msg)
-{
-    int i; 
-    printf("XXX %s\n", msg);
-    gpib_wrtf(gd, "%s", SR620_CLKF_QUERY);
-    gpib_rdf(gd, "%d", &i);
-}
-
 /* Restore instrument state from stdin.
  */
 static void
@@ -273,7 +263,6 @@ sr620_restore(gd_t gd)
     int hhscale, hbin, mgvert, jgvert;
     int setup5, setup6, rs232wait, ssetup;
     int ssd1, ssd0, shd2, shd1, shd0;
-    double x;
 
     if ((n = read_all(0, buf, MAXCONFBUF)) < 0) {
         perror("write");
@@ -298,7 +287,6 @@ sr620_restore(gd_t gd)
         fprintf(stderr, "%s: error scanning configuration string\n", prog);
         exit(1);
     }
-    //_debugmarker(gd, "1");
     /* 1 - instrument mode - same as MODE command */       
     gpib_wrtf(gd, "%s %d", SR620_MODE, mode);
     /* 2 - source - same as SRCE command */       
@@ -313,7 +301,6 @@ sr620_restore(gd_t gd)
     gpib_wrtf(gd, "%s %d", SR620_DISP, disp);
     /* 7 - graph source - same as DGPH command */       
     gpib_wrtf(gd, "%s %d", SR620_DGPH, dgph);
-    //_debugmarker(gd, "2");
     /** 
      ** 8 - setup byte 1 
      **/
@@ -321,7 +308,6 @@ sr620_restore(gd_t gd)
     gpib_wrtf(gd, "%s %d", SR620_AUTM, setup1 & 1);
     /* 8[1] - autoprint on/off */    
     gpib_wrtf(gd, "%s %d", SR620_AUTP, (setup1 >> 1) & 1);
-    //_debugmarker(gd, "3");
     /* 8[2] - rel on/off */    
     gpib_wrtf(gd, "%s %d", SR620_DREL, (setup1 >> 2) & 1);
     /* 8[3] - x1000 on/off */    
@@ -349,7 +335,6 @@ sr620_restore(gd_t gd)
     /* XXX redundant with TERM below? */
     /* 9[6:7] - dvm1 gain (auto=0, 20V=1, 2V=2) */
     gpib_wrtf(gd, "%s 1,%d", SR620_RNGE, (setup2 >> 6) & 3);
-    //_debugmarker(gd, "4");
     /**
      ** 10 - setup byte 3
      **/
@@ -365,7 +350,6 @@ sr620_restore(gd_t gd)
     gpib_wrtf(gd, "%s 2,%d", SR620_TSLP, (setup3 >> 4) & 1);
     /* 10[5] - B ac/dc */
     gpib_wrtf(gd, "%s 2,%d", SR620_TCPL, (setup3 >> 5) & 1);
-    //_debugmarker(gd, "5");
     /**
      ** 11 - setup byte 4
      **/
@@ -385,7 +369,6 @@ sr620_restore(gd_t gd)
     //gpib_wrtf(gd, "%s 3,%.0E", SR620_GSCL, _decode125(mgvert));
     /* 16 - jitter graph vert scale */
     //gpib_wrtf(gd, "%s 4,%.0E", SR620_GSCL, _decode125(jgvert));
-    //_debugmarker(gd, "6");
     /**
      ** 17 - setup byte 5
      **/
@@ -395,7 +378,6 @@ sr620_restore(gd_t gd)
     gpib_wrtf(gd, "%s %d", SR620_PDEV, (setup5 >> 5) & 1);
     /* 17[6] - plot gpib/rs232 */
     gpib_wrtf(gd, "%s %d", SR620_PLPT, (setup5 >> 6) & 1);
-    //_debugmarker(gd, "7");
     /**
      ** 18 - setup byte 6
      **/
@@ -409,7 +391,6 @@ sr620_restore(gd_t gd)
     gpib_wrtf(gd, "%s %d", SR620_RLVL, (setup6 >> 7) & 1);
     /* 19 - rs232 wait - same as WAIT command */
     gpib_wrtf(gd, "%s %d", SR620_WAIT, rs232wait);
-    //_debugmarker(gd, "8");
     /**
      ** 20 - scan setup byte
      **/
@@ -421,7 +402,6 @@ sr620_restore(gd_t gd)
     gpib_wrtf(gd, "%s %d", SR620_DBEG, 256*ssd1 + ssd0);
     /* 23,24,25 - scan hold time = (65536*byte23 + 256*byte24 + byte25) */
     gpib_wrtf(gd, "%s %.0E", SR620_HOLD, 0.01*(65536*shd2 + 256*shd1 + shd0));
-    //_debugmarker(gd, "9");
 }
 
 /* Save instrument state to stdout.

@@ -66,7 +66,7 @@ int gpib_rdf(gd_t gd, char *fmt, ...);
 
 void gpib_wrt(gd_t gd, void *buf, int len);
 void gpib_wrtstr(gd_t gd, char *str);
-int gpib_wrtf(gd_t gd, char *fmt, ...);
+void gpib_wrtf(gd_t gd, char *fmt, ...);
 
 int gpib_qry(gd_t gd, char *str, void *buf, int len);
 

@@ -42,6 +42,8 @@ AC_C_CONST
 ##
 AC_CHECK_FUNCS( \
   getopt_long \
+  vsnprintf \
+  vsscanf \
 )
 AC_SEARCH_LIBS([pow], [m])
 
