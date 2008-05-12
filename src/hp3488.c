@@ -17,7 +17,9 @@
    along with gpib-utils; if not, write to the Free Software Foundation, 
    Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
 
-#define _GNU_SOURCE /* for asprintf */
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -30,8 +32,10 @@
 #include <assert.h>
 #include <sys/time.h>
 #include <math.h>
+#if HAVE_LIBREADLINE
 #include <readline/readline.h>
 #include <readline/history.h>
+#endif
 
 #include "hp3488.h"
 #include "gpib.h"
@@ -444,6 +448,7 @@ instrument_clear(gd_t gd)
     }
 }
 
+#if HAVE_LIBREADLINE
 static void 
 shell_help(void)
 {
@@ -541,6 +546,13 @@ shell_interact(gd_t gd)
         free(line);
     }
 }
+#else
+static void
+shell_interact(gd_t gd)
+{
+    fprintf(stderr, "%s: not configured with readline support\n", prog);
+}
+#endif /* HAVE_LIBREADLINE */
 
 int
 main(int argc, char *argv[])

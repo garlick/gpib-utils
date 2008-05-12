@@ -156,7 +156,7 @@
 #define SR620_SCPT              "SCPT"  /* SCPT(?) j */
 #define SR620_VBEG              "VBEG"  /* VBEG(?) j{,x} */
 #define SR620_VOUT_QUERY        "VOUT?" /* VOUT? j */
-#define SR620_VSTP              "VSTP   /* VSTP(?) j{,x} */
+#define SR620_VSTP              "VSTP"  /* VSTP(?) j{,x} */
 
 /**
  ** Graphics Control Commands
