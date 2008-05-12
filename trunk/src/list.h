@@ -1,5 +1,5 @@
 /*****************************************************************************
- *  $Id: list.h 700 2005-03-09 11:11:46Z garlick $
+ *  $Id: list.h 2899 2002-12-11 19:00:36Z dun $
  *****************************************************************************
  *  Copyright (C) 2001-2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

@@ -1,39 +1,72 @@
-AC_INIT([gpib-utils], [1.3])
-
-# put some configure products into ./config to avoid polluting topdir
+##
+# Prologue
+##
+AC_INIT([gpib-utils])
+AC_META
 AC_CONFIG_AUX_DIR([config])
+AC_CONFIG_SRCDIR([NEWS])
+AC_CANONICAL_SYSTEM
 
-# work with automake
-AM_INIT_AUTOMAKE
-
-# avoids spurious rebuilds of configure in some cases
+##
+# Automake support
+##
+AM_INIT_AUTOMAKE($PROJECT, $VERSION)
+AM_CONFIG_HEADER([config/config.h])
 AM_MAINTAINER_MODE
 
-# put preprocessor config results in config.h
-AC_CONFIG_HEADERS([config.h])
-
-# automake wants this
+##
+# Checks for programs
+##
+AC_PROG_CC
+AC_PROG_LN_S
 AC_PROG_LIBTOOL
-AC_ENABLE_SHARED([yes])
+AM_CONDITIONAL(WITH_GNU_LD, test "$with_gnu_ld" = "yes")
+AC_LIB_LTDL
 
-# look for pow(), in -lm if needed
+##
+# Checks for header files.
+##
+AC_HEADER_STDC
+AC_CHECK_HEADERS( \
+  getopt.h \
+)
+
+##
+# Checks for typedefs, structures, and compiler characteristics
+## 
+AC_C_BIGENDIAN
+AC_C_CONST
+
+##
+# Checks for library functions
+##
+AC_CHECK_FUNCS( \
+  getopt_long \
+)
 AC_SEARCH_LIBS([pow], [m])
 
-# look for readline() in -lreadline, then set HAVE_LIBREADLINE in config.h
-# and substitute LIBREADLINE in Makefiles
 AC_CHECK_LIB( [readline], [readline], 
   [AC_DEFINE([HAVE_LIBREADLINE], [1], [Define if you have libreadline])
    AC_SUBST([LIBREADLINE], ["-lreadline -lcurses"])], 
   [], [-lcurses])
 
-# look for ibclr() in -lgpib , then set CONFIG_LIBGPIB in config.h
 AC_CHECK_LIB([gpib], [ibclr])
 
-# process automake's Makefile.in's to Makefile's
-AC_OUTPUT([\
-	Makefile \
-	libvxi11/Makefile \
-	libics/Makefile \
-	src/Makefile
-	man/Makefile
-])
+##
+# For list.c, hostlist.c
+##
+AC_DEFINE(WITH_LSD_FATAL_ERROR_FUNC, 1, [Define lsd_fatal_error])
+AC_DEFINE(WITH_LSD_NOMEM_ERROR_FUNC, 1, [Define lsd_fatal_error])
+
+##
+# Epilogue
+##
+AC_CONFIG_FILES( \
+  gpib-utils.spec \
+  Makefile \
+  libvxi11/Makefile \
+  libics/Makefile \
+  src/Makefile
+  man/Makefile
+)
+AC_OUTPUT

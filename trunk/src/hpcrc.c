@@ -20,6 +20,9 @@
 /* This hp1630 CRC algorithm was submitted by Adam Goldman.
  */
 
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
 #include <stdint.h>
 
 static uint16_t const hpcrc_table[256] = {

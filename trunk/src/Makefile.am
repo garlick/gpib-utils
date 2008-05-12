@@ -1,3 +1,5 @@
+AM_CFLAGS = -Wall
+
 noinst_LIBRARIES = libgpibutils.a
 libgpibutils_a_SOURCES = util.c gpib.c list.c argv.c hostlist.c hpcrc.c \
 	util.h gpib.h list.h argv.h hostlist.h hpcrc.h

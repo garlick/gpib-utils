@@ -17,7 +17,9 @@
    along with gpib-utils; if not, write to the Free Software Foundation, 
    Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
 
-#define _GNU_SOURCE
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

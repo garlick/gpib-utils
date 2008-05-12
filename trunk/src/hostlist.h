@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  $Id: hostlist.h 618 2003-10-03 18:06:39Z garlick $
+ *  $Id: hostlist.h 6836 2008-01-29 17:21:53Z grondo $
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -276,7 +276,8 @@ void hostlist_uniq(hostlist_t hl);
  * hostlist_ranged_string() will write a bracketed hostlist representation
  * where possible.
  */
-size_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf);
+ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf);
+ssize_t hostset_ranged_string(hostset_t hs, size_t n, char *buf);
 
 /* hostlist_deranged_string():
  *
@@ -287,7 +288,8 @@ size_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf);
  * hostlist_deranged_string() will not attempt to write a bracketed
  * hostlist representation. Every hostname will be explicitly written.
  */
-size_t hostlist_deranged_string(hostlist_t hl, size_t n, char *buf);
+ssize_t hostlist_deranged_string(hostlist_t hl, size_t n, char *buf);
+ssize_t hostset_deranged_string(hostset_t hs, size_t n, char *buf);
 
 
 /* ----[ hostlist utility functions ]---- */

@@ -20,7 +20,9 @@
 /* Agilent 34401A DMM */
 /* Agilent 34410A and 34411A DMM  */
 
-#define _GNU_SOURCE /* for asprintf */
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
