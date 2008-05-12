@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# create configure from configure.ac
+# create Makefile.in's from Makefile.am's
+
 set -x
 
 mkdir -p config
