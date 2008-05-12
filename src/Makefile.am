@@ -4,7 +4,7 @@ libgpibutils_a_SOURCES = util.c gpib.c list.c argv.c hostlist.c hpcrc.c \
 
 AM_CPPFLAGS = -I$(top_srcdir)/libvxi11 -I$(top_srcdir)/libics
 LDADD = libgpibutils.a $(top_builddir)/libvxi11/libvxi11.a \
-	$(top_builddir)/libics/libics.a
+	$(top_builddir)/libics/libics.a @LIBREADLINE@
 
 bin_PROGRAMS = hp6632 hp1630 hptopbm hptodino hp3457 hp3488 hp8656 \
       dg535 sr620 ics8065 ics8064 a6032 a34401
