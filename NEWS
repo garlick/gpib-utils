@@ -3,8 +3,9 @@ gpib-utils-1.4 Release Notes                                   2008-XX-XX
 =========================================================================
 
 * Refactored ICS and VXI-11 code into (non-installed) libraries.
+  The goal is for the VXI-11 library to become generally useful.
 
-* Added support for new devices
+* Added support for new devices:
   - ics8064 ICS Electronics 8064 Ethernet to Relay interface
   - hp6632 Hewlett-Packard 6632A/6633A/6634A System DC Power Supply
   - a34401 Agilent 34401A/34410A/34411A DMM.
