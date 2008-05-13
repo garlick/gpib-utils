@@ -206,9 +206,10 @@ static int
 _getunixdate(char *datestr, int len)
 {
 	FILE *pipe;
-    char *cmd;
+    char cmd[80];
 
-    if (asprintf(&cmd, "%s +'%%Y,%%m,%%d-%%H,%%M,%%S'", PATH_DATE) < 0) {
+    if (snprintf(cmd, sizeof(cmd), "%s +'%%Y,%%m,%%d-%%H,%%M,%%S'", 
+                 PATH_DATE) < 0) {
         fprintf(stderr, "%s: out of memory", prog);
         return -1;
     }
@@ -223,7 +224,6 @@ _getunixdate(char *datestr, int len)
 		perror("pclose");
 		return -1;
 	}
-    free(cmd);
     return 0;
 }
 
