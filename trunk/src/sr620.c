@@ -77,7 +77,7 @@ usage(void)
 
     fprintf(stderr, 
 "Usage: %s [--options]\n"
-"  -n,--name name        instrument address [%s]\n"
+"  -a,--address addr     instrument address [%s]\n"
 "  -c,--clear            initialize instrument to default values\n"
 "  -l,--local            return instrument to local operation on exit\n"
 "  -v,--verbose          show protocol on stderr\n"
