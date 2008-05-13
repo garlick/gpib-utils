@@ -72,7 +72,7 @@ usage(void)
 
     fprintf(stderr, 
 "Usage: %s [--options]\n"
-"  -n,--name name     instrument address [%s]\n"
+"  -a,--address addr  instrument address [%s]\n"
 "  -c,--clear         set default values, verify model no., set date\n"
 "  -l,--local         return instrument to local operation on exit\n"
 "  -v,--verbose       show protocol on stderr\n"
@@ -378,7 +378,7 @@ main(int argc, char *argv[])
     prog = basename(argv[0]);
     while ((c = getopt_long(argc, argv, OPTIONS, longopts, NULL)) != EOF) {
         switch (c) {
-        case 'n':   /* --name */
+        case 'a':   /* --address */
             addr = optarg;
             break;
         case 'v':   /* --verbose */
