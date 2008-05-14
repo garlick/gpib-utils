@@ -1,209 +1,43 @@
 <html>
-<center><h1><font face="Helvetica" color=blue>gpib-utils</font></h1></center>
-Welcome to gpib-utils, a collection of linux command line utilities
-for various electronic test instruments.
+
+<h1><font face="Helvetica" color=blue>gpib-utils</font></h1>
+<small><i>Simple UNIX/Linux command line utilities for the test bench</i></small>
+<hr>
+
+<table width="100%">
+<tr>
+<td width="60%">
+<font face="Helvetica" color=blue>gpib-utils</font> 
+supports a <a href="supported.html">variety of instruments</a> and
+is easily extended to accomodate more (submissions welcome!)
 <p>
-Gpib-utils natively supports LAN-connected instruments using 
-<a href="http://www.vxibus.org/?q=node/206">VXI-11 protocol</a>,
-including GPIB instruments connected via a VXI-11 gateway such 
-as the <a href="http://www.icselect.com/vxi11_ds.html">ICS 8065</a>.  
-In addition, gpib-utils can be compiled with
-<a href="http://linux-gpib.sourceforge.net/">linux-gpib</a>
-to access instruments attached to a GPIB PCI or USB adapter.
-<h3>Supported Instruments</h3>
-
-<table border="1" cellpadding="3" cellspacing="0" width="100%">
-<tr bgcolor="#cccccc">
- <td style="text-align: center;" width="30%">
-     Instrument</td>
- <td style="text-align: center;" width="40%">
-     gpib-utils functions</td>
- <td style="text-align: center;" width="30%">
-     Documentation Links</td>
+<font face="Helvetica" color=blue>gpib-utils</font> 
+can use <a href="http://linux-gpib.sourceforge.net/">linux-gpib</a> 
+software to communicate with instruments using a GPIB USB or PCI adapter
+on Linux.
+<p>
+Or <font face="Helvetica" color=blue>gpib-utils</font> 
+can also use built-in VXI-11 support to communicate with instruments
+via Ethernet on any UNIX/Linux system.
+<p>
+Save and restore a test setup.  Capture a screen dump.  Extract data
+for <a href="http://www.gnuplot.info/">gnuplot</a>.
+<p>
+Utilities can be combined in shell scripts to drive light automated
+test applications.
+<p>
+<a href="http://sourceforge.net/project/showfiles.php?group_id=145407">
+Download</a> the latest <font face="Helvetica" color=blue>gpib-utils</font>
+and enjoy!
+</td>
+<td>
+<img src="a6032.png" width=450 alt="[Agilent 6032 Screen Dump]">
+<br>
+<center><small><i>Agilent 6032A Oscilloscope Screen Dump</i></small></center>
+</td>
 </tr>
-
-<tr>
- <td>Agilent 6000-series Oscilloscope
-     <img src="pic/a6000.jpg" alt="[Agilent 6000]"></td>
- <td>
-  <ul>
-   <li>save/restore setup
-   <li><a href="a6032.png">print screen</a>
-   <li>Manual page: <a href="man1/a6032.1.html">a6032(1)</a>
-  </ul>
- </td>
- <td>
-  <ul>
-   <li><a href="http://www.home.agilent.com/agilent/redirector.jspx?action=ref&cname=AGILENT_EDITORIAL&ckey=921993&lc=eng&cc=US&nfr=-35165.536905496">6000 Series Oscilloscopes Programmer's Reference</a>
-   <li><a href="http://www.home.agilent.com/agilent/redirector.jspx?action=ref&cname=AGILENT_EDITORIAL&ckey=606965&lc=eng&cc=US&nfr=-35165.536905496">6000 Series Oscilloscopes Service Guide</a>
-   <li><a href="http://www.home.agilent.com/agilent/redirector.jspx?action=ref&cname=AGILENT_EDITORIAL&ckey=606926&lc=eng&cc=US&nfr=-35165.536905496">6000 Series Oscilloscopes User's Guide</a>
-  </ul>
- </td>
-</tr>
-
-<tr>
- <td>ICS 8065 Ethernet-to-GPIB Gateway
-     <img src="pic/ics8065.jpg" alt="[ICS 8065]"></td>
- <td>
-  <ul>
-   <li>access error log
-   <li>configure, reboot, etc.
-   <li>Manual page: <a href="man1/ics8065.1.html">ics8065(1)</a>
-  </ul>
- </td>
- <td>
-  <ul>
-    <li><a href="http://www.icselect.com/pdfs/8065_ds.pdf">Data Sheet</a>
-  </ul>
- </td>
-</tr>
-
-<tr>
- <td>HP 1630/1631 Logic Analyzer
-     <img src="pic/1630d.jpg" alt="[HP 1630D]"></td>
- <td>
-  <ul>
-   <li>save/restore setup and state/timing/analog data
-   <li><a href="screen.png">screen dump</a>
-   <li>convert state/timing data to DECSIM ASCI format for off-line 
-       <a href="dinotrace.gif">analysis </a> with 
-       <a href="http://www.veripool.com/dinotrace/">dinotrace</a>
-   <li>Manual pages: <a href="man1/hp1630.1.html">hp1630(1)</a>,
-       <a href="man1/hptodino.1.html">hptodino(1)</a>,
-       <a href="man1/hptopbm.1.html">hptopbm(1)</a>
-  </ul>
- </td>
- <td>
-  <ul>
-    <li><a href="http://www.home.agilent.com/agilent/redirector.jspx?action=ref&cname=AGILENT_EDITORIAL&ckey=810952&lc=eng&cc=US&nfr=-11143.0.00">HP 1630A/D Logic Analyzer Operating Manual</a>
-    <li><a href="http://www.home.agilent.com/agilent/redirector.jspx?action=ref&cname=AGILENT_EDITORIAL&ckey=806412&lc=eng&cc=US">HP 1631A/D Operating and Programming Manual</a>
-    <li><a href="http://www.home.agilent.com/agilent/redirector.jspx?action=ref&cname=AGILENT_EDITORIAL&ckey=822936&lc=eng&cc=US&nfr=-11143.0.00">1630A/D/G and 1631A/D/G Logic Analyzer Service Manual</a>
-  </ul>
- </td>
-</tr>
-
-<tr>
- <td>HP 3457A Digital Multimeter
-     <img src="pic/3457a.jpg" alt="[HP 3457A]"></td>
- <td>
-  <ul>
-   <li>set configuration parameters
-   <li>take samples at regular intervals (output gnuplot-ready)
-   <li>Manual page: <a href="man1/hp3457.1.html">hp3457(1)</a>
-  </ul>
- </td>
- <td>
-  <ul>
-    <li><a href="http://www.home.agilent.com/agilent/redirector.jspx?action=ref&cname=AGILENT_EDITORIAL&ckey=619869&lc=eng&cc=US&nfr=-11143.0.00">3457A Digital Multimeter Service Manual</a>
-    <li><a href="http://www.home.agilent.com/agilent/redirector.jspx?action=ref&cname=AGILENT_EDITORIAL&ckey=796393&lc=eng&cc=US&nfr=-11143.0.00">3457A Multimeter Operating Manual</a>
-  </ul>
- </td>
-</tr>
-
-<tr>
- <td>HP 8656A Signal Generator
-     <img src="pic/8656.jpg" alt="[HP 8656A]"></td>
- <td>
-  <ul>
-   <li>set configuration parameters
-   <li>Manual page: <a href="man1/hp8656.1.html">hp8656(1)</a>
-  </ul>
- </td>
- <td>
-  <ul>
-   <li><a href="http://www.home.agilent.com/agilent/redirector.jspx?action=ref&cname=AGILENT_EDITORIAL&ckey=732467&lc=eng&cc=US&nfr=-11143.0.00">8656A Signal Generator Operating Manual</a>
-  </ul>
- </td>
-</tr>
-  
-<tr>
- <td>HP 3488A Switch/Control Unit
-     <img src="pic/3488a.jpg" alt="[HP 3488A]"></td>
- <td>
-  <ul>
-   <li>probe installed switch cards
-   <li>open/close/query switches
-   <li>Manual page: <a href="man1/hp3488.1.html">hp3488(1)</a>
-  </ul>
- </td>
- <td>
-  <ul>
-   <li><a href="http://www.home.agilent.com/agilent/redirector.jspx?action=ref&cname=AGILENT_EDITORIAL&ckey=722618&lc=eng&cc=US&nfr=-11143.0.00">3488A Switch/Control Unit Operating, Programming, and Configuration Manual</a>
-   <li><a href="http://www.home.agilent.com/agilent/redirector.jspx?action=ref&cname=AGILENT_EDITORIAL&ckey=722632&lc=eng&cc=US&nfr=-11143.0.00">3488A Switch/Control Unit Service Manual</a>
-  </ul>
- </td>
-</tr>
-
-<tr>
- <td>SRS DG535 Digital Delay/Pulse Generator
-     <img src="pic/dg535.jpg" alt="[DG535]"></td>
- <td>
-  <ul>
-   <li>get/set configuration parameters
-   <li>Manual page: <a href="man1/dg535.1.html">dg535(1)</a>
-  </ul>
- </td>
- <td>
-  <ul>
-   <li><a href="http://www.thinksrs.com/downloads/PDFs/Manuals/DG535m.pdf">DG535 Operating Manual</a>
-  </ul>
- </td>
-</tr>
-
-<tr>
- <td>SRS SR620 Frequency Counter
-     <img src="pic/sr620.jpg" alt="[SR620]"></td>
- <td>
-  <ul>
-   <li>save/restore setup
-   <li>Manual page: <a href="sr620.html">sr620(1)</a>
-  </ul>
- </td>
- <td>
-  <ul>
-   <li><a href="http://www.thinksrs.com/downloads/PDFs/Manuals/SR620m.pdf">SR620 Operating Manual</a>
-  </ul>
- </td>
-</tr>
- 
 </table>
 
-<h3>Example Use Case</h3>
-
-Here is an example of how gpib-utils might be used to automate a
-bench experiment.  In this case we measure the frequency response of an
-RC filter attached to the HP 8656 signal generator and HP 3457 DMM
-using the following script.
-
-<pre>
-#!/bin/bash
-
-hp3457 --clear --function acv --trigger syn
-hp8656 --clear --frequency 100khz --incrfreq 10khz --amplitude 1v
-
-# Take measurements from 100khz to 1mhz in 10khz increments
-for freq in `seq 100 10 1000`; do
-  volts=`hp3457 --samples 1`
-  echo "$freq     $volts"
-  hp8656 --frequency up
-done
-			
-hp3457 --local
-hp8656 --local
-</pre>
-Graphing the output with <a href="http://www.gnuplot.info/">gnuplot</a>
-for three different RC combinations yields:
-<hr>
-<img src="filter.png" alt="[filter response plot of RC filter]">
-<hr>
-
-<h3>For Further Information</h3>
-
-<ul>
- <li><a href="linux-gpib.html">Setting up gpib-utils with linux-gpib</a>
- <li><a href="vxi.html">Adding VXI-11 Support to gpib-utils</a>
- <li><a href="http://sourceforge.net/projects/gpib-utils">SF summary page (inclding downloads)</a>
-</ul>
 <hr>
 $Id$
 

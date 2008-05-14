@@ -1,0 +1,168 @@
+<html>
+<h3>Instruments Supported by gpib-utils</h3>
+
+<table border="1" cellpadding="3" cellspacing="0" width="100%">
+<tr bgcolor="#cccccc">
+ <td style="text-align: center;" width="30%">
+     Instrument</td>
+ <td style="text-align: center;" width="40%">
+     gpib-utils functions</td>
+ <td style="text-align: center;" width="30%">
+     Documentation Links</td>
+</tr>
+
+<tr>
+ <td>Agilent 6000-series Oscilloscope</td>
+ <td>
+  <ul>
+   <li>save/restore setup
+   <li><a href="a6032.png">print screen</a>
+   <li>Manual page: <a href="man1/a6032.1.html">a6032(1)</a>
+  </ul>
+ </td>
+ <td>
+  <ul>
+   <li><a href="http://www.home.agilent.com/agilent/redirector.jspx?action=ref&cname=AGILENT_EDITORIAL&ckey=921993&lc=eng&cc=US&nfr=-35165.536905496">6000 Series Oscilloscopes Programmer's Reference</a>
+   <li><a href="http://www.home.agilent.com/agilent/redirector.jspx?action=ref&cname=AGILENT_EDITORIAL&ckey=606965&lc=eng&cc=US&nfr=-35165.536905496">6000 Series Oscilloscopes Service Guide</a>
+   <li><a href="http://www.home.agilent.com/agilent/redirector.jspx?action=ref&cname=AGILENT_EDITORIAL&ckey=606926&lc=eng&cc=US&nfr=-35165.536905496">6000 Series Oscilloscopes User's Guide</a>
+  </ul>
+ </td>
+</tr>
+
+<tr>
+ <td>ICS 8065 Ethernet-to-GPIB Gateway</td>
+ <td>
+  <ul>
+   <li>access error log
+   <li>configure, reboot, etc.
+   <li>Manual page: <a href="man1/ics8065.1.html">ics8065(1)</a>
+  </ul>
+ </td>
+ <td>
+  <ul>
+    <li><a href="http://www.icselect.com/pdfs/8065_ds.pdf">Data Sheet</a>
+  </ul>
+ </td>
+</tr>
+
+<tr>
+ <td>ICS 8064 LAN to Relay Interface</td>
+ <td>
+  <ul>
+   <li>configure, reboot, etc.
+   <li>open/close/query relays
+   <li>Manual page: <a href="man1/ics8064.1.html">ics8064(1)</a>
+  </ul>
+ </td>
+ <td>
+  <ul>
+    <li><a href="http://www.icselect.com/pdfs/8064_ds.pdf">Data Sheet</a>
+  </ul>
+ </td>
+</tr>
+
+
+<tr>
+ <td>HP 1630/1631 Logic Analyzer</td>
+ <td>
+  <ul>
+   <li>save/restore setup and state/timing/analog data
+   <li><a href="screen.png">screen dump</a>
+   <li>convert state/timing data to DECSIM ASCI format for off-line 
+       <a href="dinotrace.gif">analysis </a> with 
+       <a href="http://www.veripool.com/dinotrace/">dinotrace</a>
+   <li>Manual pages: <a href="man1/hp1630.1.html">hp1630(1)</a>,
+       <a href="man1/hptodino.1.html">hptodino(1)</a>,
+       <a href="man1/hptopbm.1.html">hptopbm(1)</a>
+  </ul>
+ </td>
+ <td>
+  <ul>
+    <li><a href="http://www.home.agilent.com/agilent/redirector.jspx?action=ref&cname=AGILENT_EDITORIAL&ckey=810952&lc=eng&cc=US&nfr=-11143.0.00">HP 1630A/D Logic Analyzer Operating Manual</a>
+    <li><a href="http://www.home.agilent.com/agilent/redirector.jspx?action=ref&cname=AGILENT_EDITORIAL&ckey=806412&lc=eng&cc=US">HP 1631A/D Operating and Programming Manual</a>
+    <li><a href="http://www.home.agilent.com/agilent/redirector.jspx?action=ref&cname=AGILENT_EDITORIAL&ckey=822936&lc=eng&cc=US&nfr=-11143.0.00">1630A/D/G and 1631A/D/G Logic Analyzer Service Manual</a>
+  </ul>
+ </td>
+</tr>
+
+<tr>
+ <td>HP 3457A Digital Multimeter</td>
+ <td>
+  <ul>
+   <li>set configuration parameters
+   <li>take samples at regular intervals (output gnuplot-ready)
+   <li>Manual page: <a href="man1/hp3457.1.html">hp3457(1)</a>
+  </ul>
+ </td>
+ <td>
+  <ul>
+    <li><a href="http://www.home.agilent.com/agilent/redirector.jspx?action=ref&cname=AGILENT_EDITORIAL&ckey=619869&lc=eng&cc=US&nfr=-11143.0.00">3457A Digital Multimeter Service Manual</a>
+    <li><a href="http://www.home.agilent.com/agilent/redirector.jspx?action=ref&cname=AGILENT_EDITORIAL&ckey=796393&lc=eng&cc=US&nfr=-11143.0.00">3457A Multimeter Operating Manual</a>
+  </ul>
+ </td>
+</tr>
+
+<tr>
+ <td>HP 8656A Signal Generator</td>
+ <td>
+  <ul>
+   <li>set configuration parameters
+   <li>Manual page: <a href="man1/hp8656.1.html">hp8656(1)</a>
+  </ul>
+ </td>
+ <td>
+  <ul>
+   <li><a href="http://www.home.agilent.com/agilent/redirector.jspx?action=ref&cname=AGILENT_EDITORIAL&ckey=732467&lc=eng&cc=US&nfr=-11143.0.00">8656A Signal Generator Operating Manual</a>
+  </ul>
+ </td>
+</tr>
+  
+<tr>
+ <td>HP 3488A Switch/Control Unit</td>
+ <td>
+  <ul>
+   <li>probe installed switch cards
+   <li>open/close/query switches
+   <li>Manual page: <a href="man1/hp3488.1.html">hp3488(1)</a>
+  </ul>
+ </td>
+ <td>
+  <ul>
+   <li><a href="http://www.home.agilent.com/agilent/redirector.jspx?action=ref&cname=AGILENT_EDITORIAL&ckey=722618&lc=eng&cc=US&nfr=-11143.0.00">3488A Switch/Control Unit Operating, Programming, and Configuration Manual</a>
+   <li><a href="http://www.home.agilent.com/agilent/redirector.jspx?action=ref&cname=AGILENT_EDITORIAL&ckey=722632&lc=eng&cc=US&nfr=-11143.0.00">3488A Switch/Control Unit Service Manual</a>
+  </ul>
+ </td>
+</tr>
+
+<tr>
+ <td>SRS DG535 Digital Delay/Pulse Generator</td>
+ <td>
+  <ul>
+   <li>get/set configuration parameters
+   <li>Manual page: <a href="man1/dg535.1.html">dg535(1)</a>
+  </ul>
+ </td>
+ <td>
+  <ul>
+   <li><a href="http://www.thinksrs.com/downloads/PDFs/Manuals/DG535m.pdf">DG535 Operating Manual</a>
+  </ul>
+ </td>
+</tr>
+
+<tr>
+ <td>SRS SR620 Frequency Counter</td>
+ <td>
+  <ul>
+   <li>save/restore setup
+   <li>Manual page: <a href="sr620.html">sr620(1)</a>
+  </ul>
+ </td>
+ <td>
+  <ul>
+   <li><a href="http://www.thinksrs.com/downloads/PDFs/Manuals/SR620m.pdf">SR620 Operating Manual</a>
+  </ul>
+ </td>
+</tr>
+ 
+</table>
+</html>
