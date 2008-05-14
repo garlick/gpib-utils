@@ -1,4 +1,4 @@
-AM_CFLAGS = -Wall -Wno-unused
+AM_CFLAGS = @GCCWARNRPC@
 
 noinst_LIBRARIES = libvxi11.a
 
