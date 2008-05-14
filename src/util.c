@@ -39,7 +39,7 @@ read_all(int fd, void *buf, int len)
 
     do {
         do {
-            n = read(fd, buf + bc, len - bc);
+            n = read(fd, (char *)buf + bc, len - bc);
         } while (n < 0 && errno == EINTR);
         if (n > 0)
             bc += n;
@@ -56,7 +56,7 @@ write_all(int fd, void *buf, int len)
 
     do {
         do {
-            n = write(fd, buf + bc, len - bc);
+            n = write(fd, (char *)buf + bc, len - bc);
         } while (n < 0 && errno == EINTR);
         if (n > 0)
             bc += n;

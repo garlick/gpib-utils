@@ -13,6 +13,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#define PORTMAP /* needed for clnttcp_create() proto on solaris 11 */
 #include <rpc/rpc.h>
 #include <errno.h>
 #include <string.h>
