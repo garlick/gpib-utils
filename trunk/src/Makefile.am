@@ -1,15 +1,41 @@
 AM_CFLAGS = @GCCWARN@
 
-common_sources = \
-	util.c gpib.c list.c argv.c hostlist.c hpcrc.c hprintf.c \
-	util.h gpib.h list.h argv.h hostlist.h hpcrc.h hprintf.h
-
 AM_CPPFLAGS = -I$(top_srcdir)/libvxi11 -I$(top_srcdir)/libics
 LDADD = $(top_builddir)/libvxi11/libvxi11.a \
 	$(top_builddir)/libics/libics.a @LIBREADLINE@
 
-bin_PROGRAMS = hp6632 hp1630 hptopbm hptodino hp3457 hp3488 hp8656 \
-      dg535 sr620 ics8065 ics8064 a6032 a34401
+common_sources = \
+	util.c \
+	gpib.c \
+	list.c \
+	argv.c \
+	hostlist.c \
+	hpcrc.c \
+	hprintf.c \
+	util.h \
+	gpib.h \
+	list.h \
+	argv.h \
+	hostlist.h \
+	hpcrc.h \
+	hprintf.h
+
+
+bin_PROGRAMS = \
+	hp6632 \
+	hp1630 \
+	hptopbm \
+	hptodino \
+	hp3457 \
+	hp3488 \
+	hp8656 \
+	dg535 \
+	sr620 \
+	ics8065 \
+	ics8064 \
+	a6032 \
+	a34401
+
 hp1630_SOURCES = hp1630.c hp1630.h $(common_sources)
 hptopbm_SOURCES =  hptopbm.c $(common_sources)
 hptodino_SOURCES =  hptodino.c $(common_sources)
