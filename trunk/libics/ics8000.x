@@ -15,6 +15,8 @@
  * reverse network byte order.  XDR integers are in host byte order.
  */
 
+%#include <strings.h>
+
 /* Action parameter values */
 %#define ICS_READ           0
 %#define ICS_WRITE          1

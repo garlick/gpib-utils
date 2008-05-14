@@ -221,7 +221,8 @@ _vtodb(double *a, double offset)
     int result = 0;
     double l = log10(*a);
 
-    if (l == EDOM || l == ERANGE || isinf(l) || isnan(l))
+    /* FIXME: isinf() is apparently not portable (solaris 10, gcc 3.4.3) */
+    if (l == EDOM || l == ERANGE || /*isinf(l) || */isnan(l))
         result = -1;
     else
         *a = l*20.0 + offset;

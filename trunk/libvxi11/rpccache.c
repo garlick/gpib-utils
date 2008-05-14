@@ -1,15 +1,19 @@
 /* rpccache.c - cache RPC connections for reuse */
 
+#if HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdarg.h>
+#include <sys/param.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-#include <rpc/pmap_clnt.h>
+#include <rpc/rpc.h>
 #include <errno.h>
 #include <string.h>
 #include <ctype.h>

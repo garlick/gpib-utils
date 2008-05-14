@@ -2,6 +2,8 @@
 %/* VXI-11 RPCL definitions. Taken from appendix C of the VXI-11 specfication.
 % * See http://www.vxi.org 
 % */
+
+%#include <strings.h>
 %
 %/* VXI-11 flags */
 %#define VXI11_FLAG_WAITLOCK         0x01
