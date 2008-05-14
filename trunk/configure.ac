@@ -18,10 +18,13 @@ AM_MAINTAINER_MODE
 # Checks for programs
 ##
 AC_PROG_CC
-AC_PROG_LN_S
-AC_PROG_LIBTOOL
-AM_CONDITIONAL(WITH_GNU_LD, test "$with_gnu_ld" = "yes")
-AC_LIB_LTDL
+if test "$GCC" = yes; then
+  GCCWARN="-Wall"
+  GCCWARNRPC="-Wall -Wno-unused"
+  AC_SUBST([GCCWARN])
+  AC_SUBST([GCCWARNRPC])
+fi
+AC_PROG_RANLIB
 
 ##
 # Checks for header files.
@@ -46,6 +49,7 @@ AC_CHECK_FUNCS( \
   vsscanf \
 )
 AC_SEARCH_LIBS([pow], [m])
+AC_SEARCH_LIBS([clnt_create],[nsl])
 
 AC_CHECK_LIB( [readline], [readline], 
   [AC_DEFINE([HAVE_LIBREADLINE], [1], [Define if you have libreadline])

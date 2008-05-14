@@ -1,4 +1,4 @@
-AM_CFLAGS = -Wall
+AM_CFLAGS = @GCCWARN@
 
 common_sources = \
 	util.c gpib.c list.c argv.c hostlist.c hpcrc.c hprintf.c \
