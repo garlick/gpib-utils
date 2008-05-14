@@ -236,13 +236,25 @@ target_cpu = @target_cpu@
 target_os = @target_os@
 target_vendor = @target_vendor@
 AM_CFLAGS = @GCCWARN@
-common_sources = \
-	util.c gpib.c list.c argv.c hostlist.c hpcrc.c hprintf.c \
-	util.h gpib.h list.h argv.h hostlist.h hpcrc.h hprintf.h
-
 AM_CPPFLAGS = -I$(top_srcdir)/libvxi11 -I$(top_srcdir)/libics
 LDADD = $(top_builddir)/libvxi11/libvxi11.a \
 	$(top_builddir)/libics/libics.a @LIBREADLINE@
+
+common_sources = \
+	util.c \
+	gpib.c \
+	list.c \
+	argv.c \
+	hostlist.c \
+	hpcrc.c \
+	hprintf.c \
+	util.h \
+	gpib.h \
+	list.h \
+	argv.h \
+	hostlist.h \
+	hpcrc.h \
+	hprintf.h
 
 hp1630_SOURCES = hp1630.c hp1630.h $(common_sources)
 hptopbm_SOURCES = hptopbm.c $(common_sources)
