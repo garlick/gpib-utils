@@ -27,11 +27,11 @@
 #include <stdarg.h>
 #include <errno.h>
 #include <string.h>
-#if HAVE_GETOPT_LONG
 #include <unistd.h>
-#endif
 #include <libgen.h>
+#if HAVE_GETOPT_LONG
 #include <getopt.h>
+#endif
 #include <assert.h>
 #include <sys/time.h>
 #include <math.h>

@@ -213,14 +213,16 @@ main(int argc, char *argv[])
     char *display_string = NULL;
     int out_chan = -1;
     int get_delay = 0;
-    double set_delay_time = HUGE_VALF;
+    double set_delay_time = 0.0;
     int set_delay_chan = -1;
     int get_out_mode = 0;
     int set_out_mode = -1;
     int get_out_ampl = 0;
-    double set_out_ampl = HUGE_VALF;
+    double set_out_ampl = 0.0;
+    int Gopt = 0;
     int get_out_offset = 0;
-    double set_out_offset = HUGE_VALF;
+    double set_out_offset = 0.0;
+    int Fopt = 0;
     int get_out_polarity = 0;
     int set_out_polarity = -1;
     int get_out_z = 0;
@@ -303,6 +305,7 @@ main(int argc, char *argv[])
             break;
         case 'G': /* --set-out-ampl */
             set_out_ampl = strtod(optarg, NULL);
+            Gopt = 1;
             todo++;
             break;
         case 'f' : /* --get-out-offset */
@@ -310,6 +313,7 @@ main(int argc, char *argv[])
             todo++;
             break;
         case 'F': /* --set-out-offset */
+	    Fopt = 1;
             set_out_offset = strtod(optarg, NULL);
             todo++;
             break;
@@ -410,11 +414,11 @@ main(int argc, char *argv[])
         fprintf(stderr, "%s: --get/set-out-mode needs --out-chan\n", prog);
         exit(1);
     }
-    if (out_chan == -1 && (get_out_ampl || set_out_ampl != HUGE_VALF)) {
+    if (out_chan == -1 && (get_out_ampl || Gopt)) {
         fprintf(stderr, "%s: --get/set-out-ampl needs --out-chan\n", prog);
         exit(1);
     }
-    if (out_chan == -1 && (get_out_offset || set_out_offset != HUGE_VALF)) {
+    if (out_chan == -1 && (get_out_offset || Fopt)) {
         fprintf(stderr, "%s: --get/set-output-off needs --out-chan\n", prog);
         exit(1);
     }
@@ -470,7 +474,7 @@ main(int argc, char *argv[])
         }
         fprintf(stderr, "%s: %s\n", prog, findstr(out_modes, i));
     }
-    if (set_out_ampl != HUGE_VALF)
+    if (Gopt)
         gpib_wrtf(gd, "%s %d,%lf", DG535_OUT_AMPL, out_chan, set_out_ampl);
     if (get_out_ampl) {
         double d;
@@ -483,7 +487,7 @@ main(int argc, char *argv[])
         }
         fprintf(stderr, "%s: %lf\n", prog, d);
     }
-    if (set_out_offset != HUGE_VALF)
+    if (Fopt)
         gpib_wrtf(gd, "%s %d,%lf", DG535_OUT_OFFSET, out_chan, set_out_offset);
     if (get_out_offset) {
         double d;

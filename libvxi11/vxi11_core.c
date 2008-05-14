@@ -2,6 +2,9 @@
  * vxi11core.c - wrappers for core VXI-11 functions
  */
 
+#if HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
@@ -11,7 +14,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-#include <rpc/pmap_clnt.h>
+#include <rpc/rpc.h>
 #include <errno.h>
 #include <string.h>
 #include <ctype.h>
