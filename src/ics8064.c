@@ -20,7 +20,9 @@
 #if HAVE_CONFIG_H
 #include "config.h"
 #endif
+#if HAVE_GETOPT_LONG
 #include <getopt.h>
+#endif
 #include <libgen.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,6 +42,8 @@
 #define INSTRUMENT "ics8064"
 
 #define OPTIONS "ea:cfCrjJ:tT:sS:zZ:kK:gG:nN:iv0:1:qQmIRlL"
+#if HAVE_GETOPT_LONG
+#define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
 static struct option longopts[] = {
         /* general */
         {"address",             required_argument,  0, 'a'},
@@ -80,6 +84,9 @@ static struct option longopts[] = {
 
         {0, 0, 0, 0}
 };
+#else
+#define GETOPT(ac,av,opt,lopt) getopt(ac,av,opt)
+#endif
 
 static strtab_t errtab[] = ICS_ERRLOG;
 char *prog;
@@ -398,7 +405,7 @@ main(int argc, char *argv[])
 
     prog = basename(argv[0]);
 
-    while ((c = getopt_long(argc, argv, OPTIONS, longopts, NULL)) != EOF) {
+    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
         switch (c) {
             case 'a' :  /* --address */
                 addr = optarg;
