@@ -27,7 +27,9 @@
 #include <stdarg.h>
 #include <errno.h>
 #include <string.h>
+#if HAVE_GETOPT_LONG
 #include <unistd.h>
+#endif
 #include <libgen.h>
 #include <getopt.h>
 #include <assert.h>
@@ -120,6 +122,8 @@ char *prog = "";
 static int verbose = 0;
 
 #define OPTIONS "a:clviSI:V:o:O:C:r"
+#if HAVE_GETOPT_LONG
+#define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
 static struct option longopts[] = {
     {"address",         required_argument, 0, 'a'},
     {"clear",           no_argument,       0, 'c'},
@@ -135,6 +139,9 @@ static struct option longopts[] = {
     {"read",            no_argument,       0, 'r'},
     {0, 0, 0, 0},
 };
+#else
+#define GETOPT(ac,av,opt,lopt) getopt(ac,av,opt)
+#endif
 
 static void 
 usage(void)
@@ -286,7 +293,7 @@ main(int argc, char *argv[])
      * Handle options.
      */
     prog = basename(argv[0]);
-    while ((c = getopt_long(argc, argv, OPTIONS, longopts, NULL)) != EOF) {
+    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
         switch (c) {
         case 'a': /* --address */
             addr = optarg;

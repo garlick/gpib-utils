@@ -27,7 +27,9 @@
 #include <string.h>
 #include <unistd.h>
 #include <libgen.h>
+#if HAVE_GETOPT_LONG
 #include <getopt.h>
+#endif
 #include <assert.h>
 #include <sys/time.h>
 #include <math.h>
@@ -52,6 +54,8 @@ static strtab_t _selftest_errors[] = SR620_TEST_ERRORS;
 static strtab_t _autocal_errors[] = SR620_AUTOCAL_ERRORS;
 
 #define OPTIONS "a:clvsrStpPjCgG"
+#if HAVE_GETOPT_LONG
+#define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
 static struct option longopts[] = {
     {"address",         required_argument, 0, 'a'},
     {"clear",           no_argument,       0, 'c'},
@@ -69,6 +73,9 @@ static struct option longopts[] = {
     {"graph-disable",   no_argument,       0, 'g'},
     {0, 0, 0, 0},
 };
+#else
+#define GETOPT(ac,av,opt,lopt) getopt(ac,av,opt)
+#endif
 
 static void 
 usage(void)
@@ -556,7 +563,7 @@ main(int argc, char *argv[])
      * Handle options.
      */
     prog = basename(argv[0]);
-    while ((c = getopt_long(argc, argv, OPTIONS, longopts, NULL)) != EOF) {
+    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
         switch (c) {
         case 'a': /* --address */
             addr = optarg;

@@ -29,7 +29,9 @@
 #include <string.h>
 #include <unistd.h>
 #include <libgen.h>
+#if HAVE_GETOPT_LONG
 #include <getopt.h>
+#endif
 #include <assert.h>
 #include <stdarg.h>
 #include <stdint.h>
@@ -51,10 +53,15 @@ char *prog = "<unknown>";
 double clock_ns = 100; /* clock period in ns */
 
 #define OPTIONS "c:"
+#if HAVE_GETOPT_LONG
+#define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
 static struct option longopts[] = {
     {"clock",       required_argument, 0, 'c'},
     {0, 0, 0, 0},
 };
+#else
+#define GETOPT(ac,av,opt,lopt) getopt(ac,av,opt)
+#endif
 
 static uint16_t 
 _getint16(uint8_t *buf)
@@ -369,7 +376,7 @@ main(int argc, char *argv[])
      */
 
     prog = basename(argv[0]);
-    while ((c = getopt_long(argc, argv, OPTIONS, longopts, NULL)) != EOF) {
+    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
         switch (c) {
             case 'c':   /* --clock */
                 if (freqstr(optarg, &f) < 0) {
