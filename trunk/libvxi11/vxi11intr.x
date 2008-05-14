@@ -1,6 +1,9 @@
 /* VXI-11 RPCL definitions. Taken from appendix C of the VXI-11 specfication. */
 /* See http://www.vxi.org */
 
+%#include <strings.h>
+%#include <stdlib.h>
+
 %#define VXI11_INTR_SVC_PROGNUM   395185
 %#define VXI11_INTR_SVC_VERSION   1
 

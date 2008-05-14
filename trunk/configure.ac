@@ -50,6 +50,7 @@ AC_CHECK_FUNCS( \
 )
 AC_SEARCH_LIBS([pow], [m])
 AC_SEARCH_LIBS([clnt_create],[nsl])
+AC_SEARCH_LIBS([inet_aton],[resolv])
 
 AC_CHECK_LIB( [readline], [readline], 
   [AC_DEFINE([HAVE_LIBREADLINE], [1], [Define if you have libreadline])

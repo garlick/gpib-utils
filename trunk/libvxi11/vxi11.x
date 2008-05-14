@@ -4,6 +4,7 @@
 % */
 
 %#include <strings.h>
+%#include <stdlib.h>
 %
 %/* VXI-11 flags */
 %#define VXI11_FLAG_WAITLOCK         0x01
