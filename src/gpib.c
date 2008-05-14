@@ -752,12 +752,14 @@ gpib_init(char *addr, spollfun_t sf, unsigned long retry)
 {
     gd_t gd = NULL;
 
-#if HAVE_LIBGPIB
     if (strchr(addr, ':') == NULL) { 
+#if HAVE_LIBGPIB
         gd = _ibdev(strtoul(addr, NULL, 10), sf, retry);
-    } else
+#else
+        fprintf(stderr, "%s: not configured with native GPIB support\n", prog);
 #endif
-    gd = _init_vxi(addr, sf, retry);
+    } else
+        gd = _init_vxi(addr, sf, retry);
     return gd;
 }
 
