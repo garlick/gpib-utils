@@ -64,6 +64,8 @@ AC_CHECK_LIB([gpib], [ibclr])
 ##
 AC_DEFINE(WITH_LSD_FATAL_ERROR_FUNC, 1, [Define lsd_fatal_error])
 AC_DEFINE(WITH_LSD_NOMEM_ERROR_FUNC, 1, [Define lsd_fatal_error])
+AC_DEFINE(WANT_RECKLESS_HOSTRANGE_EXPANSION, 1, 
+					[Allow reckless hostname expansion])
 
 ##
 # Epilogue
