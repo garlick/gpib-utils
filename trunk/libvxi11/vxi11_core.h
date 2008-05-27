@@ -22,7 +22,7 @@ int vxi11_open_abrt_channel(CLIENT *core, unsigned short abortPort,
                             CLIENT **abrtp);
 
 /* Close abort channel opened with vxi11_open_abrt_channel().
- * It is best to do close the abort channel before vxi11_destroy_link().
+ * It is best to close the abort channel before vxi11_destroy_link().
  */
 void vxi11_close_abrt_channel(CLIENT *abrt);
 
@@ -33,7 +33,7 @@ void vxi11_close_abrt_channel(CLIENT *abrt);
  * milliseconds until the instrument is available.  The 'device' parameter 
  * selects the target of the instrument link.  It may be "instr0" for 
  * standalone VXI-11 instruments; for a VXI-11 GPIB-ethernet gateway, 
- * use the form * "gpib0" for the interface, or "gpib0,n" where n is 
+ * use the form "gpib0" for the interface, or "gpib0,n" where n is 
  * the GPIB address for an instrument.  The link is returned in 'lidp' -
  * this is passed with the core channel handle to most of the vxi11 functions.
  * The port to pass into vxi11_open_abrt_channel() is returned in 'abortPortp' 
