@@ -129,7 +129,7 @@ usage(void)
   "  -Q,--query-digital        query the state of digital inputs\n"
   "  -I,--shell                start interactive shell\n"
   "  -L,--selftest             execute instrument selftest\n"
- "  -r,--radio                set radio button mode (max of one relay closed)\n"
+  "  -R,--radio                set radio button mode (max one relay closed)\n"
                        , prog, addr ? addr : "no default");
         exit(1);
 }
