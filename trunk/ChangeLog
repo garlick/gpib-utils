@@ -1,3 +1,7 @@
+2008-06-21 Jim Garlick <garlick.jim@gmail.com>
+
+	* src/ics8064.c : Correct radio description in usage output.
+
 2008-05-26 Jim Garlick <garlick.jim@gmail.com>
 
 	* exmaples, htdocs : Remove stale documentation.
