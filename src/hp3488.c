@@ -644,7 +644,7 @@ main(int argc, char *argv[])
                 fprintf(stderr, "%s: -C may only be specified once\n", prog);
                 exit(1);
             }
-            valid_targets = hostlist_create(NULL);
+            valid_targets = hostlist_create("");
             if (parse_model_config(optarg) == -1)
                 exit(1);
             break;
@@ -686,7 +686,7 @@ main(int argc, char *argv[])
         instrument_test(gd);
 
     if (need_valid_targets && valid_targets == NULL) {
-        valid_targets = hostlist_create(NULL);
+        valid_targets = hostlist_create("");
         probe_model_config(gd);
     }
 
