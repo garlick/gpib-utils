@@ -1,3 +1,7 @@
+2008-07-02 Jim Garlick <garlick.jim@gmail.com>
+
+	* src/hp3488.c : Fix improper hostlsit initialization.
+
 2008-06-21 Jim Garlick <garlick.jim@gmail.com>
 
 	* src/ics8064.c : Correct radio description in usage output.
