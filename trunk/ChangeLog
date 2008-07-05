@@ -1,3 +1,17 @@
+2008-07-05 Jim Garlick <garlick.jim@gmail.com>
+
+	* src/hp3488.c, src/ics8064.c, src/util.c, configure.ac : 
+	Added xreadline() and remove GNU readline support.
+
+	* config/x_ac_expand_install_dirs.m4, configure.ac : 
+	Make installation directories available in config.h.
+
+	* gpib-utils.spec, configure.ac : Don't substitute in spec file
+	which itself calls configure.
+
+	* config/ac_linux_gpib.m4, configure.ac : Add --with-linux-gpib[=DIR]
+	configure option.
+
 2008-07-02 Jim Garlick <garlick.jim@gmail.com>
 
 	* src/hp3488.c : Fix improper hostlsit initialization.

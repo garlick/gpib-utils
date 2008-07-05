@@ -20,6 +20,8 @@
 int read_all(int fd, void *buf, int count);
 int write_all(int fd, void *buf, int count);
 
+char *xreadline(char *prompt, char *buf, int buflen);
+
 void *xmalloc(size_t size);
 char *xstrdup(char *str);
 void *xrealloc(void *ptr, int size);

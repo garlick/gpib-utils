@@ -40,7 +40,9 @@ bin_PROGRAMS = hp6632$(EXEEXT) hp1630$(EXEEXT) hptopbm$(EXEEXT) \
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/config/ac_meta.m4 \
+am__aclocal_m4_deps = $(top_srcdir)/config/ac_linux_gpib.m4 \
+	$(top_srcdir)/config/ac_meta.m4 \
+	$(top_srcdir)/config/x_ac_expand_install_dirs.m4 \
 	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
@@ -159,6 +161,9 @@ EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 GCCWARN = @GCCWARN@
 GCCWARNRPC = @GCCWARNRPC@
+GPIB_CPPFLAGS = @GPIB_CPPFLAGS@
+GPIB_LDFLAGS = @GPIB_LDFLAGS@
+GPIB_LIBS = @GPIB_LIBS@
 GREP = @GREP@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
@@ -167,7 +172,6 @@ INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
-LIBREADLINE = @LIBREADLINE@
 LIBS = @LIBS@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
@@ -188,6 +192,20 @@ SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
 VERSION = @VERSION@
+X_BINDIR = @X_BINDIR@
+X_DATADIR = @X_DATADIR@
+X_EXEC_PREFIX = @X_EXEC_PREFIX@
+X_INCLUDEDIR = @X_INCLUDEDIR@
+X_INFODIR = @X_INFODIR@
+X_LIBDIR = @X_LIBDIR@
+X_LIBEXECDIR = @X_LIBEXECDIR@
+X_LOCALSTATEDIR = @X_LOCALSTATEDIR@
+X_MANDIR = @X_MANDIR@
+X_OLDINCLUDEDIR = @X_OLDINCLUDEDIR@
+X_PREFIX = @X_PREFIX@
+X_SBINDIR = @X_SBINDIR@
+X_SHAREDSTATEDIR = @X_SHAREDSTATEDIR@
+X_SYSCONFDIR = @X_SYSCONFDIR@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -242,9 +260,9 @@ target_vendor = @target_vendor@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CFLAGS = @GCCWARN@
-AM_CPPFLAGS = -I$(top_srcdir)/libvxi11 -I$(top_srcdir)/libics
+AM_CPPFLAGS = -I$(top_srcdir)/libvxi11 -I$(top_srcdir)/libics @GPIB_CPPFLAGS@
 LDADD = $(top_builddir)/libvxi11/libvxi11.a \
-	$(top_builddir)/libics/libics.a @LIBREADLINE@
+	$(top_builddir)/libics/libics.a @GPIB_LDFLAGS@ @GPIB_LIBS@
 
 common_sources = \
 	util.c \

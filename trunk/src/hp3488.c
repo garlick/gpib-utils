@@ -34,10 +34,6 @@
 #include <assert.h>
 #include <sys/time.h>
 #include <math.h>
-#if HAVE_LIBREADLINE
-#include <readline/readline.h>
-#include <readline/history.h>
-#endif
 
 #include "hp3488.h"
 #include "gpib.h"
@@ -455,7 +451,6 @@ instrument_clear(gd_t gd)
     }
 }
 
-#if HAVE_LIBREADLINE
 static void 
 shell_help(void)
 {
@@ -536,30 +531,18 @@ docmd(gd_t gd, char **av)
 static void
 shell_interact(gd_t gd)
 {
-    char *line;
+    char buf[128];
     char **av;
     int rc = 0;
 
-    /* disable readline file name completion */
-    /*rl_bind_key ('\t', rl_insert); */
-
-    while (rc == 0 && (line = readline("hp3488> "))) {
-        if (strlen(line) > 0) {
-            add_history(line);
-            av = argv_create(line, "");
+    while (rc == 0 && (xreadline("hp3488> ", buf, sizeof(buf)))) {
+        if (strlen(buf) > 0) {
+            av = argv_create(buf, "");
             rc = docmd(gd, av);
             argv_destroy(av);
         } 
-        free(line);
     }
 }
-#else
-static void
-shell_interact(gd_t gd)
-{
-    fprintf(stderr, "%s: not configured with readline support\n", prog);
-}
-#endif /* HAVE_LIBREADLINE */
 
 int
 main(int argc, char *argv[])
