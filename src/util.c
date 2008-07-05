@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include <ctype.h>
 #include <math.h>
 
 #include "util.h"
@@ -63,6 +64,25 @@ write_all(int fd, void *buf, int len)
     } while (n > 0 && bc < len);
 
     return bc;
+}
+
+static void _zap_trailing_whitespace(char *s)
+{
+    char *p = s + strlen(s) - 1;
+
+    while (p >= s && isspace(*p))
+        *p-- = '\0';
+}
+
+char *
+xreadline(char *prompt, char *buf, int buflen)
+{
+    printf("%s", prompt);
+    fflush(stdout);
+    if (fgets(buf, buflen, stdin) == NULL)
+        return NULL;
+    _zap_trailing_whitespace(buf);
+    return buf;
 }
 
 void *

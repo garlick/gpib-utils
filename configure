@@ -666,6 +666,20 @@ target
 target_cpu
 target_vendor
 target_os
+X_PREFIX
+X_EXEC_PREFIX
+X_BINDIR
+X_SBINDIR
+X_LIBEXECDIR
+X_DATADIR
+X_SYSCONFDIR
+X_SHAREDSTATEDIR
+X_LOCALSTATEDIR
+X_LIBDIR
+X_INCLUDEDIR
+X_OLDINCLUDEDIR
+X_INFODIR
+X_MANDIR
 INSTALL_PROGRAM
 INSTALL_SCRIPT
 INSTALL_DATA
@@ -712,7 +726,9 @@ RANLIB
 CPP
 GREP
 EGREP
-LIBREADLINE
+GPIB_CPPFLAGS
+GPIB_LDFLAGS
+GPIB_LIBS
 LIBOBJS
 LTLIBOBJS'
 ac_subst_files=''
@@ -1307,6 +1323,11 @@ Optional Features:
 			  (and sometimes confusing) to the casual installer
   --disable-dependency-tracking  speeds up one-time build
   --enable-dependency-tracking   do not reject slow dependency extractors
+
+Optional Packages:
+  --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
+  --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-linux-gpib=DIR       prefix for linux-gpib library files and headers
 
 Some influential environment variables:
   CC          C compiler command
@@ -1923,6 +1944,133 @@ test -n "$target_alias" &&
   test "$program_prefix$program_suffix$program_transform_name" = \
     NONENONEs,x,x, &&
   program_prefix=${target_alias}-
+
+  { echo "$as_me:$LINENO: checking installation directory variables" >&5
+echo $ECHO_N "checking installation directory variables... $ECHO_C" >&6; }
+
+  _x_ac_expand_install_dirs_prefix="$prefix"
+  test "$prefix" = NONE && prefix="$ac_default_prefix"
+  _x_ac_expand_install_dirs_exec_prefix="$exec_prefix"
+  test "$exec_prefix" = NONE && exec_prefix="$prefix"
+
+  eval X_PREFIX="$prefix"
+
+cat >>confdefs.h <<_ACEOF
+#define X_PREFIX "$X_PREFIX"
+_ACEOF
+
+
+
+  eval X_EXEC_PREFIX="$exec_prefix"
+
+cat >>confdefs.h <<_ACEOF
+#define X_EXEC_PREFIX "$X_EXEC_PREFIX"
+_ACEOF
+
+
+
+  eval X_BINDIR="$bindir"
+
+cat >>confdefs.h <<_ACEOF
+#define X_BINDIR "$X_BINDIR"
+_ACEOF
+
+
+
+  eval X_SBINDIR="$sbindir"
+
+cat >>confdefs.h <<_ACEOF
+#define X_SBINDIR "$X_SBINDIR"
+_ACEOF
+
+
+
+  eval X_LIBEXECDIR="$libexecdir"
+
+cat >>confdefs.h <<_ACEOF
+#define X_LIBEXECDIR "$X_LIBEXECDIR"
+_ACEOF
+
+
+
+  eval X_DATADIR="$datadir"
+
+cat >>confdefs.h <<_ACEOF
+#define X_DATADIR "$X_DATADIR"
+_ACEOF
+
+
+
+  eval X_SYSCONFDIR="$sysconfdir"
+
+cat >>confdefs.h <<_ACEOF
+#define X_SYSCONFDIR "$X_SYSCONFDIR"
+_ACEOF
+
+
+
+  eval X_SHAREDSTATEDIR="$sharedstatedir"
+
+cat >>confdefs.h <<_ACEOF
+#define X_SHAREDSTATEDIR "$X_SHAREDSTATEDIR"
+_ACEOF
+
+
+
+  eval X_LOCALSTATEDIR="$localstatedir"
+
+cat >>confdefs.h <<_ACEOF
+#define X_LOCALSTATEDIR "$X_LOCALSTATEDIR"
+_ACEOF
+
+
+
+  eval X_LIBDIR="$libdir"
+
+cat >>confdefs.h <<_ACEOF
+#define X_LIBDIR "$X_LIBDIR"
+_ACEOF
+
+
+
+  eval X_INCLUDEDIR="$includedir"
+
+cat >>confdefs.h <<_ACEOF
+#define X_INCLUDEDIR "$X_INCLUDEDIR"
+_ACEOF
+
+
+
+  eval X_OLDINCLUDEDIR="$oldincludedir"
+
+cat >>confdefs.h <<_ACEOF
+#define X_OLDINCLUDEDIR "$X_OLDINCLUDEDIR"
+_ACEOF
+
+
+
+  eval X_INFODIR="$infodir"
+
+cat >>confdefs.h <<_ACEOF
+#define X_INFODIR "$X_INFODIR"
+_ACEOF
+
+
+
+  eval X_MANDIR="$mandir"
+
+cat >>confdefs.h <<_ACEOF
+#define X_MANDIR "$X_MANDIR"
+_ACEOF
+
+
+
+  prefix="$_x_ac_expand_install_dirs_prefix"
+  exec_prefix="$_x_ac_expand_install_dirs_exec_prefix"
+
+  { echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6; }
+
 
 ##
 # Automake support
@@ -4734,6 +4882,253 @@ fi
 
 
 
+
+# Check whether --with-linux-gpib was given.
+if test "${with_linux_gpib+set}" = set; then
+  withval=$with_linux_gpib;
+    if test "$withval" = "no"; then
+      ac_linux_gpib_path=
+
+    elif test "$withval" = "yes"; then
+      ac_linux_gpib_path=/usr
+    else
+      ac_linux_gpib_path="$withval"
+    fi
+
+fi
+
+  if test "$ac_linux_gpib_path" != ""; then
+    saved_CPPFLAGS="$CPPFLAGS"
+    CPPFLAGS="$CPPFLAGS -I$ac_linux_gpib_path/include"
+    if test "${ac_cv_header_gpib_ib_h+set}" = set; then
+  { echo "$as_me:$LINENO: checking for gpib/ib.h" >&5
+echo $ECHO_N "checking for gpib/ib.h... $ECHO_C" >&6; }
+if test "${ac_cv_header_gpib_ib_h+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_header_gpib_ib_h" >&5
+echo "${ECHO_T}$ac_cv_header_gpib_ib_h" >&6; }
+else
+  # Is the header compilable?
+{ echo "$as_me:$LINENO: checking gpib/ib.h usability" >&5
+echo $ECHO_N "checking gpib/ib.h usability... $ECHO_C" >&6; }
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+$ac_includes_default
+#include <gpib/ib.h>
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  ac_header_compiler=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_header_compiler=no
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ echo "$as_me:$LINENO: result: $ac_header_compiler" >&5
+echo "${ECHO_T}$ac_header_compiler" >&6; }
+
+# Is the header present?
+{ echo "$as_me:$LINENO: checking gpib/ib.h presence" >&5
+echo $ECHO_N "checking gpib/ib.h presence... $ECHO_C" >&6; }
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+#include <gpib/ib.h>
+_ACEOF
+if { (ac_try="$ac_cpp conftest.$ac_ext"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_cpp conftest.$ac_ext") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } >/dev/null && {
+	 test -z "$ac_c_preproc_warn_flag$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       }; then
+  ac_header_preproc=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+  ac_header_preproc=no
+fi
+
+rm -f conftest.err conftest.$ac_ext
+{ echo "$as_me:$LINENO: result: $ac_header_preproc" >&5
+echo "${ECHO_T}$ac_header_preproc" >&6; }
+
+# So?  What about this header?
+case $ac_header_compiler:$ac_header_preproc:$ac_c_preproc_warn_flag in
+  yes:no: )
+    { echo "$as_me:$LINENO: WARNING: gpib/ib.h: accepted by the compiler, rejected by the preprocessor!" >&5
+echo "$as_me: WARNING: gpib/ib.h: accepted by the compiler, rejected by the preprocessor!" >&2;}
+    { echo "$as_me:$LINENO: WARNING: gpib/ib.h: proceeding with the compiler's result" >&5
+echo "$as_me: WARNING: gpib/ib.h: proceeding with the compiler's result" >&2;}
+    ac_header_preproc=yes
+    ;;
+  no:yes:* )
+    { echo "$as_me:$LINENO: WARNING: gpib/ib.h: present but cannot be compiled" >&5
+echo "$as_me: WARNING: gpib/ib.h: present but cannot be compiled" >&2;}
+    { echo "$as_me:$LINENO: WARNING: gpib/ib.h:     check for missing prerequisite headers?" >&5
+echo "$as_me: WARNING: gpib/ib.h:     check for missing prerequisite headers?" >&2;}
+    { echo "$as_me:$LINENO: WARNING: gpib/ib.h: see the Autoconf documentation" >&5
+echo "$as_me: WARNING: gpib/ib.h: see the Autoconf documentation" >&2;}
+    { echo "$as_me:$LINENO: WARNING: gpib/ib.h:     section \"Present But Cannot Be Compiled\"" >&5
+echo "$as_me: WARNING: gpib/ib.h:     section \"Present But Cannot Be Compiled\"" >&2;}
+    { echo "$as_me:$LINENO: WARNING: gpib/ib.h: proceeding with the preprocessor's result" >&5
+echo "$as_me: WARNING: gpib/ib.h: proceeding with the preprocessor's result" >&2;}
+    { echo "$as_me:$LINENO: WARNING: gpib/ib.h: in the future, the compiler will take precedence" >&5
+echo "$as_me: WARNING: gpib/ib.h: in the future, the compiler will take precedence" >&2;}
+
+    ;;
+esac
+{ echo "$as_me:$LINENO: checking for gpib/ib.h" >&5
+echo $ECHO_N "checking for gpib/ib.h... $ECHO_C" >&6; }
+if test "${ac_cv_header_gpib_ib_h+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_cv_header_gpib_ib_h=$ac_header_preproc
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_header_gpib_ib_h" >&5
+echo "${ECHO_T}$ac_cv_header_gpib_ib_h" >&6; }
+
+fi
+if test $ac_cv_header_gpib_ib_h = yes; then
+
+      saved_LDFLAGS="$LDFLAGS"
+      LDFLAGS="$LDFLAGS -L$ac_linux_gpib_path/lib"
+      { echo "$as_me:$LINENO: checking for ibwrt in -lgpib" >&5
+echo $ECHO_N "checking for ibwrt in -lgpib... $ECHO_C" >&6; }
+if test "${ac_cv_lib_gpib_ibwrt+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lgpib  $LIBS"
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char ibwrt ();
+int
+main ()
+{
+return ibwrt ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
+  ac_cv_lib_gpib_ibwrt=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_cv_lib_gpib_ibwrt=no
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_lib_gpib_ibwrt" >&5
+echo "${ECHO_T}$ac_cv_lib_gpib_ibwrt" >&6; }
+if test $ac_cv_lib_gpib_ibwrt = yes; then
+
+        GPIB_CPPFLAGS=-I$ac_linux_gpib_path/include
+
+        GPIB_LDFLAGS=-L$ac_linux_gpib_path/lib
+
+        GPIB_LIBS=-lgpib
+
+        cat >>confdefs.h <<\_ACEOF
+#define HAVE_LINUX_GPIB 1
+_ACEOF
+
+
+
+else
+
+        echo ERROR: Could not find usable linux-gpib library.
+        exit 1
+
+
+fi
+
+      LDFLAGS="$saved_LDFLAGS"
+
+else
+
+      echo ERROR: Could not find usable linux-gpib include file
+      exit 1
+
+
+fi
+
+
+    CPPFLAGS="$saved_CPPFLAGS"
+  fi
+
+
+
+
 for ac_func in \
   getopt_long \
   vsnprintf \
@@ -5081,150 +5476,6 @@ if test "$ac_res" != no; then
 fi
 
 
-{ echo "$as_me:$LINENO: checking for readline in -lreadline" >&5
-echo $ECHO_N "checking for readline in -lreadline... $ECHO_C" >&6; }
-if test "${ac_cv_lib_readline_readline+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lreadline -lcurses $LIBS"
-cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char readline ();
-int
-main ()
-{
-return readline ();
-  ;
-  return 0;
-}
-_ACEOF
-rm -f conftest.$ac_objext conftest$ac_exeext
-if { (ac_try="$ac_link"
-case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_link") 2>conftest.er1
-  ac_status=$?
-  grep -v '^ *+' conftest.er1 >conftest.err
-  rm -f conftest.er1
-  cat conftest.err >&5
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && {
-	 test -z "$ac_c_werror_flag" ||
-	 test ! -s conftest.err
-       } && test -s conftest$ac_exeext &&
-       $as_test_x conftest$ac_exeext; then
-  ac_cv_lib_readline_readline=yes
-else
-  echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-	ac_cv_lib_readline_readline=no
-fi
-
-rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
-      conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ echo "$as_me:$LINENO: result: $ac_cv_lib_readline_readline" >&5
-echo "${ECHO_T}$ac_cv_lib_readline_readline" >&6; }
-if test $ac_cv_lib_readline_readline = yes; then
-
-cat >>confdefs.h <<\_ACEOF
-#define HAVE_LIBREADLINE 1
-_ACEOF
-
-   LIBREADLINE="-lreadline -lcurses"
-
-fi
-
-
-
-{ echo "$as_me:$LINENO: checking for ibclr in -lgpib" >&5
-echo $ECHO_N "checking for ibclr in -lgpib... $ECHO_C" >&6; }
-if test "${ac_cv_lib_gpib_ibclr+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lgpib  $LIBS"
-cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char ibclr ();
-int
-main ()
-{
-return ibclr ();
-  ;
-  return 0;
-}
-_ACEOF
-rm -f conftest.$ac_objext conftest$ac_exeext
-if { (ac_try="$ac_link"
-case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_link") 2>conftest.er1
-  ac_status=$?
-  grep -v '^ *+' conftest.er1 >conftest.err
-  rm -f conftest.er1
-  cat conftest.err >&5
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && {
-	 test -z "$ac_c_werror_flag" ||
-	 test ! -s conftest.err
-       } && test -s conftest$ac_exeext &&
-       $as_test_x conftest$ac_exeext; then
-  ac_cv_lib_gpib_ibclr=yes
-else
-  echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-	ac_cv_lib_gpib_ibclr=no
-fi
-
-rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
-      conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ echo "$as_me:$LINENO: result: $ac_cv_lib_gpib_ibclr" >&5
-echo "${ECHO_T}$ac_cv_lib_gpib_ibclr" >&6; }
-if test $ac_cv_lib_gpib_ibclr = yes; then
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBGPIB 1
-_ACEOF
-
-  LIBS="-lgpib $LIBS"
-
-fi
-
-
 ##
 # For list.c, hostlist.c
 ##
@@ -5247,7 +5498,7 @@ _ACEOF
 ##
 # Epilogue
 ##
-ac_config_files="$ac_config_files gpib-utils.spec Makefile libvxi11/Makefile libics/Makefile src/Makefile man/Makefile"
+ac_config_files="$ac_config_files Makefile libvxi11/Makefile libics/Makefile src/Makefile man/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -5835,7 +6086,6 @@ do
   case $ac_config_target in
     "config/config.h") CONFIG_HEADERS="$CONFIG_HEADERS config/config.h" ;;
     "depfiles") CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
-    "gpib-utils.spec") CONFIG_FILES="$CONFIG_FILES gpib-utils.spec" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "libvxi11/Makefile") CONFIG_FILES="$CONFIG_FILES libvxi11/Makefile" ;;
     "libics/Makefile") CONFIG_FILES="$CONFIG_FILES libics/Makefile" ;;
@@ -5955,6 +6205,20 @@ target!$target$ac_delim
 target_cpu!$target_cpu$ac_delim
 target_vendor!$target_vendor$ac_delim
 target_os!$target_os$ac_delim
+X_PREFIX!$X_PREFIX$ac_delim
+X_EXEC_PREFIX!$X_EXEC_PREFIX$ac_delim
+X_BINDIR!$X_BINDIR$ac_delim
+X_SBINDIR!$X_SBINDIR$ac_delim
+X_LIBEXECDIR!$X_LIBEXECDIR$ac_delim
+X_DATADIR!$X_DATADIR$ac_delim
+X_SYSCONFDIR!$X_SYSCONFDIR$ac_delim
+X_SHAREDSTATEDIR!$X_SHAREDSTATEDIR$ac_delim
+X_LOCALSTATEDIR!$X_LOCALSTATEDIR$ac_delim
+X_LIBDIR!$X_LIBDIR$ac_delim
+X_INCLUDEDIR!$X_INCLUDEDIR$ac_delim
+X_OLDINCLUDEDIR!$X_OLDINCLUDEDIR$ac_delim
+X_INFODIR!$X_INFODIR$ac_delim
+X_MANDIR!$X_MANDIR$ac_delim
 INSTALL_PROGRAM!$INSTALL_PROGRAM$ac_delim
 INSTALL_SCRIPT!$INSTALL_SCRIPT$ac_delim
 INSTALL_DATA!$INSTALL_DATA$ac_delim
@@ -5986,20 +6250,6 @@ CPPFLAGS!$CPPFLAGS$ac_delim
 ac_ct_CC!$ac_ct_CC$ac_delim
 EXEEXT!$EXEEXT$ac_delim
 OBJEXT!$OBJEXT$ac_delim
-DEPDIR!$DEPDIR$ac_delim
-am__include!$am__include$ac_delim
-am__quote!$am__quote$ac_delim
-AMDEP_TRUE!$AMDEP_TRUE$ac_delim
-AMDEP_FALSE!$AMDEP_FALSE$ac_delim
-AMDEPBACKSLASH!$AMDEPBACKSLASH$ac_delim
-CCDEPMODE!$CCDEPMODE$ac_delim
-am__fastdepCC_TRUE!$am__fastdepCC_TRUE$ac_delim
-am__fastdepCC_FALSE!$am__fastdepCC_FALSE$ac_delim
-GCCWARN!$GCCWARN$ac_delim
-GCCWARNRPC!$GCCWARNRPC$ac_delim
-RANLIB!$RANLIB$ac_delim
-CPP!$CPP$ac_delim
-GREP!$GREP$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -6041,13 +6291,29 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+DEPDIR!$DEPDIR$ac_delim
+am__include!$am__include$ac_delim
+am__quote!$am__quote$ac_delim
+AMDEP_TRUE!$AMDEP_TRUE$ac_delim
+AMDEP_FALSE!$AMDEP_FALSE$ac_delim
+AMDEPBACKSLASH!$AMDEPBACKSLASH$ac_delim
+CCDEPMODE!$CCDEPMODE$ac_delim
+am__fastdepCC_TRUE!$am__fastdepCC_TRUE$ac_delim
+am__fastdepCC_FALSE!$am__fastdepCC_FALSE$ac_delim
+GCCWARN!$GCCWARN$ac_delim
+GCCWARNRPC!$GCCWARNRPC$ac_delim
+RANLIB!$RANLIB$ac_delim
+CPP!$CPP$ac_delim
+GREP!$GREP$ac_delim
 EGREP!$EGREP$ac_delim
-LIBREADLINE!$LIBREADLINE$ac_delim
+GPIB_CPPFLAGS!$GPIB_CPPFLAGS$ac_delim
+GPIB_LDFLAGS!$GPIB_LDFLAGS$ac_delim
+GPIB_LIBS!$GPIB_LIBS$ac_delim
 LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 4; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 20; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

@@ -6,6 +6,7 @@ AC_META
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_SRCDIR([NEWS])
 AC_CANONICAL_SYSTEM
+X_AC_EXPAND_INSTALL_DIRS
 
 ##
 # Automake support
@@ -43,6 +44,7 @@ AC_C_CONST
 ##
 # Checks for library functions
 ##
+AC_LINUX_GPIB
 AC_CHECK_FUNCS( \
   getopt_long \
   vsnprintf \
@@ -51,13 +53,6 @@ AC_CHECK_FUNCS( \
 AC_SEARCH_LIBS([pow], [m])
 AC_SEARCH_LIBS([clnt_create],[nsl])
 AC_SEARCH_LIBS([inet_aton],[resolv])
-
-AC_CHECK_LIB( [readline], [readline], 
-  [AC_DEFINE([HAVE_LIBREADLINE], [1], [Define if you have libreadline])
-   AC_SUBST([LIBREADLINE], ["-lreadline -lcurses"])], 
-  [], [-lcurses])
-
-AC_CHECK_LIB([gpib], [ibclr])
 
 ##
 # For list.c, hostlist.c
@@ -71,7 +66,6 @@ AC_DEFINE(WANT_RECKLESS_HOSTRANGE_EXPANSION, 1,
 # Epilogue
 ##
 AC_CONFIG_FILES( \
-  gpib-utils.spec \
   Makefile \
   libvxi11/Makefile \
   libics/Makefile \

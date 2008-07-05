@@ -28,10 +28,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#if HAVE_LIBREADLINE
-#include <readline/readline.h>
-#include <readline/history.h>
-#endif
 
 #include "ics.h"
 #include "util.h"
@@ -295,7 +291,6 @@ _validate_targets(char *targets)
     return res;
 }
 
-#if HAVE_LIBREADLINE
 static int
 _docmd(gd_t gd, char **av)
 {
@@ -339,30 +334,18 @@ _docmd(gd_t gd, char **av)
 static void
 _shell(gd_t gd)
 {
-    char *line;
+    char buf[128];
     char **av;
     int rc = 0;
 
-    /* disable readline file name completion */
-    /*rl_bind_key ('\t', rl_insert); */
-
-    while (rc == 0 && (line = readline("ics8064> "))) {
-        if (strlen(line) > 0) {
-            add_history(line);
-            av = argv_create(line, "");
+    while (rc == 0 && xreadline("ics8064> ", buf, sizeof(buf))) {
+        if (strlen(buf) > 0) {
+            av = argv_create(buf, "");
             rc = _docmd(gd, av);
             argv_destroy(av);
         }
-        free(line);
     }
 }
-#else
-static void
-_shell(gd_t gd)
-{
-    fprintf(stderr, "%s: not configured with readline support\n", prog);
-}
-#endif /* HAVE_LIBREADLINE */
 
 int
 main(int argc, char *argv[])

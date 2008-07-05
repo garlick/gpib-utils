@@ -1,8 +1,8 @@
 AM_CFLAGS = @GCCWARN@
 
-AM_CPPFLAGS = -I$(top_srcdir)/libvxi11 -I$(top_srcdir)/libics
+AM_CPPFLAGS = -I$(top_srcdir)/libvxi11 -I$(top_srcdir)/libics @GPIB_CPPFLAGS@
 LDADD = $(top_builddir)/libvxi11/libvxi11.a \
-	$(top_builddir)/libics/libics.a @LIBREADLINE@
+	$(top_builddir)/libics/libics.a @GPIB_LDFLAGS@ @GPIB_LIBS@
 
 common_sources = \
 	util.c \
