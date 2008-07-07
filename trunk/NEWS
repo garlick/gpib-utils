@@ -3,7 +3,6 @@ gpib-utils-1.4 Release Notes                                   2008-XX-XX
 =========================================================================
 
 * Refactored ICS and VXI-11 code into (non-installed) libraries.
-  The goal is for the VXI-11 library to become generally useful.
 
 * Added support for new devices:
   - ics8064 ICS Electronics 8064 Ethernet to Relay interface
