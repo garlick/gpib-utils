@@ -651,9 +651,6 @@ LIBS
 build_alias
 host_alias
 target_alias
-PROJECT
-VERSION
-RELEASE
 build
 build_cpu
 build_vendor
@@ -666,6 +663,15 @@ target
 target_cpu
 target_vendor
 target_os
+META_NAME
+META_VERSION
+META_RELEASE
+META_ALIAS
+META_DATE
+META_AUTHOR
+META_LT_CURRENT
+META_LT_REVISION
+META_LT_AGE
 X_PREFIX
 X_EXEC_PREFIX
 X_BINDIR
@@ -686,6 +692,7 @@ INSTALL_DATA
 am__isrc
 CYGPATH_W
 PACKAGE
+VERSION
 ACLOCAL
 AUTOCONF
 AUTOMAKE
@@ -1327,7 +1334,7 @@ Optional Features:
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
-  --with-linux-gpib=DIR       prefix for linux-gpib library files and headers
+  --with-linux-gpib=DIR   prefix for linux-gpib library files and headers
 
 Some influential environment variables:
   CC          C compiler command
@@ -1761,31 +1768,6 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
-
-  PROJECT="`perl -ne 'print,exit if s/^\s*NAME:\s*(\S*).*/\1/i' $srcdir/META`"
-
-cat >>confdefs.h <<_ACEOF
-#define PROJECT "$PROJECT"
-_ACEOF
-
-
-
-  VERSION="`perl -ne 'print,exit if s/^\s*VERSION:\s*(\S*).*/\1/i' $srcdir/META`"
-
-cat >>confdefs.h <<_ACEOF
-#define VERSION "$VERSION"
-_ACEOF
-
-
-
-  RELEASE="`perl -ne 'print,exit if s/^\s*RELEASE:\s*(\S*).*/\1/i' $srcdir/META`"
-
-cat >>confdefs.h <<_ACEOF
-#define RELEASE "$RELEASE"
-_ACEOF
-
-
-
 ac_aux_dir=
 for ac_dir in config "$srcdir"/config; do
   if test -f "$ac_dir/install-sh"; then
@@ -1944,6 +1926,184 @@ test -n "$target_alias" &&
   test "$program_prefix$program_suffix$program_transform_name" = \
     NONENONEs,x,x, &&
   program_prefix=${target_alias}-
+
+  { echo "$as_me:$LINENO: checking metadata" >&5
+echo $ECHO_N "checking metadata... $ECHO_C" >&6; }
+
+  META="$srcdir/META"
+  _x_ac_meta_got_file=no
+  if test -f "$META"; then
+    _x_ac_meta_got_file=yes
+
+    META_NAME=`perl -n\
+    -e "BEGIN { \\$key=shift @ARGV; }"\
+    -e "next unless s/^\s*\\$key[:=]//i;"\
+    -e "s/^((?:[^'\"#]*(?:(['\"])[^\2]*\2)*)*)#.*/\\$1/;"\
+    -e "s/^\s+//;"\
+    -e "s/\s+$//;"\
+    -e "s/^(['\"])(.*)\1/\\$2/;"\
+    -e "\\$val=\\$_;"\
+    -e "END { print \\$val if defined \\$val; }"\
+    '(?:NAME|PROJECT|PACKAGE)' $META`;
+    if test -n "$META_NAME"; then
+
+cat >>confdefs.h <<_ACEOF
+#define META_NAME "$META_NAME"
+_ACEOF
+
+
+    fi
+
+    META_VERSION=`perl -n\
+    -e "BEGIN { \\$key=shift @ARGV; }"\
+    -e "next unless s/^\s*\\$key[:=]//i;"\
+    -e "s/^((?:[^'\"#]*(?:(['\"])[^\2]*\2)*)*)#.*/\\$1/;"\
+    -e "s/^\s+//;"\
+    -e "s/\s+$//;"\
+    -e "s/^(['\"])(.*)\1/\\$2/;"\
+    -e "\\$val=\\$_;"\
+    -e "END { print \\$val if defined \\$val; }"\
+    'VERSION' $META`;
+    if test -n "$META_VERSION"; then
+
+cat >>confdefs.h <<_ACEOF
+#define META_VERSION "$META_VERSION"
+_ACEOF
+
+
+    fi
+
+    META_RELEASE=`perl -n\
+    -e "BEGIN { \\$key=shift @ARGV; }"\
+    -e "next unless s/^\s*\\$key[:=]//i;"\
+    -e "s/^((?:[^'\"#]*(?:(['\"])[^\2]*\2)*)*)#.*/\\$1/;"\
+    -e "s/^\s+//;"\
+    -e "s/\s+$//;"\
+    -e "s/^(['\"])(.*)\1/\\$2/;"\
+    -e "\\$val=\\$_;"\
+    -e "END { print \\$val if defined \\$val; }"\
+    'RELEASE' $META`;
+    if test -n "$META_RELEASE"; then
+
+cat >>confdefs.h <<_ACEOF
+#define META_RELEASE "$META_RELEASE"
+_ACEOF
+
+
+    fi
+
+    if test -n "$META_NAME" -a -n "$META_VERSION"; then
+        META_ALIAS="$META_NAME-$META_VERSION"
+        test -n "$META_RELEASE" -a "$META_RELEASE" != "1" \
+          && META_ALIAS="$META_ALIAS-$META_RELEASE"
+
+cat >>confdefs.h <<_ACEOF
+#define META_ALIAS "$META_ALIAS"
+_ACEOF
+
+
+    fi
+
+    META_DATE=`perl -n\
+    -e "BEGIN { \\$key=shift @ARGV; }"\
+    -e "next unless s/^\s*\\$key[:=]//i;"\
+    -e "s/^((?:[^'\"#]*(?:(['\"])[^\2]*\2)*)*)#.*/\\$1/;"\
+    -e "s/^\s+//;"\
+    -e "s/\s+$//;"\
+    -e "s/^(['\"])(.*)\1/\\$2/;"\
+    -e "\\$val=\\$_;"\
+    -e "END { print \\$val if defined \\$val; }"\
+    'DATE' $META`;
+    if test -n "$META_DATE"; then
+
+cat >>confdefs.h <<_ACEOF
+#define META_DATE "$META_DATE"
+_ACEOF
+
+
+    fi
+
+    META_AUTHOR=`perl -n\
+    -e "BEGIN { \\$key=shift @ARGV; }"\
+    -e "next unless s/^\s*\\$key[:=]//i;"\
+    -e "s/^((?:[^'\"#]*(?:(['\"])[^\2]*\2)*)*)#.*/\\$1/;"\
+    -e "s/^\s+//;"\
+    -e "s/\s+$//;"\
+    -e "s/^(['\"])(.*)\1/\\$2/;"\
+    -e "\\$val=\\$_;"\
+    -e "END { print \\$val if defined \\$val; }"\
+    'AUTHOR' $META`;
+    if test -n "$META_AUTHOR"; then
+
+cat >>confdefs.h <<_ACEOF
+#define META_AUTHOR "$META_AUTHOR"
+_ACEOF
+
+
+    fi
+
+
+    META_LT_CURRENT=`perl -n\
+    -e "BEGIN { \\$key=shift @ARGV; }"\
+    -e "next unless s/^\s*\\$key[:=]//i;"\
+    -e "s/^((?:[^'\"#]*(?:(['\"])[^\2]*\2)*)*)#.*/\\$1/;"\
+    -e "s/^\s+//;"\
+    -e "s/\s+$//;"\
+    -e "s/^(['\"])(.*)\1/\\$2/;"\
+    -e "\\$val=\\$_;"\
+    -e "END { print \\$val if defined \\$val; }"\
+    'LT_CURRENT' $META`;
+    META_LT_REVISION=`perl -n\
+    -e "BEGIN { \\$key=shift @ARGV; }"\
+    -e "next unless s/^\s*\\$key[:=]//i;"\
+    -e "s/^((?:[^'\"#]*(?:(['\"])[^\2]*\2)*)*)#.*/\\$1/;"\
+    -e "s/^\s+//;"\
+    -e "s/\s+$//;"\
+    -e "s/^(['\"])(.*)\1/\\$2/;"\
+    -e "\\$val=\\$_;"\
+    -e "END { print \\$val if defined \\$val; }"\
+    'LT_REVISION' $META`;
+    META_LT_AGE=`perl -n\
+    -e "BEGIN { \\$key=shift @ARGV; }"\
+    -e "next unless s/^\s*\\$key[:=]//i;"\
+    -e "s/^((?:[^'\"#]*(?:(['\"])[^\2]*\2)*)*)#.*/\\$1/;"\
+    -e "s/^\s+//;"\
+    -e "s/\s+$//;"\
+    -e "s/^(['\"])(.*)\1/\\$2/;"\
+    -e "\\$val=\\$_;"\
+    -e "END { print \\$val if defined \\$val; }"\
+    'LT_AGE' $META`;
+    if test -n "$META_LT_CURRENT" \
+         -o -n "$META_LT_REVISION" \
+         -o -n "$META_LT_AGE"; then
+      test -n "$META_LT_CURRENT" || META_LT_CURRENT="0"
+      test -n "$META_LT_REVISION" || META_LT_REVISION="0"
+      test -n "$META_LT_AGE" || META_LT_AGE="0"
+
+cat >>confdefs.h <<_ACEOF
+#define META_LT_CURRENT "$META_LT_CURRENT"
+_ACEOF
+
+
+cat >>confdefs.h <<_ACEOF
+#define META_LT_REVISION "$META_LT_REVISION"
+_ACEOF
+
+
+cat >>confdefs.h <<_ACEOF
+#define META_LT_AGE "$META_LT_AGE"
+_ACEOF
+
+
+
+
+    fi
+  fi
+
+  { echo "$as_me:$LINENO: result: $_x_ac_meta_got_file" >&5
+echo "${ECHO_T}$_x_ac_meta_got_file" >&6; }
+
+
 
   { echo "$as_me:$LINENO: checking installation directory variables" >&5
 echo $ECHO_N "checking installation directory variables... $ECHO_C" >&6; }
@@ -2380,8 +2540,8 @@ fi
 
 
 # Define the identity of the package.
- PACKAGE=$PROJECT
- VERSION=$VERSION
+ PACKAGE=$META_NAME
+ VERSION=$META_VERSION
 
 
 cat >>confdefs.h <<_ACEOF
@@ -5498,7 +5658,7 @@ _ACEOF
 ##
 # Epilogue
 ##
-ac_config_files="$ac_config_files Makefile libvxi11/Makefile libics/Makefile src/Makefile man/Makefile"
+ac_config_files="$ac_config_files Makefile libvxi11/Makefile libics/Makefile src/Makefile man/Makefile man/a6032.1 man/dg535.1 man/hp1630.1 man/hp3457.1 man/hp3488.1 man/hp6632.1 man/hp8656.1 man/hptodino.1 man/hptopbm.1 man/ics8064.1 man/ics8065.1 man/sr620.1"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -6091,6 +6251,18 @@ do
     "libics/Makefile") CONFIG_FILES="$CONFIG_FILES libics/Makefile" ;;
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
     "man/Makefile") CONFIG_FILES="$CONFIG_FILES man/Makefile" ;;
+    "man/a6032.1") CONFIG_FILES="$CONFIG_FILES man/a6032.1" ;;
+    "man/dg535.1") CONFIG_FILES="$CONFIG_FILES man/dg535.1" ;;
+    "man/hp1630.1") CONFIG_FILES="$CONFIG_FILES man/hp1630.1" ;;
+    "man/hp3457.1") CONFIG_FILES="$CONFIG_FILES man/hp3457.1" ;;
+    "man/hp3488.1") CONFIG_FILES="$CONFIG_FILES man/hp3488.1" ;;
+    "man/hp6632.1") CONFIG_FILES="$CONFIG_FILES man/hp6632.1" ;;
+    "man/hp8656.1") CONFIG_FILES="$CONFIG_FILES man/hp8656.1" ;;
+    "man/hptodino.1") CONFIG_FILES="$CONFIG_FILES man/hptodino.1" ;;
+    "man/hptopbm.1") CONFIG_FILES="$CONFIG_FILES man/hptopbm.1" ;;
+    "man/ics8064.1") CONFIG_FILES="$CONFIG_FILES man/ics8064.1" ;;
+    "man/ics8065.1") CONFIG_FILES="$CONFIG_FILES man/ics8065.1" ;;
+    "man/sr620.1") CONFIG_FILES="$CONFIG_FILES man/sr620.1" ;;
 
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
@@ -6190,9 +6362,6 @@ LIBS!$LIBS$ac_delim
 build_alias!$build_alias$ac_delim
 host_alias!$host_alias$ac_delim
 target_alias!$target_alias$ac_delim
-PROJECT!$PROJECT$ac_delim
-VERSION!$VERSION$ac_delim
-RELEASE!$RELEASE$ac_delim
 build!$build$ac_delim
 build_cpu!$build_cpu$ac_delim
 build_vendor!$build_vendor$ac_delim
@@ -6205,6 +6374,15 @@ target!$target$ac_delim
 target_cpu!$target_cpu$ac_delim
 target_vendor!$target_vendor$ac_delim
 target_os!$target_os$ac_delim
+META_NAME!$META_NAME$ac_delim
+META_VERSION!$META_VERSION$ac_delim
+META_RELEASE!$META_RELEASE$ac_delim
+META_ALIAS!$META_ALIAS$ac_delim
+META_DATE!$META_DATE$ac_delim
+META_AUTHOR!$META_AUTHOR$ac_delim
+META_LT_CURRENT!$META_LT_CURRENT$ac_delim
+META_LT_REVISION!$META_LT_REVISION$ac_delim
+META_LT_AGE!$META_LT_AGE$ac_delim
 X_PREFIX!$X_PREFIX$ac_delim
 X_EXEC_PREFIX!$X_EXEC_PREFIX$ac_delim
 X_BINDIR!$X_BINDIR$ac_delim
@@ -6225,6 +6403,7 @@ INSTALL_DATA!$INSTALL_DATA$ac_delim
 am__isrc!$am__isrc$ac_delim
 CYGPATH_W!$CYGPATH_W$ac_delim
 PACKAGE!$PACKAGE$ac_delim
+VERSION!$VERSION$ac_delim
 ACLOCAL!$ACLOCAL$ac_delim
 AUTOCONF!$AUTOCONF$ac_delim
 AUTOMAKE!$AUTOMAKE$ac_delim
@@ -6243,13 +6422,6 @@ am__untar!$am__untar$ac_delim
 MAINTAINER_MODE_TRUE!$MAINTAINER_MODE_TRUE$ac_delim
 MAINTAINER_MODE_FALSE!$MAINTAINER_MODE_FALSE$ac_delim
 MAINT!$MAINT$ac_delim
-CC!$CC$ac_delim
-CFLAGS!$CFLAGS$ac_delim
-LDFLAGS!$LDFLAGS$ac_delim
-CPPFLAGS!$CPPFLAGS$ac_delim
-ac_ct_CC!$ac_ct_CC$ac_delim
-EXEEXT!$EXEEXT$ac_delim
-OBJEXT!$OBJEXT$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -6291,6 +6463,13 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+CC!$CC$ac_delim
+CFLAGS!$CFLAGS$ac_delim
+LDFLAGS!$LDFLAGS$ac_delim
+CPPFLAGS!$CPPFLAGS$ac_delim
+ac_ct_CC!$ac_ct_CC$ac_delim
+EXEEXT!$EXEEXT$ac_delim
+OBJEXT!$OBJEXT$ac_delim
 DEPDIR!$DEPDIR$ac_delim
 am__include!$am__include$ac_delim
 am__quote!$am__quote$ac_delim
@@ -6313,7 +6492,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 20; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 27; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
@@ -6714,21 +6893,22 @@ echo "$as_me: $ac_file is unchanged" >&6;}
   fi
   rm -f "$tmp/out12"
 # Compute $ac_file's index in $config_headers.
+_am_arg=$ac_file
 _am_stamp_count=1
 for _am_header in $config_headers :; do
   case $_am_header in
-    $ac_file | $ac_file:* )
+    $_am_arg | $_am_arg:* )
       break ;;
     * )
       _am_stamp_count=`expr $_am_stamp_count + 1` ;;
   esac
 done
-echo "timestamp for $ac_file" >`$as_dirname -- $ac_file ||
-$as_expr X$ac_file : 'X\(.*[^/]\)//*[^/][^/]*/*$' \| \
-	 X$ac_file : 'X\(//\)[^/]' \| \
-	 X$ac_file : 'X\(//\)$' \| \
-	 X$ac_file : 'X\(/\)' \| . 2>/dev/null ||
-echo X$ac_file |
+echo "timestamp for $_am_arg" >`$as_dirname -- "$_am_arg" ||
+$as_expr X"$_am_arg" : 'X\(.*[^/]\)//*[^/][^/]*/*$' \| \
+	 X"$_am_arg" : 'X\(//\)[^/]' \| \
+	 X"$_am_arg" : 'X\(//\)$' \| \
+	 X"$_am_arg" : 'X\(/\)' \| . 2>/dev/null ||
+echo X"$_am_arg" |
     sed '/^X\(.*[^/]\)\/\/*[^/][^/]*\/*$/{
 	    s//\1/
 	    q
@@ -6765,7 +6945,7 @@ echo "$as_me: executing $ac_file commands" >&6;}
   # each Makefile.in and add a new line on top of each file to say so.
   # Grep'ing the whole file is not good either: AIX grep has a line
   # limit of 2048, but all sed's we know have understand at least 4000.
-  if sed 10q "$mf" | grep '^#.*generated by automake' > /dev/null 2>&1; then
+  if sed -n 's,^#.*generated by automake.*,X,p' "$mf" | grep X >/dev/null 2>&1; then
     dirpart=`$as_dirname -- "$mf" ||
 $as_expr X"$mf" : 'X\(.*[^/]\)//*[^/][^/]*/*$' \| \
 	 X"$mf" : 'X\(//\)[^/]' \| \

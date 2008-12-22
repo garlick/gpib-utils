@@ -2,16 +2,16 @@
 # Prologue
 ##
 AC_INIT([gpib-utils])
-AC_META
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_SRCDIR([NEWS])
 AC_CANONICAL_SYSTEM
+X_AC_META
 X_AC_EXPAND_INSTALL_DIRS
 
 ##
 # Automake support
 ##
-AM_INIT_AUTOMAKE($PROJECT, $VERSION)
+AM_INIT_AUTOMAKE($META_NAME, $META_VERSION)
 AM_CONFIG_HEADER([config/config.h])
 AM_MAINTAINER_MODE
 
@@ -69,7 +69,19 @@ AC_CONFIG_FILES( \
   Makefile \
   libvxi11/Makefile \
   libics/Makefile \
-  src/Makefile
-  man/Makefile
+  src/Makefile \
+  man/Makefile \
+  man/a6032.1 \
+  man/dg535.1 \
+  man/hp1630.1 \
+  man/hp3457.1 \
+  man/hp3488.1 \
+  man/hp6632.1 \
+  man/hp8656.1 \
+  man/hptodino.1 \
+  man/hptopbm.1 \
+  man/ics8064.1 \
+  man/ics8065.1 \
+  man/sr620.1 \
 )
 AC_OUTPUT

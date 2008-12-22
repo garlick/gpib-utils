@@ -1,3 +1,13 @@
+2008-12-21 Jim Garlick <garlick.jim@gmail.com>
+
+	* config/x_ac_meta.m4 : Update, supercedes ac_meta.m4.
+
+	* META : Add release date.
+
+	* man/*.1.in : Rename from *.1 and standardize headers.
+
+	* autogen.sh : Rename from bootstrap.
+
 2008-07-06 Jim Garlick <garlick.jim@gmail.com>
 
 	* man/ics8064.1, man/hp6632.1 : New.
