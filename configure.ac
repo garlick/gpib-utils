@@ -69,6 +69,7 @@ AC_CONFIG_FILES( \
   Makefile \
   libvxi11/Makefile \
   libics/Makefile \
+  liblsd/Makefile \
   src/Makefile \
   man/Makefile \
   man/a6032.1 \

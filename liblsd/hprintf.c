@@ -36,8 +36,16 @@
 #include <assert.h>
 #include <string.h>
 
-#include "util.h"
 #include "hprintf.h"
+
+#ifdef WITH_LSD_NOMEM_ERROR_FUNC
+#  undef lsd_nomem_error
+   extern void * lsd_nomem_error(char *file, int line, char *mesg);
+#else /* !WITH_LSD_NOMEM_ERROR_FUNC */
+#  ifndef lsd_nomem_error
+#    define lsd_nomem_error(file, line, mesg) (NULL)
+#  endif /* !lsd_nomem_error */
+#endif /* !WITH_LSD_NOMEM_ERROR_FUNC */
 
 #define CHUNKSIZE 80
 char *hvsprintf(const char *fmt, va_list ap)
@@ -48,7 +56,9 @@ char *hvsprintf(const char *fmt, va_list ap)
     do {
         va_list vacpy;
 
-        str = (size == 0) ? xmalloc(CHUNKSIZE) : xrealloc(str, size+CHUNKSIZE);
+        str = (size == 0) ? malloc(CHUNKSIZE) : realloc(str, size+CHUNKSIZE);
+        if (str == NULL)
+            return lsd_nomem_error(__FILE__, __LINE__, "hvsprintf"); 
         size += CHUNKSIZE;
 
         va_copy(vacpy, ap);
