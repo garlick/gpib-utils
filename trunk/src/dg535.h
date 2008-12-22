@@ -1,7 +1,7 @@
 /* This file is part of gpib-utils.
    For details, see http://sourceforge.net/projects/gpib-utils.
 
-   Copyright (C) 2005 Jim Garlick <garlick@speakeasy.net>
+   Copyright (C) 2005-2008 Jim Garlick <garlick.jim@gmail.com>
 
    gpib-utils is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

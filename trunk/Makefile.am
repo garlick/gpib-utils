@@ -1,1 +1,1 @@
-SUBDIRS = libvxi11 libics src man
+SUBDIRS = libvxi11 libics liblsd src man

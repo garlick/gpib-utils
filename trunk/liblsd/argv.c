@@ -31,7 +31,17 @@
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>
-#include "util.h"
+
+#include "argv.h"
+
+#ifdef WITH_LSD_NOMEM_ERROR_FUNC
+#  undef lsd_nomem_error
+   extern void * lsd_nomem_error(char *file, int line, char *mesg);
+#else /* !WITH_LSD_NOMEM_ERROR_FUNC */
+#  ifndef lsd_nomem_error
+#    define lsd_nomem_error(file, line, mesg) (NULL)
+#  endif /* !lsd_nomem_error */
+#endif /* !WITH_LSD_NOMEM_ERROR_FUNC */
 
 /* make a copy of the first word in str and advance str past it */
 static char *_nextargv(char **strp, char *ignore)
@@ -49,9 +59,10 @@ static char *_nextargv(char **strp, char *ignore)
     len = str - word;
 
     if (len > 0) {
-        cpy = (char *)xmalloc(len + 1);
-        memcpy(cpy, word, len);
-        cpy[len] = '\0';
+        if ((cpy = (char *)malloc(len + 1))) {
+            memcpy(cpy, word, len);
+            cpy[len] = '\0';
+        }
     }
 
     *strp = str;
@@ -81,12 +92,17 @@ static int _sizeargv(char *str, char *ignore)
 char **argv_create(char *cmdline, char *ignore)
 {
     int argc = _sizeargv(cmdline, ignore);
-    char **argv = (char **)xmalloc(sizeof(char *) * (argc + 1));
+    char **argv = (char **)malloc(sizeof(char *) * (argc + 1));
     int i;
 
+    if (!argv)
+        return lsd_nomem_error(__FILE__, __LINE__, "argv_create");
+
     for (i = 0; i < argc; i++) {
-        argv[i] = _nextargv(&cmdline, ignore);
-        assert(argv[i] != NULL);
+        if (!(argv[i] = _nextargv(&cmdline, ignore))) {
+            argv_destroy(argv);
+            return lsd_nomem_error(__FILE__, __LINE__, "argv_create");
+        }
     }
     argv[i] = NULL;
 
