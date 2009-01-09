@@ -1,0 +1,19 @@
+.TH hptopbm 1 "@META_DATE@" "@META_ALIAS@" "@META_NAME@"
+.SH NAME
+hptopbm \- convert HP-graphics to portable bitmap (PBM) format
+.SH SYNOPSIS
+.nf
+.B hptopbm <hp-graphics-file >pbm-file
+.fi
+.SH DESCRIPTION
+\fBhptobpm\fR is a filter that converts HP-graphics bitmap format
+to portable bitmap (PBM) format on standard output.
+HP-graphics format is read by older HP ThinkJet printers such as the 
+HP 2671G and is produced by older HP instrumentation like HP 1630 logic
+analyzer series.
+.SH EXAMPLE
+To print an HP logic analyzer screen dump on a postscript printer:
+.IP
+hp1630 --print-screen | hptopbm | pbmtolps -dpi 100 | lpr
+.SH "SEE ALSO"
+hp1630(1), pbmtolps(1), thinkjettopbm(1), pbm(5)

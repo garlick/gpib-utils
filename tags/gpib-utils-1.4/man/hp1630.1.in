@@ -1,0 +1,79 @@
+.TH hp1630 1 "@META_DATE@" "@META_ALIAS@" "@META_NAME@"
+.SH NAME
+hp1630 \- control HP 1630/31 logic analyzer
+.SH SYNOPSIS
+.nf
+.B hp1630 [\fIOPTIONS\fR]
+
+.fi
+.SH DESCRIPTION
+\fBhp1630\fR controls the HP 1630/31 logic analyzer via its GPIB interface.
+.PP
+\fBhp1630\fR performs actions selected on the command line in a fixed sequence:
+.IP
+.nf
+clear
+set date
+save/restore/print operation
+local
+.SH OPTIONS
+\fBhp1630\fR accepts the following command line options:
+.TP
+\fB\-a\fR, \fB\-\-address\fR address
+Override the default instrument address in @X_SYSCONFDIR@/gpib-utils.conf.
+.TP
+\fB\-c\fR, \fB\-\-clear\fR
+Clear the instrument, load power-on values, verify the model number,
+and set the date to the UNIX date.
+.TP
+\fB\-d\fR, \fB\-\-date\fR
+Set the date to to UNIX date.
+.TP
+\fB\-l\fR, \fB\-\-local\fR
+Enable the front panel.
+.TP
+\fB\-p\fR, \fB\-\-print-screen\fR 
+Dump the screen contents to standard output.  
+The output will be in HP-graphics format for waveform displays.
+Text displays will be in HP-text or HP-graphics format depending on the
+setting in the System Menu.
+HP-graphics can be converted to portable bitmap (PBM) format using
+\fBhptopbm(1)\fR.
+.TP
+\fB\-P\fR, \fB\-\-print-all\fR 
+Dump the screen contents and the entire contents of the trace memory
+to standard output.
+.TP
+\fB\-s\fR, \fB\-\-save-all\fR 
+Save the instrument configuration, state measurement data, 
+timing measurement data, and analog measurement data (hp1631 only)
+to standard output.
+.TP
+\fB\-C\fR, \fB\-\-save-config\fR 
+Save the instrument configuration to standard output.
+.TP
+\fB\-S\fR, \fB\-\-save-state\fR 
+Save the instrument state measurement data to standard output.
+.TP
+\fB\-T\fR, \fB\-\-save-timing\fR 
+Save the instrument timing measurement data to standard output.
+.TP
+\fB\-A\fR, \fB\-\-save-analog\fR 
+Save the instrument analog measurement data to standard output (hp1631 only).
+.TP
+\fB\-r\fR, \fB\-\-restore\fR 
+Restore state/measurement data saved by any of the save options
+from standard input.
+.SH FILES
+@X_SYSCONFDIR@/gpib-utils.conf
+.SH "SEE ALSO"
+"Hewlett Packard 1630A/D Logic Analyzer Operating Manual",
+second edition, May 1983.
+.PP
+"Hewlett Packard 1631A/D Logic Analyer Operating and Programming Manual",
+Aug. 1985.
+.PP
+"Hewlett Packard 1630A/D/G and 1631A/D Logic Analyzers Service Manual",
+Apr. 1988.
+.PP
+hptopbm(1), hptodino(1)
