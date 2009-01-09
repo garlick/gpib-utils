@@ -11,7 +11,7 @@ the ICS Electronics 8064 Ethernet-Relay Interface via its LAN interface.
 .SH OPTIONS
 .TP
 \fB\-a\fR, \fB\-\-address\fR address
-Override the default IP address in /etc/gpib-utils.conf.
+Override the default IP address in @X_SYSCONFDIR@/gpib-utils.conf.
 .TP
 \fB\-c\fR, \fB\-\-clear\fR
 Clear instrument state.
@@ -106,4 +106,4 @@ Save the current configuration settings to nonvolatile RAM.
 Reboot the 8064.  Upon reboot, configuration settings from nonvolatile 
 RAM will be used.
 .SH FILES
-/etc/gpib-utils.conf
+@X_SYSCONFDIR@/gpib-utils.conf

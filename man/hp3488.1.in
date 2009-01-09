@@ -26,7 +26,7 @@ If an action is not selected on the command line, it is not performed.
 \fBhp3488\fR accepts the following command line options:
 .TP
 \fB\-a\fR, \fB\-\-address\fR address
-Override the default instrument address in /etc/gpib-utils.conf.
+Override the default instrument address in @X_SYSCONFDIR@/gpib-utils.conf.
 .TP
 \fB\-c\fR, \fB\-\-clear\fR
 Clear the instrument, verify its model number, and open all channels.
@@ -164,7 +164,7 @@ while true; do
 done
 .fi
 .SH FILES
-/etc/gpib-utils.conf
+@X_SYSCONFDIR@/gpib-utils.conf
 .SH "SEE ALSO"
 "HP 3488A Switch/Control Unit: Operating, Programming, and Configuration 
 Manual", Sept. 1, 1995.

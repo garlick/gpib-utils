@@ -22,7 +22,7 @@ local
 \fBa6032\fR accepts the following command line options:
 .TP
 \fB\-a\fR, \fB\-\-address\fR address
-Override the default instrument address in /etc/gpib-utils.conf.
+Override the default instrument address in @X_SYSCONFDIR@/gpib-utils.conf.
 .TP
 \fB\-c\fR, \fB\-\-clear\fR
 Clear the instrument, load default configuration,
@@ -53,6 +53,6 @@ Save the instrument configuration to standard output.
 \fB\-r\fR, \fB\-\-restore-setup\fR 
 Restore instrument configuration from standard input.
 .SH FILES
-/etc/gpib-utils.conf
+@X_SYSCONFDIR@/gpib-utils.conf
 .SH SEE ALSO
 "Agilent 6000 Series Oscilloscopes Programmer's Reference", 2007.

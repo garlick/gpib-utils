@@ -19,7 +19,7 @@ If an action is not selected on the command line, it is not peformed.
 \fBhp8656\fR accepts the following command line options:
 .TP
 \fB\-a\fR, \fB\-\-address\fR address
-Override the default instrument address in /etc/gpib-utils.conf.
+Override the default instrument address in @X_SYSCONFDIR@/gpib-utils.conf.
 .TP
 \fB\-c\fR, \fB\-\-clear\fR
 Clear the instrument and load the following defaults:
@@ -68,6 +68,6 @@ done
 hp8656 --local
 .fi
 .SH FILES
-/etc/gpib-utils.conf
+@X_SYSCONFDIR@/gpib-utils.conf
 .SH "SEE ALSO"
 "HP 8656A Signal Generator 0.1 - 990 MHz Operating Manual", May 1981.

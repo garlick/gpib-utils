@@ -23,7 +23,7 @@ local
 \fBsr620\fR accepts the following command line options:
 .TP
 \fB\-a\fR, \fB\-\-address\fR address
-Override the default instrument address in /etc/gpib-utils.conf.
+Override the default instrument address in @X_SYSCONFDIR@/gpib-utils.conf.
 .TP
 \fB\-c\fR, \fB\-\-clear\fR
 Clear the instrument, and verify the instrument ID.
@@ -61,6 +61,6 @@ Graph jitter stripchart.
 \fB\-l\fR, \fB\-\-local\fR
 Enable the front panel.
 .SH FILES
-/etc/gpib-utils.conf
+@X_SYSCONFDIR@/gpib-utils.conf
 .SH SEE ALSO
 "Model SR620 Universal Time Interval Counter", revision 2.7, Feb. 2006.
