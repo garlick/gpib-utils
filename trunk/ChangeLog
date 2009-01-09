@@ -1,7 +1,5 @@
 2009-01-08 Jim Garlick <garlick.jim@gmail.com>
 
-	* : tag gpib-utils-1.4
-
 	* gpib-utils.spec : Droped doc reference to missing examples directory.
 
 	* src/ics8065.c, man/ics8065.1.in : Dropped --reset-factory option.
