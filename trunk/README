@@ -1,0 +1,5 @@
+Wish list:
+
+- Support for serial-connected instruments
+- Support for "raw socket" connected instruments
+- Configure option to build against NI GPIB libs (any others?)
