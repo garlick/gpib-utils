@@ -25,7 +25,7 @@ If an action is not selected on the command line, it is not performed.
 \fBhp3457\fR accepts the following command line options:
 .TP
 \fB\-a\fR, \fB\-\-address\fR address
-Override the default instrument address in /etc/gpib-utils.conf.
+Override the default instrument address in @X_SYSCONFDIR@/gpib-utils.conf.
 .TP
 \fB\-c\fR, \fB\-\-clear\fR
 Clear the instrument, verify its model number, and load defaults 
@@ -110,7 +110,7 @@ set title "HP 3457A Voltmeter Test"
 plot 'sample.dat' title "Sample Plot" with linesp;
 .fi
 .SH FILES
-/etc/gpib-utils.conf
+@X_SYSCONFDIR@/gpib-utils.conf
 .SH "SEE ALSO"
 "HP 3457A Multimeter Operating Manual", May 1986.
 .PP

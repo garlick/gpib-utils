@@ -20,7 +20,7 @@ local
 \fBhp1630\fR accepts the following command line options:
 .TP
 \fB\-a\fR, \fB\-\-address\fR address
-Override the default instrument address in /etc/gpib-utils.conf.
+Override the default instrument address in @X_SYSCONFDIR@/gpib-utils.conf.
 .TP
 \fB\-c\fR, \fB\-\-clear\fR
 Clear the instrument, load power-on values, verify the model number,
@@ -65,7 +65,7 @@ Save the instrument analog measurement data to standard output (hp1631 only).
 Restore state/measurement data saved by any of the save options
 from standard input.
 .SH FILES
-/etc/gpib-utils.conf
+@X_SYSCONFDIR@/gpib-utils.conf
 .SH "SEE ALSO"
 "Hewlett Packard 1630A/D Logic Analyzer Operating Manual",
 second edition, May 1983.

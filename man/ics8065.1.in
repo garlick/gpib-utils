@@ -12,7 +12,7 @@ the ICS Electronics 8065 Ethernet-GPIB Controller via its LAN interface.
 \fBics8065\fR accepts the following command line options:
 .TP
 \fB\-a\fR, \fB\-\-address\fR address
-Override the default IP address in /etc/gpib-utils.conf.
+Override the default IP address in @X_SYSCONFDIR@/gpib-utils.conf.
 .TP
 \fB\-i\fR, \fB\-\-get-idn-string\fR
 Display the 8065 idn string, which contains the firmware revision,
@@ -102,7 +102,7 @@ Reboot the 8065.  All device links will be cleared, all connections closed,
 and all resources released.  Upon reboot, the default configuration settings
 from nonvolatile RAM will be used.
 .SH FILES
-/etc/gpib-utils.conf
+@X_SYSCONFDIR@/gpib-utils.conf
 .SH SEE ALSO
 "ICS Electronics MODEL 8065 Ethernet-GPIB Controller Instruction Manual",
 rev 2, March 2007.
