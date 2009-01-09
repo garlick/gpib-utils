@@ -37,7 +37,7 @@
 
 #define INSTRUMENT "ics8064"
 
-#define OPTIONS "ea:cfCrjJ:tT:sS:zZ:kK:gG:nN:iv0:1:qQmIRlL"
+#define OPTIONS "ea:cCrjJ:tT:sS:zZ:kK:gG:nN:iv0:1:qQmIRlL"
 #if HAVE_GETOPT_LONG
 #define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
 static struct option longopts[] = {
@@ -63,7 +63,6 @@ static struct option longopts[] = {
         {"get-keepalive",       no_argument,        0, 'k'},
         {"set-keepalive",       required_argument,  0, 'K'},
         {"reload-config",       no_argument,        0, 'C'},
-        {"reload-factory",      no_argument,        0, 'f'},
         {"commit-config",       no_argument,        0, 'm'},
         {"get-errlog",          no_argument,        0, 'e'},
         {"reboot",              no_argument,        0, 'r'},
@@ -114,7 +113,6 @@ usage(void)
   "  -k,--get-keepalive        get keepalive time (in seconds)\n"
   "  -K,--set-keepalive        set keepalive time (in seconds)\n"
   "  -C,--reload-config        force reload of default config\n"
-  "  -f,--reload-factory       reload factory config settings\n"
   "  -m,--commit-config        commit (write) current config\n"
   "  -r,--reboot               reboot\n"
   "  -e,--get-errlog           get error log (side effect: log is cleared)\n"
@@ -369,7 +367,6 @@ main(int argc, char *argv[])
     int get_keepalive = 0;
     int set_keepalive = -1;
     int reload_config = 0;
-    int reload_factory = 0;
     int commit_config = 0;
     int reboot = 0;
     int get_idn = 0;
@@ -462,10 +459,6 @@ main(int argc, char *argv[])
                 break;
             case 'C':   /* --reload-config */
                 reload_config = 1;
-                ics_todo++;
-                break;
-            case 'f':   /* --reload-factory */
-                reload_factory = 1;
                 ics_todo++;
                 break;
             case 'm':   /* --commit-config */
@@ -629,13 +622,6 @@ main(int argc, char *argv[])
     if (set_keepalive != -1) {
         if (ics_set_keepalive(ics, set_keepalive) != 0)
             goto done;
-    }
-
-    /* reload_factory */
-    if (reload_factory) {
-        if (ics_reload_factory(ics) != 0)
-            goto done;
-        fprintf(stderr, "%s: factory config reloaded\n", prog);
     }
 
     /* reload_config */

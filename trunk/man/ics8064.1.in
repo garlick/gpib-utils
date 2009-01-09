@@ -99,9 +99,6 @@ not be used.
 \fB\-C\fR, \fB\-\-reload-config\fR
 Force a reload of the default configuration settings from nonvolatile RAM.
 .TP
-\fB\-f\fR, \fB\-\-reload-factory\fR
-Force a reload of the factory configuration settings.
-.TP
 \fB\-c\fR, \fB\-\-commit-config\fR
 Save the current configuration settings to nonvolatile RAM.
 .TP

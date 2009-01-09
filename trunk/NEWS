@@ -1,6 +1,10 @@
 =========================================================================
-gpib-utils-1.4 Release Notes                                   2008-XX-XX 
+gpib-utils-1.4 Release Notes                                   2009-01-08 
 =========================================================================
+
+* Pulled --reset-factory options from ics8065 utility on advice from
+  ICS Electronics.  This option was not intended for customers and can
+  cause some serious grief.
 
 * Refactored ICS and VXI-11 code into (non-installed) libraries.
 
