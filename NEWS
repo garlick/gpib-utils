@@ -2,16 +2,16 @@
 gpib-utils-1.4 Release Notes                                   2009-01-08 
 =========================================================================
 
-* Pulled --reset-factory options from ics8065 utility on advice from
+* Dropped --reset-factory options from ics8065 utility on advice from
   ICS Electronics.  This option was not intended for customers and can
   cause some serious grief.
 
-* Refactored ICS and VXI-11 code into (non-installed) libraries.
+* Refactored ICS, VXI-11, and LSD code into (non-installed) libraries.
 
 * Added support for new devices:
-  - ics8064 ICS Electronics 8064 Ethernet to Relay interface
-  - hp6632 Hewlett-Packard 6632A/6633A/6634A System DC Power Supply
-  - a34401 Agilent 34401A/34410A/34411A DMM.
+  - ics8064:  ICS Electronics 8064 Ethernet to Relay interface
+  - hp6632:   Hewlett-Packard 6632A/6633A/6634A System DC Power Supply
+  - a34401:   Agilent 34401A/34410A/34411A DMM.
 
 * Added automake/autoconf infrastructure so gpib-utils compiles with and
   without linux-gpib.
