@@ -8,6 +8,8 @@
 
 	* src/ics8064.c, man/ics8064.1.in : Dropped --reset-factory option.
 
+	* man/a34401.1.in, man/gpib-utils.conf.5.in : New.
+
 2008-12-21 Jim Garlick <garlick.jim@gmail.com>
 
 	* config/x_ac_meta.m4 : Update, supercedes ac_meta.m4.

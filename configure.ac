@@ -72,6 +72,7 @@ AC_CONFIG_FILES( \
   liblsd/Makefile \
   src/Makefile \
   man/Makefile \
+  man/a34401.1 \
   man/a6032.1 \
   man/dg535.1 \
   man/hp1630.1 \
@@ -84,5 +85,6 @@ AC_CONFIG_FILES( \
   man/ics8064.1 \
   man/ics8065.1 \
   man/sr620.1 \
+  man/gpib-utils.conf.5 \
 )
 AC_OUTPUT
