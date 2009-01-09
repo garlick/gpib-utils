@@ -30,7 +30,6 @@ cp etc/gpib-utils.conf $RPM_BUILD_ROOT/%{_sysconfdir}/gpib-utils.conf
 %files
 %defattr(-,root,root)
 %doc ChangeLog COPYING
-%doc examples 
 %{_bindir}/*
 %{_mandir}/man1/*
 %config %{_sysconfdir}/gpib-utils.conf

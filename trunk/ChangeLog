@@ -1,3 +1,11 @@
+2009-01-08 Jim Garlick <garlick.jim@gmail.com>
+
+	* gpib-utils.spec : Droped doc reference to missing examples directory.
+
+	* src/ics8065.c, man/ics8065.1.in : Dropped --reset-factory option.
+
+	* src/ics8064.c, man/ics8064.1.in : Dropped --reset-factory option.
+
 2008-12-21 Jim Garlick <garlick.jim@gmail.com>
 
 	* config/x_ac_meta.m4 : Update, supercedes ac_meta.m4.
