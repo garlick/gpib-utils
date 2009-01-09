@@ -13,7 +13,7 @@ GPIB interface.
 \fBhp6632\fR accepts the following command line options:
 .TP
 \fB\-a\fR, \fB\-\-address\fR address
-Override the default instrument address in /etc/gpib-utils.conf.
+Override the default instrument address in @X_SYSCONFDIR@/gpib-utils.conf.
 .TP
 \fB\-c\fR, \fB\-\-clear\fR
 Clear the instrument, load power-on values, verify the model number,
@@ -46,4 +46,4 @@ Enable/disable overcurrent protection.
 \fB\-r\fR, \fB\-\-read\fR
 Read and display I and V in ``I<tab>V'' format.
 .SH FILES
-/etc/gpib-utils.conf
+@X_SYSCONFDIR@/gpib-utils.conf
