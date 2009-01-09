@@ -32,4 +32,5 @@ cp etc/gpib-utils.conf $RPM_BUILD_ROOT/%{_sysconfdir}/gpib-utils.conf
 %doc ChangeLog COPYING
 %{_bindir}/*
 %{_mandir}/man1/*
+%{_mandir}/man5/*
 %config %{_sysconfdir}/gpib-utils.conf

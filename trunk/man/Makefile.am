@@ -14,7 +14,7 @@ man1_MANS = \
 	sr620.1
 
 man5_MANS = \
-	gpib.conf.5
+	gpib-utils.conf.5
 
 EXTRA_DIST = \
 	a34401.1 \
