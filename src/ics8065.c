@@ -34,7 +34,7 @@
 
 #define INSTRUMENT "ics8065"
 
-#define OPTIONS "a:cfCriejJ:tT:mM:sS:zZ:kK:gG:qQ:wW:nN:"
+#define OPTIONS "a:cCriejJ:tT:mM:sS:zZ:kK:gG:qQ:wW:nN:"
 #if HAVE_GETOPT_LONG
 #define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
 static struct option longopts[] = {
@@ -60,7 +60,6 @@ static struct option longopts[] = {
         {"set-ren-mode",        required_argument,  0, 'M'},
         {"get-ren-mode",        no_argument,        0, 'm'},
         {"reload-config",       no_argument,        0, 'C'},
-        {"reload-factory",      no_argument,        0, 'f'},
         {"commit-config",       no_argument,        0, 'c'},
         {"reboot",              no_argument,        0, 'r'},
         {"get-idn-string",      no_argument,        0, 'i'},
@@ -103,7 +102,6 @@ usage(void)
   "  -m,--get-ren-mode         get REN active at boot (0=false, 1=true)\n"
   "  -M,--set-ren-mode         set REN active at boot (0=false, 1=true)\n"
   "  -C,--reload-config        force reload of default config\n"
-  "  -f,--reload-factory       reload factory config settings\n"
   "  -c,--commit-config        commit (write) current config\n"
   "  -r,--reboot               reboot\n"
   "  -i,--get-idn-string       get idn string\n"
@@ -140,7 +138,6 @@ main(int argc, char *argv[])
     int get_ren_mode = 0;
     int set_ren_mode = -1;
     int reload_config = 0;
-    int reload_factory = 0;
     int commit_config = 0;
     int reboot = 0;
     int get_idn = 0;
@@ -236,10 +233,6 @@ main(int argc, char *argv[])
                 break;
             case 'C':   /* --reload-config */
                 reload_config = 1;
-                todo++;
-                break;
-            case 'f':   /* --reload-factory */
-                reload_factory = 1;
                 todo++;
                 break;
             case 'c':   /* --commit-config */
@@ -419,13 +412,6 @@ main(int argc, char *argv[])
     if (set_ren_mode != -1) {
         if (ics_set_ren_mode(ics, set_ren_mode) != 0)
             goto done;
-    }
-
-    /* reload_factory */
-    if (reload_factory) {
-        if (ics_reload_factory(ics) != 0)
-            goto done;
-        fprintf(stderr, "%s: factory config reloaded\n", prog);
     }
 
     /* reload_config */
