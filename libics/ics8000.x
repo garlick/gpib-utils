@@ -267,16 +267,6 @@ struct Reload_Config_Resp {
    unsigned int error;
 };
 
-/* The reload_factory procedure is used to cause the Edevice to reset the
- * default configuration back to the factory loaded defaults.  Any/all 
- * modifications to the default configuration are lost as a result.  Note that
- * dynamic in-memory configuration settings are not modified until a 
- * reload_config or reboot is executed.
- */
-struct Reload_Factory_Resp {
-   unsigned int error;
-};
-
 /* The commit_config procedure is used to cause the current configuration
  * settings to be saved.  Any modified configuration settings now become
  * default settings and will be reloaded as the default settings with either
@@ -335,7 +325,6 @@ program ICSCONFIG {
       Eos_Active_Resp eos_active (Eos_Active_Parms) = 18;
       Eos_Char_Resp eos_char (Eos_Char_Parms) = 19;
       Reload_Config_Resp reload_config (void) = 20;
-      Reload_Factory_Resp reload_factory (void) = 21;
       Commit_Config_Resp commit_config (void) = 22;
       Reboot_Resp reboot (void) = 23;
       Idn_Resp idn_string (void) = 25;

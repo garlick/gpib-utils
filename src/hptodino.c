@@ -37,7 +37,6 @@
 #include <stdint.h>
 #include <time.h>
 
-#include "hp1630.h"
 #include "util.h"
 #include "hpcrc.h"
 
