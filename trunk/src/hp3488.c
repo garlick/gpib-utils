@@ -17,6 +17,16 @@
    along with gpib-utils; if not, write to the Free Software Foundation, 
    Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
 
+/* References:
+ * "HP 3488A Switch/Control Unit: Operating, Programming, and 
+ *   Configuration Manual", Sept 1, 1995.
+ *
+ * Notes:
+ * <slot> is slot number 1-5 (1 digit)
+ * <c> is channel address <slot><chan> (3 digits)
+ */
+
+
 #if HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -35,13 +45,59 @@
 #include <sys/time.h>
 #include <math.h>
 
-#include "hp3488.h"
 #include "gpib.h"
 #include "util.h"
 #include "argv.h"
 #include "hostlist.h"
 
 #define INSTRUMENT "hp3488"
+
+#define HP3488_DMODE_MODE_STATIC    1       /* default */
+#define HP3488_DMODE_MODE_STATIC2   2       /* read what was written */
+#define HP3488_DMODE_MODE_RWSTROBE  3       /* read & write strobe mode */
+#define HP3488_DMODE_MODE_HANDSHAKE 4       /* handshake (no ext. inc. mode) */
+
+#define HP3488_DMODE_POLARITY_LBP   0x01    /* lower byte polarity */
+#define HP3488_DMODE_POLARITY_UBP   0x02    /* upper byte polarity */
+#define HP3488_DMODE_POLARITY_PCTL  0x04    /* PCTL polarity (low ready) */
+#define HP3488_DMODE_POLARITY_PFLG  0x08    /* PFLG polarity (low ready) */
+#define HP3488_DMODE_POLARITY_IODIR 0x16    /* I/O direction line polarity */
+                                            /*   high = input mode normally */
+
+/* Status byte values
+ * Also SRQ mask values (except rqs cannot be masked)
+ */
+#define HP3488_STATUS_SCAN_DONE     0x01    /* end of scan sequence */
+#define HP3488_STATUS_OUTPUT_AVAIL  0x02    /* output available */
+#define HP3488_STATUS_SRQ_POWER     0x04    /* power on SRQ asserted */
+#define HP3488_STATUS_SRQ_BUTTON    0x08    /* front panel SRQ asserted */
+#define HP3488_STATUS_READY         0x10    /* ready for instructions */
+#define HP3488_STATUS_ERROR         0x20    /* an error has occurred */
+#define HP3488_STATUS_RQS           0x40    /* rqs */
+
+/* Error byte values
+ */
+#define HP3488_ERROR_SYNTAX         0x1     /* syntax error */
+#define HP3488_ERROR_EXEC           0x2     /* exection error */
+#define HP3488_ERROR_TOOFAST        0x4     /* hardware trigger too fast */
+#define HP3488_ERROR_LOGIC          0x8     /* logic failure */
+#define HP3488_ERROR_POWER          0x10    /* power supply failure */
+
+/* Card model numbers, descriptions, and valid channel numbers.
+ * Note: 44477 and 44476 are reported as 44471 by CTYPE command.
+ */
+#define MODELTAB    { \
+    { 00000, "empty slot",            NULL }, \
+    { 44470, "relay multiplexer",     "[00-09]" }, \
+    { 44471, "general purpose relay", "[00-09]" }, \
+    { 44472, "dual 4-1 VHF switch",   "[00-03,10-13]" }, \
+    { 44473, "4x4 matrix switch",     "[00-03,10-13,20-23,30-33]" }, \
+    { 44474, "digital I/O",           "[00-15]" }, \
+    { 44475, "breadboard",            NULL }, \
+    { 44476, "microwave switch",      "[00-03]" }, \
+    { 44477, "form C relay",          "[00-06]" }, \
+    { 44478, "1.3GHz multiplexer",    "[00-03,10-13]" }, \
+}
 
 typedef struct {
     int model;
@@ -115,7 +171,7 @@ _check_error(gd_t gd, char *msg)
     int res = 0;
     unsigned char err;
 
-    gpib_wrtstr(gd, HP3488_ERR_QUERY);
+    gpib_wrtstr(gd, "ERROR");
     gpib_rdstr(gd, tmpbuf, sizeof(tmpbuf));   /* clears error */
 
     err = strtoul(tmpbuf, NULL, 10);
@@ -184,16 +240,16 @@ _disambiguate_ctype(gd_t gd, int slot)
     int err4, err9;
     int model;
 
-    gpib_wrtf(gd, "%s", HP3488_DISP_OFF);
+    gpib_wrtf(gd, "DOFF");
 
     fprintf(stderr, "%s: closing switches in slot %d to disambiguate card type\n", prog, slot);
     fprintf(stderr, "%s: avoid this in the future by using -C option\n", prog);
 
     lerr_flag = 0;  /* next logic error will set lerr_flag */
-    gpib_wrtf(gd, "%s %d04", HP3488_CLOSE, slot);
+    gpib_wrtf(gd, "CLOSE %d04", slot);
     err4 = lerr_flag;
     lerr_flag = 0;  /* next logic error will set lerr_flag */
-    gpib_wrtf(gd, "%s %d09", HP3488_CLOSE, slot);
+    gpib_wrtf(gd, "CLOSE %d09", slot);
     err9 = lerr_flag;
     lerr_flag = 1;  /* back to default logic error handling */
 
@@ -208,8 +264,8 @@ _disambiguate_ctype(gd_t gd, int slot)
         exit(1);
     }
 
-    gpib_wrtf(gd, "%s %d", HP3488_CRESET, slot);
-    gpib_wrtf(gd, "%s", HP3488_DISP_ON);
+    gpib_wrtf(gd, "CRESET %d", slot);
+    gpib_wrtf(gd, "DON");
 
     return model;
 }
@@ -222,7 +278,7 @@ _ctype(gd_t gd, int slot)
 {
     char buf[128];
 
-    gpib_wrtf(gd, "%s %d", HP3488_CTYPE, slot);
+    gpib_wrtf(gd, "CTYPE %d", slot);
     gpib_rdstr(gd, buf, sizeof(buf));
 
     if (strlen(buf) < 15) {
@@ -304,7 +360,7 @@ query_caddr(gd_t gd, char *caddr)
 {
     char buf[128];
 
-    gpib_wrtf(gd, "%s %s", HP3488_VIEW_QUERY, caddr);
+    gpib_wrtf(gd, "VIEW %s", caddr);
     gpib_rdstr(gd, buf, sizeof(buf));
 
     if (!strncmp(buf, "OPEN   1", 8))
@@ -382,7 +438,7 @@ open_targets(gd_t gd, char *str)
         if (my_hostlist_find(valid_targets, caddr) == -1)
             fprintf(stderr, "%s: %s: invalid channel address\n", prog, caddr);
         else
-            gpib_wrtf(gd, "%s %s", HP3488_OPEN, caddr);
+            gpib_wrtf(gd, "OPEN %s", caddr);
     }
     hostlist_iterator_destroy(it);
     hostlist_destroy(hl);
@@ -401,7 +457,7 @@ close_targets(gd_t gd, char *str)
         if (my_hostlist_find(valid_targets, caddr) == -1)
             fprintf(stderr, "%s: %s: invalid channel address\n", prog, caddr);
         else
-            gpib_wrtf(gd, "%s %s", HP3488_CLOSE, caddr);
+            gpib_wrtf(gd, "CLOSE %s", caddr);
     }
     hostlist_iterator_destroy(it);
     hostlist_destroy(hl);
@@ -424,7 +480,7 @@ list_targets()
 static void
 instrument_test(gd_t gd)
 {
-    gpib_wrtf(gd, "%s", HP3488_TEST);
+    gpib_wrtf(gd, "TEST");
     /* if we don't exit via serial poll callback, we passed */
     printf("%s: selftest passed\n", prog);
 }
@@ -441,12 +497,11 @@ instrument_clear(gd_t gd)
     gpib_clr(gd, 1000000);
 
     /* verify the instrument id is what we expect */
-    gpib_wrtf(gd, "%s", HP3488_ID_QUERY);
+    gpib_wrtf(gd, "ID?");
     gpib_rdstr(gd, tmpbuf, sizeof(tmpbuf));
 
-    if (strncmp(tmpbuf, HP3488_ID_RESPONSE, strlen(HP3488_ID_RESPONSE)) != 0) {
-        fprintf(stderr, "%s: device id %s != %s\n", prog, tmpbuf,
-                HP3488_ID_RESPONSE);
+    if (strncmp(tmpbuf, "HP3488A", 7) != 0) {
+        fprintf(stderr, "%s: device id %s != %s\n", prog, tmpbuf, "HP3488A");
         exit(1);
     }
 }
@@ -506,7 +561,7 @@ docmd(gd_t gd, char **av)
         } else if (strcmp(av[0], "id") == 0) {
             char tmpbuf[128];
 
-            gpib_wrtf(gd, "%s", HP3488_ID_QUERY);
+            gpib_wrtf(gd, "ID?");
             gpib_rdstr(gd, tmpbuf, sizeof(tmpbuf));
             printf("%s\n", tmpbuf);
 

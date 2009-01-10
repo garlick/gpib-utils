@@ -76,10 +76,6 @@ int     ics_set_ren_mode(ics_t ics, int flag);
  */
 int     ics_reload_config(ics_t ics);
 
-/* Reload factory config settings.
- */
-int     ics_reload_factory(ics_t ics);
-
 /* Commit (write) current config.
  */
 int     ics_commit_config(ics_t ics);

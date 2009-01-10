@@ -17,6 +17,10 @@
    along with gpib-utils; if not, write to the Free Software Foundation, 
    Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
 
+/* Stanford Research Systems DG535
+ * Digital Delay / Pulse Generator.
+ */
+
 #if HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -36,11 +40,77 @@
 #include <math.h>
 #include <stdint.h>
 
-#include "dg535.h"
 #include "gpib.h"
 #include "util.h"
 
 #define INSTRUMENT "dg535"
+
+#define DG535_DO_TRIG                   0       /* trigger input */
+#define DG535_DO_T0                     1       /* T0 output */
+#define DG535_DO_A                      2       /* A output */
+#define DG535_DO_B                      3       /* B output */
+#define DG535_DO_AB                     4       /* AB and -AB outputs */
+#define DG535_DO_C                      5       /* C output */
+#define DG535_DO_D                      6       /* D output */
+#define DG535_DO_CD                     7       /* CD and -CD output */
+
+#define DG535_OUT_NAMES { \
+    { DG535_DO_T0, "t0" }, \
+    { DG535_DO_A,  "a" }, \
+    { DG535_DO_B,  "b" }, \
+    { DG535_DO_AB, "ab" }, \
+    { DG535_DO_C,  "c" }, \
+    { DG535_DO_D,  "d" }, \
+    { DG535_DO_CD, "cd" }, \
+    { 0, NULL } \
+}
+
+#define DG535_OUT_TTL                   0
+#define DG535_OUT_NIM                   1
+#define DG535_OUT_ECL                   2
+#define DG535_OUT_VAR                   3
+
+#define DG535_OUT_MODES { \
+    { DG535_OUT_TTL, "ttl" }, \
+    { DG535_OUT_NIM, "nim" }, \
+    { DG535_OUT_ECL, "ecl" }, \
+    { DG535_OUT_VAR, "var" }, \
+    { 0, NULL } \
+}
+
+#define DG535_TRIG_INT                  0
+#define DG535_TRIG_EXT                  1
+#define DG535_TRIG_SS                   2
+#define DG535_TRIG_BUR                  3
+
+#define DG535_TRIG_MODES { \
+    { DG535_TRIG_INT, "int" }, \
+    { DG535_TRIG_EXT, "ext" }, \
+    { DG535_TRIG_SS,  "ss" }, \
+    { DG535_TRIG_BUR, "bur" }, \
+    { 0, NULL } \
+}
+
+/* Error status byte values.
+ */
+#define DG535_ERR_RECALL                0x40    /* recalled data was corrupt */
+#define DG535_ERR_DELAY_RANGE           0x20    /* delay range error */
+#define DG535_ERR_DELAY_LINKAGE         0x10    /* delay linkage error */
+#define DG535_ERR_CMDMODE               0x08    /* wrong mode for command */
+#define DG535_ERR_ERANGE                0x04    /* value out of range */
+#define DG535_ERR_NUMPARAM              0x02    /* wrong number of paramters */
+#define DG535_ERR_BADCMD                0x01    /* unrecognized command */
+
+/* Instrument status byte values.
+ * These bits can generate SRQ if present in the status mask.
+ */
+#define DG535_STAT_BADMEM               0x40    /* memory contents corrupted */
+#define DG535_STAT_SRQ                  0x20    /* service request */
+#define DG535_STAT_TOOFAST              0x10    /* trigger rate too high */
+#define DG535_STAT_PLL                  0x08    /* 80MHz PLL is unlocked */
+#define DG535_STAT_TRIG                 0x04    /* trigger has occurred */
+#define DG535_STAT_BUSY                 0x02    /* busy with timing cycle */
+#define DG535_STAT_CMDERR               0x01    /* command error detected */
 
 char *prog = "";
 static int verbose = 0;
@@ -123,7 +193,7 @@ _check_err(gd_t gd)
     int status;
 
     /* check error status */
-    gpib_wrtf(gd, "%s", DG535_ERROR_STATUS);
+    gpib_wrtf(gd, "ES");
     gpib_rdstr(gd, buf, sizeof(buf));
     if (*buf < '0' || *buf > '9') {
         fprintf(stderr, "%s: error reading error status byte\n", prog);
@@ -453,20 +523,20 @@ main(int argc, char *argv[])
     /* clear instrument to default settings */
     if (clear) {
         gpib_clr(gd, 0);
-        gpib_wrtf(gd, "%s", DG535_CLEAR);
+        gpib_wrtf(gd, "CL");
     }
 
     /* display string */
     if (display_string)
-        gpib_wrtf(gd, "%s %s", DG535_DISPLAY_STRING, display_string);
+        gpib_wrtf(gd, "DS %s", display_string);
 
     /* outputs */
     if (set_out_mode != -1)
-        gpib_wrtf(gd, "%s %d,%d", DG535_OUT_MODE, out_chan, set_out_mode);
+        gpib_wrtf(gd, "OM %d,%d", out_chan, set_out_mode);
     if (get_out_mode) {
         int i;
 
-        gpib_wrtf(gd, "%s %d", DG535_OUT_MODE, out_chan);
+        gpib_wrtf(gd, "OM %d", out_chan);
         if (gpib_rdf(gd, "%d", &i) != 1) {
             fprintf(stderr, "%s: error reading output mode\n", prog);
             exit_val = 1;
@@ -475,11 +545,11 @@ main(int argc, char *argv[])
         fprintf(stderr, "%s: %s\n", prog, findstr(out_modes, i));
     }
     if (Gopt)
-        gpib_wrtf(gd, "%s %d,%lf", DG535_OUT_AMPL, out_chan, set_out_ampl);
+        gpib_wrtf(gd, "OA %d,%lf", out_chan, set_out_ampl);
     if (get_out_ampl) {
         double d;
 
-        gpib_wrtf(gd, "%s %d", DG535_OUT_AMPL, out_chan);
+        gpib_wrtf(gd, "OA %d", out_chan);
         if (gpib_rdf(gd, "%lf", &d) != 1) {
             fprintf(stderr, "%s: error reading output amplitude\n", prog);
             exit_val = 1;
@@ -488,11 +558,11 @@ main(int argc, char *argv[])
         fprintf(stderr, "%s: %lf\n", prog, d);
     }
     if (Fopt)
-        gpib_wrtf(gd, "%s %d,%lf", DG535_OUT_OFFSET, out_chan, set_out_offset);
+        gpib_wrtf(gd, "OO %d,%lf", out_chan, set_out_offset);
     if (get_out_offset) {
         double d;
 
-        gpib_wrtf(gd, "%s %d", DG535_OUT_OFFSET, out_chan);
+        gpib_wrtf(gd, "OO %d", out_chan);
         if (gpib_rdf(gd, "%lf", &d) != 1) {
             fprintf(stderr, "%s: error reading output offset\n", prog);
             exit_val = 1;
@@ -501,11 +571,11 @@ main(int argc, char *argv[])
         fprintf(stderr, "%s: %lf\n", prog, d);
     }
     if (set_out_polarity != -1)
-        gpib_wrtf(gd, "%s %d,%d", DG535_OUT_POLARITY, out_chan, set_out_polarity);
+        gpib_wrtf(gd, "OP %d,%d", out_chan, set_out_polarity);
     if (get_out_polarity) {
         int i;
 
-        gpib_wrtf(gd, "%s %d", DG535_OUT_POLARITY, out_chan);
+        gpib_wrtf(gd, "OP %d", out_chan);
         if (gpib_rdf(gd, "%d", &i) != 1) {
             fprintf(stderr, "%s: error reading output polarity\n", prog);
             exit_val = 1;
@@ -514,11 +584,11 @@ main(int argc, char *argv[])
         fprintf(stderr, "%s: %s\n", prog, i == 0 ? "-" : "+");
     }
     if (set_out_z != -1)
-        gpib_wrtf(gd, "%s %d,%d", DG535_TERM_Z, out_chan, set_out_z);
+        gpib_wrtf(gd, "TZ %d,%d", out_chan, set_out_z);
     if (get_out_z) {
         int i;
 
-        gpib_wrtf(gd, "%s %d", DG535_TERM_Z, out_chan);
+        gpib_wrtf(gd, "TZ %d", out_chan);
         if (gpib_rdf(gd, "%d", &i) != 1) {
             fprintf(stderr, "%s: error reading output impedance\n", prog);
             exit_val = 1;
@@ -529,14 +599,14 @@ main(int argc, char *argv[])
 
     /* delay */
     if (set_delay_chan != -1) {
-        gpib_wrtf(gd, "%s %d,%d,%lf", DG535_DELAY_TIME, out_chan,
+        gpib_wrtf(gd, "DT %d,%d,%lf", out_chan,
                 set_delay_chan, set_delay_time);
     }
     if (get_delay) {
         int i;
         double d;
 
-        gpib_wrtf(gd, "%s %d", DG535_DELAY_TIME, out_chan);
+        gpib_wrtf(gd, "DT %d", out_chan);
         if (gpib_rdf(gd, "%d,%lf", &i, &d) != 2) {
             fprintf(stderr, "%s: error reading delay time\n", prog);
             exit_val = 1;
@@ -547,11 +617,11 @@ main(int argc, char *argv[])
 
     /* trigger */
     if (set_trig_mode != -1)
-        gpib_wrtf(gd, "%s %d", DG535_TRIG_MODE, set_trig_mode);
+        gpib_wrtf(gd, "TM %d", set_trig_mode);
     if (get_trig_slope) {
         int tmp;
 
-        gpib_wrtf(gd, "%s", DG535_TRIG_SLOPE);
+        gpib_wrtf(gd, "TS");
         if (gpib_rdf(gd, "%d", &tmp) != 1) {
             fprintf(stderr, "%s: error reading trigger slope\n", prog);
             exit_val = 1;
@@ -562,7 +632,7 @@ main(int argc, char *argv[])
     if (get_burst_count) {
         int tmp;
 
-        gpib_wrtf(gd, "%s", DG535_BURST_COUNT);
+        gpib_wrtf(gd, "BC");
         if (gpib_rdf(gd, "%d", &tmp) != 1) {
             fprintf(stderr, "%s: error reading trigger slope\n", prog);
             exit_val = 1;
@@ -573,7 +643,7 @@ main(int argc, char *argv[])
     if (get_trig_z) {
         int tmp;
 
-        gpib_wrtf(gd, "%s 0", DG535_TRIG_Z);
+        gpib_wrtf(gd, "TZ 0");
         if (gpib_rdf(gd, "%d", &tmp) != 1) {
             fprintf(stderr, "%s: error reading trigger impedence\n", prog);
             exit_val = 1;
@@ -586,7 +656,7 @@ main(int argc, char *argv[])
             || single_shot) {
         int tmode;
 
-        gpib_wrtf(gd, "%s", DG535_TRIG_MODE);
+        gpib_wrtf(gd, "TM");
         if (gpib_rdf(gd, "%d", &tmode) != 1) {
             fprintf(stderr, "%s: error reading trigger mode\n", prog);
             exit_val = 1;
@@ -615,16 +685,16 @@ main(int argc, char *argv[])
             }
         }
         if (set_trig_rate != 0.0 && tmode == DG535_TRIG_INT)
-            gpib_wrtf(gd, "%s 0,%lf", DG535_TRIG_RATE, set_trig_rate);
+            gpib_wrtf(gd, "TR 0,%lf", set_trig_rate);
         if (set_trig_rate != 0.0 && tmode == DG535_TRIG_BUR)
-            gpib_wrtf(gd, "%s 1,%lf", DG535_TRIG_RATE, set_trig_rate);
+            gpib_wrtf(gd, "TR 1,%lf", set_trig_rate);
         if (get_trig_rate) {
             double tmp;
 
             if (tmode == DG535_TRIG_INT)
-                gpib_wrtf(gd, "%s 0", DG535_TRIG_RATE);
+                gpib_wrtf(gd, "TR 0");
             else /* DG535_TRIG_BUR */
-                gpib_wrtf(gd, "%s 1", DG535_TRIG_RATE);
+                gpib_wrtf(gd, "TR 1");
             if (gpib_rdf(gd, "%lf", &tmp) != 1) {
                 fprintf(stderr, "%s: error reading trigger rate\n", prog);
                 exit_val = 1;
@@ -633,13 +703,13 @@ main(int argc, char *argv[])
             fprintf(stderr, "%s: %lfhz\n", prog, tmp);
         }
         if (set_trig_slope != -1)
-            gpib_wrtf(gd, "%s %d", DG535_TRIG_SLOPE, set_trig_slope);
+            gpib_wrtf(gd, "TS %d", set_trig_slope);
         if (set_burst_count != -1)
-            gpib_wrtf(gd, "%s %d", DG535_BURST_COUNT, set_burst_count);
+            gpib_wrtf(gd, "BC %d", set_burst_count);
         if (set_trig_z != -1)
-            gpib_wrtf(gd, "%s 0,%d", DG535_TRIG_Z, set_trig_z);
+            gpib_wrtf(gd, "TZ 0,%d", set_trig_z);
         if (single_shot)
-            gpib_wrtf(gd, "%s", DG535_SINGLE_SHOT);
+            gpib_wrtf(gd, "SS");
     }
 
     /* return front panel if requested */

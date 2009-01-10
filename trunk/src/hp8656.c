@@ -17,6 +17,9 @@
    along with gpib-utils; if not, write to the Free Software Foundation, 
    Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
 
+/* This instrument is listen-only (no SRQ, no serial/parallel poll).
+ */
+
 #if HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -34,7 +37,6 @@
 #include <sys/time.h>
 #include <math.h>
 
-#include "hp8656.h"
 #include "util.h"
 #include "gpib.h"
 
@@ -124,16 +126,13 @@ main(int argc, char *argv[])
                         prog);
                 exit(1);
             }
-            sprintf(cmdstr + strlen(cmdstr), "%s%s%.0lf%s", 
-                HP8656_FREQ, HP8656_INCR_SET, f, HP8656_UNIT_HZ);
+            sprintf(cmdstr + strlen(cmdstr), "FRIS%.0lfHZ", f);
             break;
         case 'f': /* --frequency */
             if (!strcasecmp(optarg, "up")) {
-                sprintf(cmdstr + strlen(cmdstr), "%s%s", 
-                        HP8656_FREQ, HP8656_STEP_UP);
+                sprintf(cmdstr + strlen(cmdstr), "FRUP");
             } else if (!strcasecmp(optarg, "dn") ||!strcasecmp(optarg, "down")){
-                sprintf(cmdstr + strlen(cmdstr), "%s%s", 
-                        HP8656_FREQ, HP8656_STEP_DN); 
+                sprintf(cmdstr + strlen(cmdstr), "FRDN");
             } else {
                 if (freqstr(optarg, &f) < 0) {
                     fprintf(stderr, "%s: error parsing frequency arg\n", prog);
@@ -147,8 +146,7 @@ main(int argc, char *argv[])
                     fprintf(stderr, "%s: freq out of range (100kHz-990MHz)\n",prog);
                     exit(1);
                 }
-                sprintf(cmdstr + strlen(cmdstr), "%s%.0lf%s", 
-                        HP8656_FREQ, f, HP8656_UNIT_HZ);
+                sprintf(cmdstr + strlen(cmdstr), "FR%.0lfHZ", f);
             }
             break;
         case 'i': /* --incrampl */
@@ -171,8 +169,7 @@ main(int argc, char *argv[])
                             prog);
                     exit(1);
                 }
-                sprintf(cmdstr + strlen(cmdstr), "%s%s%.2lf%s", 
-                    HP8656_AMPL, HP8656_INCR_SET, a, HP8656_UNIT_DB);
+                sprintf(cmdstr + strlen(cmdstr), "APIS%.2lfDB", a);
             } else {
                 /* XXX instrument ignored minus sign when dbm units used here */
                 a = dbmtov(a);  /* convert dbm to volts */
@@ -181,17 +178,14 @@ main(int argc, char *argv[])
                             "%s: incrampl out of range (0.01uV-1.57V)\n", prog);
                     exit(1);
                 }
-                sprintf(cmdstr + strlen(cmdstr), "%s%s%.2lf%s", 
-                    HP8656_AMPL, HP8656_INCR_SET, a*1E6, HP8656_UNIT_UV);
+                sprintf(cmdstr + strlen(cmdstr), "APIS%.2lfUV", a*1E6);
             }
             break;
         case 'A': /* --amplitude */
             if (!strcasecmp(optarg, "up")) {
-                sprintf(cmdstr + strlen(cmdstr), "%s%s", 
-                        HP8656_AMPL, HP8656_STEP_UP);
+                sprintf(cmdstr + strlen(cmdstr), "APUP");
             } else if (!strcasecmp(optarg, "dn") ||!strcasecmp(optarg, "down")){
-                sprintf(cmdstr + strlen(cmdstr), "%s%s", 
-                        HP8656_AMPL, HP8656_STEP_DN); 
+                sprintf(cmdstr + strlen(cmdstr), "APDN");
             } else {
                 if (amplstr(optarg, &a) < 0) {
                     fprintf(stderr, "%s: error parsing amplitude arg\n", prog);
@@ -208,8 +202,7 @@ main(int argc, char *argv[])
                 if (a < -127.0 || a > 13.0)
                     fprintf(stderr, "%s: warning: amplitude beyond cal\n", 
                             prog);
-                sprintf(cmdstr + strlen(cmdstr), "%s%.2lf%s", 
-                        HP8656_AMPL, a, HP8656_UNIT_DBM);
+                sprintf(cmdstr + strlen(cmdstr), "AP%.2lfDM", a);
             }
             break;
         case 'v': /* --verbose */
@@ -252,7 +245,7 @@ main(int argc, char *argv[])
      * FIXME: The actual settling time should be calculated based 
      * on info in the manual.
      */
-    if (cmdstr || clear)
+    if (*cmdstr || clear)
         sleep(2);
 
     /* return front panel if requested */
