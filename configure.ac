@@ -83,7 +83,7 @@ AC_CONFIG_FILES( \
   man/hptodino.1 \
   man/hptopbm.1 \
   man/ics8064.1 \
-  man/ics8065.1 \
+  man/icsconfig.1 \
   man/sr620.1 \
   man/gpib-utils.conf.5 \
 )

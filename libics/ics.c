@@ -49,8 +49,11 @@ static strtab_t errtab[] = {
     { 0,    "success" },
     { 1,    "syntax error" },
     { 5,    "parameter error" },
+    { 8,    "unsupported function" },
     { 0,    NULL },
 };
+
+extern char *prog;
 
 static char *
 findstr(strtab_t *tab, int num)
@@ -75,7 +78,7 @@ _mkstr(char *data, u_int len)
     char *new = malloc(len + 1);
 
     if (!new) {
-        fprintf(stderr, "libics: out of memory\n");
+        fprintf(stderr, "%s: out of memory\n", prog);
         exit(1);
     }
     memcpy(new, data, len);
@@ -100,7 +103,7 @@ _ip2str(unsigned int ip)
     in.s_addr = _reverse(htonl(ip));
     cpy = strdup(inet_ntoa(in));
     if (!cpy) {
-        fprintf(stderr, "libics: out of memory\n");
+        fprintf(stderr, "%s: out of memory\n", prog);
         exit(1);
     }
     return cpy;
@@ -112,7 +115,7 @@ _str2ip(char *str, unsigned int *ipp)
     struct in_addr in;
 
     if (inet_aton(str, &in) == 0) {
-        fprintf(stderr, "libics: invalid ip number\n");
+        fprintf(stderr, "%s: invalid ip number\n", prog);
         return 1;
     }
     *ipp = ntohl(_reverse(in.s_addr));
@@ -134,7 +137,8 @@ ics_get_interface_name(ics_t ics, char **strp)
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "libics: interface_name: %s\n", findstr(errtab, r->error));
+        fprintf(stderr, "%s: interface_name: %s\n", prog, 
+                findstr(errtab, r->error));
         return r->error;
     }
     *strp = _mkstr(r->name.name_val, r->name.name_len);
@@ -157,7 +161,8 @@ ics_set_interface_name(ics_t ics, char *str)
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "libics: interface_name: %s\n", findstr(errtab, r->error));
+        fprintf(stderr, "%s: interface_name: %s\n", prog, 
+                findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -177,7 +182,8 @@ ics_get_comm_timeout(ics_t ics, unsigned int *timeoutp)
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "libics: comm_timeout: %s\n", findstr(errtab, r->error));
+        fprintf(stderr, "%s: comm_timeout: %s\n", prog,
+                findstr(errtab, r->error));
         return r->error;
     }
     *timeoutp = r->timeout;
@@ -199,7 +205,8 @@ ics_set_comm_timeout(ics_t ics, unsigned int timeout)
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "libics: comm_timeout: %s\n", findstr(errtab, r->error));
+        fprintf(stderr, "%s: comm_timeout: %s\n", prog,
+                findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -219,7 +226,8 @@ ics_get_static_ip_mode(ics_t ics, int *flagp)
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "libics: static_ip_mode: %s\n", findstr(errtab, r->error));
+        fprintf(stderr, "%s: static_ip_mode: %s\n", prog,
+                findstr(errtab, r->error));
         return r->error;
     }
     *flagp = r->mode;
@@ -241,7 +249,8 @@ ics_set_static_ip_mode(ics_t ics, int flag)
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "libics: static_ip_mode: %s\n", findstr(errtab, r->error));
+        fprintf(stderr, "%s: static_ip_mode: %s\n", prog,
+                findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -261,7 +270,7 @@ ics_get_ip_number(ics_t ics, char **ipstrp)
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "libics: ip_number: %s\n", findstr(errtab, r->error));
+        fprintf(stderr, "%s: ip_number: %s\n", prog, findstr(errtab, r->error));
         return r->error;
     }
     *ipstrp = _ip2str(r->ip);
@@ -284,7 +293,7 @@ ics_set_ip_number(ics_t ics, char *ipstr)
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "libics: ip_number: %s\n", findstr(errtab, r->error));
+        fprintf(stderr, "%s: ip_number: %s\n", prog, findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -304,7 +313,7 @@ ics_get_netmask(ics_t ics, char **ipstrp)
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "libics: netmask: %s\n", findstr(errtab, r->error));
+        fprintf(stderr, "%s: netmask: %s\n", prog, findstr(errtab, r->error));
         return r->error;
     }
     *ipstrp = _ip2str(r->ip);
@@ -327,7 +336,7 @@ ics_set_netmask(ics_t ics, char *ipstr)
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "libics: netmask: %s\n", findstr(errtab, r->error));
+        fprintf(stderr, "%s: netmask: %s\n", prog, findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -347,7 +356,7 @@ ics_get_gateway(ics_t ics, char **ipstrp)
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "libics: gateway: %s\n", findstr(errtab, r->error));
+        fprintf(stderr, "%s: gateway: %s\n", prog, findstr(errtab, r->error));
         return r->error;
     }
     *ipstrp = _ip2str(r->ip);
@@ -370,7 +379,7 @@ ics_set_gateway(ics_t ics, char *ipstr)
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "libics: gateway: %s\n", findstr(errtab, r->error));
+        fprintf(stderr, "%s: gateway: %s\n", prog, findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -390,7 +399,7 @@ ics_get_keepalive(ics_t ics, unsigned int *timep)
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "libics: keepalive: %s\n", findstr(errtab, r->error));
+        fprintf(stderr, "%s: keepalive: %s\n", prog, findstr(errtab, r->error));
         return r->error;
     }
     *timep = r->time;
@@ -412,7 +421,7 @@ ics_set_keepalive(ics_t ics, unsigned int time)
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "libics: keepalive: %s\n", findstr(errtab, r->error));
+        fprintf(stderr, "%s: keepalive: %s\n", prog, findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -432,7 +441,8 @@ ics_get_gpib_address(ics_t ics, unsigned int *addrp)
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "libics: gpib_address: %s\n", findstr(errtab, r->error));
+        fprintf(stderr, "%s: gpib_address: %s\n", prog,
+                findstr(errtab, r->error));
         return r->error;
     }
     *addrp = r->address;
@@ -454,7 +464,8 @@ ics_set_gpib_address(ics_t ics, unsigned int addr)
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "libics: gpib_address: %s\n", findstr(errtab, r->error));
+        fprintf(stderr, "%s: gpib_address: %s\n", prog,
+                findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -474,7 +485,8 @@ ics_get_system_controller(ics_t ics, int *flagp)
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "libics: system_controller: %s\n", findstr(errtab, r->error));
+        fprintf(stderr, "%s: system_controller: %s\n", prog,
+                findstr(errtab, r->error));
         return r->error;
     }
     *flagp = r->controller;
@@ -496,7 +508,8 @@ ics_set_system_controller(ics_t ics, int flag)
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "libics: system_controller: %s\n", findstr(errtab, r->error));
+        fprintf(stderr, "%s: system_controller: %s\n", prog,
+                findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -516,7 +529,7 @@ ics_get_ren_mode(ics_t ics, int *flagp)
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "libics: ren_mode: %s\n", findstr(errtab, r->error));
+        fprintf(stderr, "%s: ren_mode: %s\n", prog, findstr(errtab, r->error));
         return r->error;
     }
     *flagp = r->ren;
@@ -538,7 +551,7 @@ ics_set_ren_mode(ics_t ics, int flag)
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "libics: ren_mode: %s\n", findstr(errtab, r->error));
+        fprintf(stderr, "%s: ren_mode: %s\n", prog, findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -556,7 +569,8 @@ ics_reload_config(ics_t ics)
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "libics: reload_config: %s\n", findstr(errtab, r->error));
+        fprintf(stderr, "%s: reload_config: %s\n", prog,
+                findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -574,7 +588,8 @@ ics_commit_config(ics_t ics)
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "libics: commit_config: %s\n", findstr(errtab, r->error));
+        fprintf(stderr, "%s: commit_config: %s\n", prog,
+                findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -592,7 +607,7 @@ ics_reboot(ics_t ics)
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "libics: reboot: %s\n", findstr(errtab, r->error));
+        fprintf(stderr, "%s: reboot: %s\n", prog, findstr(errtab, r->error));
         return r->error;
     }
     return 0;
@@ -610,7 +625,8 @@ ics_idn_string(ics_t ics, char **strp)
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "libics: idn_string: %s\n", findstr(errtab, r->error));
+        fprintf(stderr, "%s: idn_string: %s\n", prog,
+                findstr(errtab, r->error));
         return r->error;
     }
     *strp = _mkstr(r->idn.idn_val, r->idn.idn_len);
@@ -629,13 +645,13 @@ ics_error_logger(ics_t ics, unsigned int **errp, int *countp)
         exit(1);
     }
     if (r->error) {
-        fprintf(stderr, "libics: error_logger: %s\n",
+        fprintf(stderr, "%s: error_logger: %s\n", prog,
                 findstr(errtab, r->error));
         return r->error;
     }
     *errp = malloc(r->count * sizeof(unsigned int));
     if (!*errp) {
-        fprintf(stderr, "libics: out of memory\n");
+        fprintf(stderr, "%s: out of memory\n", prog);
         exit(1);
     }
     memcpy(*errp, r->errors, r->count * sizeof(unsigned int));
@@ -665,7 +681,7 @@ ics_init (char *host)
         *p = '\0';
     new = malloc(sizeof(struct ics_struct));
     if (!new) {
-        fprintf(stderr, "libics: out of memory\n");
+        fprintf(stderr, "%s: out of memory\n", prog);
         exit(1);
     }
     new->ics_magic = ICS_MAGIC;

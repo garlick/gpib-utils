@@ -6,7 +6,7 @@ ics8064 \- control ICS 8064 Ethernet-Relay Interface
 .B ics8064 [\fIOPTIONS\fR]
 .fi
 .SH DESCRIPTION
-\fBics8064\fR is used to configure and control
+\fBics8064\fR is used to control
 the ICS Electronics 8064 Ethernet-Relay Interface via its LAN interface.
 .SH OPTIONS
 .TP

@@ -10,7 +10,7 @@ man1_MANS = \
 	hptodino.1 \
 	hptopbm.1 \
 	ics8064.1 \
-	ics8065.1 \
+        icsconfig.1 \
 	sr620.1
 
 man5_MANS = \
@@ -28,5 +28,5 @@ EXTRA_DIST = \
 	hptodino.1 \
 	hptopbm.1 \
 	ics8064.1 \
-	ics8065.1 \
+        icsconfig.1 \
 	sr620.1
