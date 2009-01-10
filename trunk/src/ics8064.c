@@ -29,7 +29,6 @@
 #include <unistd.h>
 #include <string.h>
 
-#include "ics.h"
 #include "util.h"
 #include "gpib.h"
 #include "hostlist.h"
@@ -37,37 +36,14 @@
 
 #define INSTRUMENT "ics8064"
 
-#define OPTIONS "ea:cCrjJ:tT:sS:zZ:kK:gG:nN:iv0:1:qQmIRlL"
+#define OPTIONS "a:vcli0:1:qQIRL"
 #if HAVE_GETOPT_LONG
 #define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
 static struct option longopts[] = {
-        /* general */
         {"address",             required_argument,  0, 'a'},
         {"verbose",             no_argument,        0, 'v'},
         {"clear",               no_argument,        0, 'c'},
         {"local",               no_argument,        0, 'l'},
-
-        /* these correspond to 8064-implemented ICS config RPCL functions */
-        {"get-interface-name",  no_argument,        0, 'j'},
-        {"set-interface-name",  required_argument,  0, 'J'},
-        {"get-comm-timeout",    no_argument,        0, 't'},
-        {"set-comm-timeout",    required_argument,  0, 'T'},
-        {"get-static-ip-mode",  no_argument,        0, 's'},
-        {"set-static-ip-mode",  required_argument,  0, 'S'},
-        {"get-ip-number",       no_argument,        0, 'z'},
-        {"set-ip-number",       required_argument,  0, 'Z'},
-        {"get-netmask",         no_argument,        0, 'n'},
-        {"set-netmask",         required_argument,  0, 'N'},
-        {"get-gateway",         no_argument,        0, 'g'},
-        {"set-gateway",         required_argument,  0, 'G'},
-        {"get-keepalive",       no_argument,        0, 'k'},
-        {"set-keepalive",       required_argument,  0, 'K'},
-        {"reload-config",       no_argument,        0, 'C'},
-        {"commit-config",       no_argument,        0, 'm'},
-        {"get-errlog",          no_argument,        0, 'e'},
-        {"reboot",              no_argument,        0, 'r'},
-
-        /* vxi */
         {"get-idn-string",      no_argument,        0, 'i'},
         {"open",                required_argument,  0, '0'},
         {"close",               required_argument,  0, '1'},
@@ -76,14 +52,11 @@ static struct option longopts[] = {
         {"shell",               no_argument,        0, 'I'},
         {"radio",               no_argument,        0, 'R'},
         {"selftest",            no_argument,        0, 'L'},
-
-        {0, 0, 0, 0}
 };
 #else
 #define GETOPT(ac,av,opt,lopt) getopt(ac,av,opt)
 #endif
 
-static strtab_t errtab[] = ICS_ERRLOG;
 char *prog;
 static int radio = 0;
 
@@ -98,24 +71,6 @@ usage(void)
   "  -c,--clear                set default values\n"
   "  -l,--local                return instrument to local operation on exit\n"
   "  -v,--verbose              show protocol on stderr\n"
-  "  -j,--get-interface-name   get VXI-11 logical name (e.g. gpib0)\n"
-  "  -J,--set-interface-name   set VXI-11 logical name (e.g. gpib0)\n"
-  "  -t,--get-comm-timeout     get TCP timeout (in seconds)\n"
-  "  -T,--set-comm-timeout     set TCP timeout (in seconds)\n"
-  "  -s,--get-static-ip-mode   get static IP mode (0=disabled, 1=enabled)\n"
-  "  -S,--set-static-ip-mode   set static IP mode (0=disabled, 1=enabled)\n"
-  "  -z,--get-ip-number        get IP number (a.b.c.d)\n"
-  "  -Z,--set-ip-number        set IP number (a.b.c.d)\n"
-  "  -n,--get-netmask          get netmask (a.b.c.d)\n"
-  "  -N,--set-netmask          set netmask (a.b.c.d)\n"
-  "  -g,--get-gateway          get gateway (a.b.c.d)\n"
-  "  -G,--set-gateway          set gateway (a.b.c.d)\n"
-  "  -k,--get-keepalive        get keepalive time (in seconds)\n"
-  "  -K,--set-keepalive        set keepalive time (in seconds)\n"
-  "  -C,--reload-config        force reload of default config\n"
-  "  -m,--commit-config        commit (write) current config\n"
-  "  -r,--reboot               reboot\n"
-  "  -e,--get-errlog           get error log (side effect: log is cleared)\n"
   "  -i,--get-idn-string       get idn string\n"
   "  -0,--open [targets]       open the specified relays\n"
   "  -1,--close [targets]      close the specified relays\n" 
@@ -348,31 +303,11 @@ _shell(gd_t gd)
 int
 main(int argc, char *argv[])
 {
-    ics_t ics = NULL;
     gd_t gd = NULL;
     int c;
     char *addr = NULL;
-    int get_interface_name = 0;
-    char *set_interface_name = NULL;
-    int get_comm_timeout = 0;
-    int set_comm_timeout = -1;
-    int get_static_ip_mode = 0;
-    int set_static_ip_mode = -1;
-    int get_ip_number = 0;
-    char *set_ip_number = NULL;
-    int get_netmask = 0;
-    char *set_netmask = NULL;
-    int get_gateway = 0;
-    char *set_gateway = NULL;
-    int get_keepalive = 0;
-    int set_keepalive = -1;
-    int reload_config = 0;
-    int commit_config = 0;
-    int reboot = 0;
     int get_idn = 0;
-    int get_errlog  = 0;
-    int ics_todo = 0;
-    int vxi_todo = 0;
+    int todo = 0;
     int verbose = 0;
     char *open = NULL;
     char *close = NULL;
@@ -394,122 +329,50 @@ main(int argc, char *argv[])
                 verbose++;
                 break;
             case 'l' :  /* --local */
-                vxi_todo++;
+                todo++;
                 local++;
                 break;
             case 'c' :  /* --clear */
                 clear++;
-                vxi_todo++;
-                break;
-            case 'j' :  /* --get-interface-name */
-                get_interface_name = 1;
-                ics_todo++;
-                break;
-            case 'J' :  /* --set-interface-name */
-                set_interface_name = optarg;
-                ics_todo++;
-                break;
-            case 't' :  /* --get-comm-timeout */
-                get_comm_timeout = 1;
-                ics_todo++;
-                break;
-            case 'T' :  /* --set-comm-timeout */
-                set_comm_timeout = strtoul(optarg, NULL, 0);
-                ics_todo++;
-                break;
-            case 's' :  /* --get-static-ip-mode */
-                get_static_ip_mode = 1;
-                ics_todo++;
-                break;
-            case 'S' :  /* --set-static-ip-mode */
-                set_static_ip_mode = strtoul(optarg, NULL, 0);
-                ics_todo++;
-                break;
-            case 'z' :  /* --get-ip-number */
-                get_ip_number = 1;
-                ics_todo++;
-                break;
-            case 'Z' :  /* --set-ip-number */
-                set_ip_number = optarg;
-                ics_todo++;
-                break;
-            case 'n' :  /* --get-netmask */
-                get_netmask = 1;
-                ics_todo++;
-                break;
-            case 'N' :  /* --set-netmask */
-                set_netmask = optarg;
-                ics_todo++;
-                break;
-            case 'g' :  /* --get-gateway */
-                get_gateway = 1;
-                ics_todo++;
-                break;
-            case 'G' :  /* --set-gateway */
-                set_gateway = optarg;
-                ics_todo++;
-                break;
-            case 'k' :  /* --get-keepalive */
-                get_keepalive = 1;
-                ics_todo++;
-                break;
-            case 'K' :  /* --set-keepalive */
-                set_keepalive = strtoul(optarg, NULL, 0);
-                ics_todo++;
-                break;
-            case 'C':   /* --reload-config */
-                reload_config = 1;
-                ics_todo++;
-                break;
-            case 'm':   /* --commit-config */
-                commit_config = 1;
-                ics_todo++;
-                break;
-            case 'e' :  /* --get-errlog */
-                get_errlog = 1;
-                ics_todo++;
-                break;
-            case 'r' :  /* --reboot */
-                reboot = 1;
-                ics_todo++;
+                todo++;
                 break;
             case 'i' :  /* --get-idn-string */
                 get_idn = 1;
-                vxi_todo++;
+                todo++;
                 break;
             case '0' :  /* --open */
                 open = optarg;
-                vxi_todo++;
+                todo++;
                 break;
             case '1' :  /* --close */
                 close = optarg;
-                vxi_todo++;
+                todo++;
                 break;
             case 'q' :  /* --query */
                 query = 1;
-                vxi_todo++;
+                todo++;
                 break;
             case 'Q' :  /* --query-dig */
                 query_dig = 1;
-                vxi_todo++;
+                todo++;
                 break;
             case 'I' :  /* --shell */
                 shell++;
-                vxi_todo++;
+                todo++;
                 break;
             case 'R' :  /* --radio */
                 radio++;
                 break;
             case 'L' :  /* --selftest */
                 selftest++;
-                vxi_todo++;
+                todo++;
                 break;
             default:
                 usage();
                 break;
         }
     }
-    if (optind < argc || (!ics_todo && !vxi_todo))
+    if (optind < argc || !todo)
         usage();
 
     if (!addr)
@@ -520,147 +383,7 @@ main(int argc, char *argv[])
         exit(1);
     }
 
-    /** ICS config funtions.
-     **/
-
-    if (ics_todo) {
-        ics = ics_init(addr);
-        if (!ics)
-            exit(1);
-    }
-
-    /* interface_name */
-    if (get_interface_name) {
-        char *tmpstr;
-
-        if (ics_get_interface_name(ics, &tmpstr) != 0)
-            goto done;
-        fprintf(stderr, "%s: %s\n", prog, tmpstr);
-        free(tmpstr);
-    }
-    if (set_interface_name) {
-        if (ics_set_interface_name(ics, set_interface_name) != 0)
-            goto done;
-    }
-
-    /* comm_timeout */
-    if (get_comm_timeout) {
-        unsigned int timeout;
-
-        if (ics_get_comm_timeout(ics, &timeout) != 0)
-            goto done;
-        fprintf(stderr, "%s: %u\n", prog, timeout);
-    }
-    if (set_comm_timeout != -1) {
-        if (ics_set_comm_timeout(ics, set_comm_timeout) != 0)
-            goto done;
-    }
-
-    /* static_ip_mode */
-    if (get_static_ip_mode) {
-        int flag;
-
-        if (ics_get_static_ip_mode(ics, &flag) != 0)
-            goto done;
-        fprintf(stderr, "%s: %u\n", prog, flag);
-    }
-    if (set_static_ip_mode != -1) {
-        if (ics_set_static_ip_mode(ics, set_static_ip_mode) != 0)
-            goto done;
-    }
-    
-    /* ip_number */
-    if (get_ip_number) {
-        char *tmpstr;
-
-        if (ics_get_ip_number(ics, &tmpstr) != 0)
-            goto done;
-        fprintf(stderr, "%s: %s\n", prog, tmpstr);
-        free(tmpstr);
-    }
-    if (set_ip_number) {
-        if (ics_set_ip_number(ics, set_ip_number) != 0)
-            goto done;
-    }
-
-    /* netmask */
-    if (get_netmask) {
-        char *tmpstr;
-
-        if (ics_get_netmask(ics, &tmpstr) != 0)
-            goto done;
-        fprintf(stderr, "%s: %s\n", prog, tmpstr);
-        free(tmpstr);
-    }
-    if (set_netmask) {
-        if (ics_set_netmask(ics, set_netmask) != 0)
-            goto done;
-    }
-
-    /* gateway */
-    if (get_gateway) {
-        char *tmpstr;
-
-        if (ics_get_gateway(ics, &tmpstr) != 0)
-            goto done;
-        fprintf(stderr, "%s: %s\n", prog, tmpstr);
-        free(tmpstr);
-    }
-    if (set_gateway) {
-        if (ics_set_gateway(ics, set_gateway) != 0)
-            goto done;
-    }
-
-    /* keepalive */
-    if (get_keepalive) {
-        unsigned int t;
-
-        if (ics_get_keepalive(ics, &t) != 0)
-            goto done;
-        fprintf(stderr, "%s: %u\n", prog, t);
-    }
-    if (set_keepalive != -1) {
-        if (ics_set_keepalive(ics, set_keepalive) != 0)
-            goto done;
-    }
-
-    /* reload_config */
-    if (reload_config) {
-        if (ics_reload_config(ics) != 0)
-            goto done;
-        fprintf(stderr, "%s: default config reloaded\n", prog);
-    }
-
-    /* commit_config */
-    if (commit_config) {
-        if (ics_commit_config(ics) != 0)
-            goto done;
-        fprintf(stderr, "%s: current config written\n", prog);
-    }
-
-    /* get_errlog */
-    if (get_errlog) {
-        unsigned int *tmperr;
-        int i, tmpcount = 0;
-
-        if (ics_error_logger(ics, &tmperr, &tmpcount) != 0)
-            goto done;
-        for (i = 0; i < tmpcount ; i++)
-            fprintf(stderr, "%s: %s\n", prog, findstr(errtab, tmperr[i]));
-        free(tmperr);
-    }
-
-    /* reboot */
-    if (reboot) {
-        if (ics_reboot(ics) != 0)
-            goto done;
-        fprintf(stderr, "%s: rebooting\n", prog);
-    }
-
-    /** Now vxi operations.
-     **/
-
-    if (vxi_todo) {
+    if (todo) {
         gd = gpib_init(addr , _interpret_status, 100000);
         if (!gd) {
             fprintf(stderr, "%s: device initialization failed for address %s\n",
@@ -696,8 +419,6 @@ main(int argc, char *argv[])
         gpib_loc(gd);
 
 done:
-    if (ics)
-        ics_fini(ics);
     if (gd)
         gpib_fini(gd);
     exit(0);

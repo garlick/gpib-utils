@@ -4,6 +4,12 @@
 
 	* src/* : Reduce use of needless preprocessor macros for ASCII cmds.
 
+	* src/icsconfig.c : Factor ICS config from ics8064.c ics8065.c.
+
+	* src/ics8064.c : Drop ICS config portion.
+
+	* src/ics8065.c : Removed.
+
 2009-01-08 Jim Garlick <garlick.jim@gmail.com>
 
 	* gpib-utils.spec : Drop doc reference to missing examples directory.
