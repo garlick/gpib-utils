@@ -36,6 +36,16 @@
 
 #define INSTRUMENT "ics8064"
 
+/* bit values for 8064 ESR register */
+#define ICS8064_ESR_QUERY_ERR       0x4
+#define ICS8064_ESR_FLASH_CORRUPT   0x8
+#define ICS8064_ESR_EXEC_ERR        0x10
+#define ICS8064_ESR_CMD_ERR         0x20
+
+/* bit values for 8064 status register */
+#define ICS8064_STB_ESR             0x20
+#define ICS8064_STB_MAV             0x10
+
 #define OPTIONS "a:vcli0:1:qQIRL"
 #if HAVE_GETOPT_LONG
 #define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
@@ -57,11 +67,86 @@ static struct option longopts[] = {
 #define GETOPT(ac,av,opt,lopt) getopt(ac,av,opt)
 #endif
 
+static int _interpret_status(gd_t gd, unsigned char status, char *msg);
+static void _clear(gd_t gd);
+static void _usage(void);
+static void _query_relays(gd_t gd);
+static void _open_relays(gd_t gd, char *targets);
+static void _close_relays(gd_t gd, char *targets);
+static int _validate_targets(char *targets);
+static void _shell(gd_t gd);
+static void _get_idn(gd_t gd);
+static void _query_digital(gd_t gd);
+static void _selftest(gd_t gd);
+
 char *prog;
 static int radio = 0;
 
-void
-usage(void)
+int
+main(int argc, char *argv[])
+{
+    gd_t gd;
+    int c;
+    int exit_val = 0;
+    int print_usage = 0;
+
+    gd = gpib_init_args(argc, argv, OPTIONS, longopts, INSTRUMENT,
+                        _interpret_status, 100000, &print_usage);
+    if (print_usage)
+        _usage();
+    if (!gd)
+        exit(1);
+
+    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
+        switch (c) {
+            case 'a' :  /* handled in gpib_init_args() */
+            case 'v' :
+                break;
+            case 'l' :  /* --local */
+                gpib_loc(gd);
+                break;
+            case 'c' :  /* --clear */
+                _clear(gd);
+                break;
+            case 'i' :  /* --get-idn-string */
+                _get_idn(gd);
+                break;
+            case '0' :  /* --open */
+                if (_validate_targets(optarg))
+                    _open_relays(gd, optarg);
+                else
+                    exit_val = 1;
+                break;
+            case '1' :  /* --close */
+                if (_validate_targets(optarg))
+                    _close_relays(gd, optarg);
+                else
+                    exit_val = 1;
+                break;
+            case 'q' :  /* --query */
+                _query_relays(gd);
+                break;
+            case 'Q' :  /* --query-dig */
+                _query_digital(gd);
+                break;
+            case 'I' :  /* --shell */
+                _shell(gd);
+                break;
+            case 'R' :  /* --radio */
+                radio++;
+                break;
+            case 'L' :  /* --selftest */
+                _selftest(gd);
+                break;
+        }
+    }
+
+    gpib_fini(gd);
+    exit(exit_val);
+}
+
+static void
+_usage(void)
 {
     char *addr = gpib_default_addr(INSTRUMENT);
 
@@ -82,17 +167,6 @@ usage(void)
                        , prog, addr ? addr : "no default");
         exit(1);
 }
-
-/* bit values for 8064 ESR register */
-#define ICS8064_ESR_QUERY_ERR       0x4
-#define ICS8064_ESR_FLASH_CORRUPT   0x8
-#define ICS8064_ESR_EXEC_ERR        0x10
-#define ICS8064_ESR_CMD_ERR         0x20
-
-/* bit values for 8064 status register */
-#define ICS8064_STB_ESR             0x20
-#define ICS8064_STB_MAV             0x10
-
 
 /* Interpet serial poll results (status byte)
  *   Return: 0=non-fatal/no error, >0=fatal, -1=retry.
@@ -137,7 +211,7 @@ _clear(gd_t gd)
            | ICS8064_ESR_EXEC_ERR  | ICS8064_ESR_CMD_ERR));
 }
 
-void
+static void
 _selftest(gd_t gd)
 {
     char tmpstr[128];
@@ -300,129 +374,6 @@ _shell(gd_t gd)
     }
 }
 
-int
-main(int argc, char *argv[])
-{
-    gd_t gd = NULL;
-    int c;
-    char *addr = NULL;
-    int get_idn = 0;
-    int todo = 0;
-    int verbose = 0;
-    char *open = NULL;
-    char *close = NULL;
-    int query = 0;
-    int query_dig = 0;
-    int clear = 0;
-    int shell = 0;
-    int local = 0;
-    int selftest = 0;
-
-    prog = basename(argv[0]);
-
-    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
-        switch (c) {
-            case 'a' :  /* --address */
-                addr = optarg;
-                break;
-            case 'v' :  /* --verbose */
-                verbose++;
-                break;
-            case 'l' :  /* --local */
-                todo++;
-                local++;
-                break;
-            case 'c' :  /* --clear */
-                clear++;
-                todo++;
-                break;
-            case 'i' :  /* --get-idn-string */
-                get_idn = 1;
-                todo++;
-                break;
-            case '0' :  /* --open */
-                open = optarg;
-                todo++;
-                break;
-            case '1' :  /* --close */
-                close = optarg;
-                todo++;
-                break;
-            case 'q' :  /* --query */
-                query = 1;
-                todo++;
-                break;
-            case 'Q' :  /* --query-dig */
-                query_dig = 1;
-                todo++;
-                break;
-            case 'I' :  /* --shell */
-                shell++;
-                todo++;
-                break;
-            case 'R' :  /* --radio */
-                radio++;
-                break;
-            case 'L' :  /* --selftest */
-                selftest++;
-                todo++;
-                break;
-            default:
-                usage();
-                break;
-        }
-    }
-    if (optind < argc || !todo)
-        usage();
-
-    if (!addr)
-        addr = gpib_default_addr(INSTRUMENT);
-    if (!addr) {
-        fprintf(stderr, "%s: no default address for %s, use --address\n",
-                prog, INSTRUMENT);
-        exit(1);
-    }
-
-    if (todo) {
-        gd = gpib_init(addr , _interpret_status, 100000);
-        if (!gd) {
-            fprintf(stderr, "%s: device initialization failed for address %s\n",
-                    prog, addr);
-            exit(1);
-        }
-        if (verbose)
-            gpib_set_verbose(gd, 1);
-    }
-    if (clear)
-        _clear(gd);
-    if (selftest)
-        _selftest(gd);
-    if (get_idn)
-        _get_idn(gd);
-    if (open) {
-        if (!_validate_targets(open))
-            goto done;
-        _open_relays(gd, open);
-    }
-    if (close) {
-        if (!_validate_targets(close))
-            goto done;
-        _close_relays(gd, close);
-    }
-    if (query)
-        _query_relays(gd);
-    if (query_dig)
-        _query_digital(gd);
-    if (shell)
-        _shell(gd);
-    if (local)
-        gpib_loc(gd);
-
-done:
-    if (gd)
-        gpib_fini(gd);
-    exit(0);
-}
 
 /*
  * vi:tabstop=4 shiftwidth=4 expandtab

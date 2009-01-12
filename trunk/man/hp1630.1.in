@@ -8,14 +8,7 @@ hp1630 \- control HP 1630/31 logic analyzer
 .fi
 .SH DESCRIPTION
 \fBhp1630\fR controls the HP 1630/31 logic analyzer via its GPIB interface.
-.PP
-\fBhp1630\fR performs actions selected on the command line in a fixed sequence:
-.IP
-.nf
-clear
-set date
-save/restore/print operation
-local
+\fBhp1630\fR performs actions in the order they appear on the command line.
 .SH OPTIONS
 \fBhp1630\fR accepts the following command line options:
 .TP

@@ -83,12 +83,16 @@
 #define HP3457_AUXERR_RAM      0x2000      /* volatile RAM failure */
 #define HP3457_AUXERR_CALRAM   0x4000      /* cal RAM protection failure */
 
-/*
- * vi:tabstop=4 shiftwidth=4 expandtab
- */
+static void _usage(void);
+static void _checkid(gd_t gd);
+static void _checkrange(gd_t gd);
+static double _gettime(void);
+static void _sleep_sec(double sec);
+static int _interpret_status(gd_t gd, unsigned char status, char *msg);
+static void _checkid(gd_t gd);
+static void _checkrange(gd_t gd);
 
 char *prog = "";
-static int verbose = 0;
 
 #define OPTIONS "a:f:r:t:m:H:s:T:d:vclAS"
 #if HAVE_GETOPT_LONG
@@ -113,8 +117,121 @@ static struct option longopts[] = {
 #define GETOPT(ac,av,opt,lopt) getopt(ac,av,opt)
 #endif
 
+int
+main(int argc, char *argv[])
+{
+    gd_t gd;
+    double freq = 0, period = 0;
+    int c, samples = 0;
+    int print_usage = 0, showtime = 0;
+
+    gd = gpib_init_args(argc, argv, OPTIONS, longopts, INSTRUMENT,
+                        _interpret_status, 0, &print_usage);
+    if (print_usage)
+        _usage();
+    if (!gd)
+        exit(1);
+
+    gpib_set_reos(gd, 1);
+
+    /*
+     * Handle options.
+     */
+    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
+        switch (c) {
+        case 'a': /* -a and -v handled in gpib_init_args () */
+        case 'v': /* --verbose */
+            break;
+        case 'c': /* --clear */
+            gpib_clr(gd, 1000000);
+            _checkid(gd);
+            gpib_wrtf(gd, "PRESET");
+            break;
+        case 'l': /* --local */
+            gpib_wrtf(gd, "RESET"); /* sets defaults for local operation */
+            gpib_loc(gd); 
+            break;
+        case 'A': /* --autocal */
+            gpib_wrtf(gd, "ACAL ALL");
+            fprintf(stderr, "%s: waiting 35 sec for AC+ohms autocal\n", prog);
+            fprintf(stderr, "%s: inputs should be disconnected\n", prog);
+            sleep(35); 
+            fprintf(stderr, "%s: autocal complete\n", prog);
+            break;
+        case 'S': /* --selftest */
+            gpib_wrtf(gd, "TEST");
+            fprintf(stderr, "%s: waiting 7 sec for self-test\n", prog);
+            sleep(7); 
+            fprintf(stderr, "%s: self-test complete\n", prog);
+            break;
+        case 'T': /* --period */
+            if (freqstr(optarg, &freq) < 0) {
+                fprintf(stderr, "%s: error parsing period argument\n", prog);
+                fprintf(stderr, "%s: use freq units: %s\n", prog, FREQ_UNITS);
+                fprintf(stderr, "%s: or period units: %s\n", prog,PERIOD_UNITS);
+                exit(1);
+            }
+            period = 1.0/freq;
+            break;
+        case 's': /* --samples */
+            samples = (int)strtoul(optarg, NULL, 10);
+            if (samples > 1)
+                showtime = 1;
+            break;
+        case 't': /* --trigger */
+            gpib_wrtf(gd, "TRIG %s", optarg);
+            break;
+        case 'r': /* --range */
+            if (!strcasecmp(optarg, "auto"))
+                gpib_wrtf(gd, "RANGE -1");
+            else
+                gpib_wrtf(gd, "RANGE %s", optarg);
+            _checkrange(gd);
+            break;
+        case 'd': /* --digits */
+            gpib_wrtf(gd, "NDIG %s", optarg);
+            break;
+        case 'f': /* --function */
+            gpib_wrtf(gd, "FUNC %s", optarg);
+            break;
+        }
+    }
+
+    if (samples > 0) {
+        char buf[1024];
+        double t0, t1, t2;
+
+	sleep(1);
+
+        t0 = 0;
+        while (samples-- > 0) {
+            t1 = _gettime();
+            if (t0 == 0)
+                t0 = t1;
+            gpib_rdstr(gd, buf, sizeof(buf));
+            t2 = _gettime();
+
+            /* Output suitable for gnuplot:
+             *   t(s)  sample 
+             * sample already has a crlf terminator
+             */
+            if (showtime)
+                printf("%-3.3lf\t%s\n", (t1-t0), buf); 
+            else
+                printf("%s\n", buf); 
+
+            if (samples > 0 && period > 0)
+                _sleep_sec(period - (t2-t1));
+        }
+    }
+
+    gpib_fini(gd);
+
+    exit(0);
+}
+
 static void 
-usage(void)
+_usage(void)
 {
     char *addr = gpib_default_addr(INSTRUMENT);
 
@@ -126,7 +243,7 @@ usage(void)
 "  -v,--verbose                       show protocol on stderr\n"
 "  -A,--autocal                       autocalibrate\n"
 "  -S,--selftest                      run selftest\n"
-"  -f,--function dcv|acv|acdcv|dci|aci|acdci|ohm2|ohm4|freq|period\n"
+"  -f,--function dcv|acv|acdcv|dci|aci|acdci|ohm|ohmf|freq|period\n"
 "                                     select function [dcv]\n"
 "  -r,--range <maxval>|auto           select range [auto]\n"
 "  -t,--trigger auto|ext|sgl|hold|syn select trigger mode [syn]\n"
@@ -243,8 +360,8 @@ _checkerr(gd_t gd)
 }
 
 /* Interpet serial poll results (status byte)
-    *   Return: 0=non-fatal/no error, >0=fatal, -1=retry.
-     */
+ * Return: 0=non-fatal/no error, >0=fatal, -1=retry.
+ */
 static int
 _interpret_status(gd_t gd, unsigned char status, char *msg)
 {
@@ -276,7 +393,7 @@ _interpret_status(gd_t gd, unsigned char status, char *msg)
 }
 
 static void 
-hp3457_checkid(gd_t gd)
+_checkid(gd_t gd)
 {
     char tmpbuf[64];
 
@@ -289,7 +406,7 @@ hp3457_checkid(gd_t gd)
 }
 
 static void 
-hp3457_checkrange(gd_t gd)
+_checkrange(gd_t gd)
 {
     char tmpbuf[64];
 
@@ -297,241 +414,6 @@ hp3457_checkrange(gd_t gd)
     gpib_rdstr(gd, tmpbuf, sizeof(tmpbuf));
     /* FIXME: more digits need to be displayed here (how many - chk manual) */
     fprintf(stderr, "%s: range is %.1lf\n", prog, strtod(tmpbuf, NULL));
-}
-
-int
-main(int argc, char *argv[])
-{
-    char *addr = NULL;
-    gd_t gd;
-    int c;
-    char *funstr = NULL;
-    char *rangestr = NULL;
-    char *trigstr = NULL;
-    char *digstr = NULL;
-    double range = -1; /* auto */
-    int samples = 0;
-    double period = 0;
-    double freq;
-    int clear = 0;
-    int local = 0;
-    int autocal = 0;
-    int selftest = 0;
-    int showtime = 0;
-
-    /*
-     * Handle options.
-     */
-    prog = basename(argv[0]);
-    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
-        switch (c) {
-        case 'a': /* --address */
-            addr = optarg;
-            break;
-        case 'c': /* --clear */
-            clear = 1;
-            break;
-        case 'l': /* --local */
-            local = 1;
-            break;
-        case 'A': /* --autocal */
-            autocal = 1;
-            break;
-        case 'S': /* --selftest */
-            selftest = 1;
-            break;
-        case 'v': /* --verbose */
-            verbose = 1;
-            break;
-        case 'T': /* --period */
-            if (freqstr(optarg, &freq) < 0) {
-                fprintf(stderr, "%s: error parsing period argument\n", prog);
-                fprintf(stderr, "%s: use freq units: %s\n", prog, FREQ_UNITS);
-                fprintf(stderr, "%s: or period units: %s\n", prog,PERIOD_UNITS);
-                exit(1);
-            }
-            period = 1.0/freq;
-            break;
-        case 's': /* --samples */
-            samples = (int)strtoul(optarg, NULL, 10);
-            if (samples > 1)
-                showtime = 1;
-            break;
-        case 't': /* --trigger */
-            if (strcasecmp(optarg, "auto") == 0)
-                trigstr = "TRIG AUTO";
-            else if (strcasecmp(optarg, "ext") == 0)
-                trigstr = "TRIG EXT";
-            else if (strcasecmp(optarg, "sgl") == 0)
-                trigstr = "TRIG SGL";
-            else if (strcasecmp(optarg, "hold") == 0)
-                trigstr = "TRIG HOLD";
-            else if (strcasecmp(optarg, "syn") == 0)
-                trigstr = "TRIG SYN";
-            else
-                usage();
-            break;
-        case 'r': /* --range */
-            rangestr = "RANGE";
-            if (!strcasecmp(optarg, "auto"))
-                range = -1; /* signifies auto */
-            else
-                range = strtod(optarg, NULL);
-            break;
-        case 'd': /* --digits */
-            if (*optarg == '3')
-                digstr = "NDIG 3";
-            else if (*optarg == '4')
-                digstr = "NDIG 4";
-            else if (*optarg == '5')
-                digstr = "NDIG 5";
-            else if (*optarg == '6')
-                digstr = "NDIG 6";
-            else
-                usage();
-            break;
-        case 'f': /* --function */
-            if (strcasecmp(optarg, "dcv") == 0)
-                funstr = "FUNC DCV";
-            else if (strcasecmp(optarg, "acv") == 0)
-                funstr = "FUNC ACV";
-            else if (strcasecmp(optarg, "acdcv") == 0)
-                funstr = "FUNC ACDCV";
-            else if (strcasecmp(optarg, "dci") == 0)
-                funstr = "FUNC DCI";
-            else if (strcasecmp(optarg, "aci") == 0)
-                funstr = "FUNC ACI";
-            else if (strcasecmp(optarg, "acdci") == 0)
-                funstr = "FUNC ACDCI";
-            else if (strcasecmp(optarg, "freq") == 0)
-                funstr = "FUNC_FREQ";
-            else if (strcasecmp(optarg, "period") == 0)
-                funstr = "FUNC_PER";
-            else if (strcasecmp(optarg, "ohm2") == 0)
-                funstr = "FUNC_OHM";
-            else if (strcasecmp(optarg, "ohm4") == 0)
-                funstr = "FUNC_OHMF";
-            else
-                usage();
-            break;
-        default:
-            usage();
-            break;
-        }
-    }
-    if (optind < argc)
-        usage();
-    if (!clear && !local && !autocal && !selftest 
-            && !funstr && !rangestr && !trigstr && !digstr && samples == 0)
-        usage();
-
-    if (!addr)
-        addr = gpib_default_addr(INSTRUMENT);
-    if (!addr) {
-        fprintf(stderr, "%s: no default address for %s, use --address\n",
-                prog, INSTRUMENT);
-        exit(1);
-    }
-    gd = gpib_init(addr, _interpret_status, 0);
-    if (!gd) {
-        fprintf(stderr, "%s: device initialization failed for address %s\n", 
-                prog, addr);
-        exit(1);
-    }
-    gpib_set_verbose(gd, verbose);
-    gpib_set_reos(gd, 1);
-
-    /* Clear dmm state, verify that model is HP3457A, and
-     * select remote defaults.
-     */
-    if (clear) {
-        gpib_clr(gd, 1000000);
-        hp3457_checkid(gd);
-        gpib_wrtf(gd, "PRESET");
-    }
-
-    /* Perform autocalibration.
-     */
-    if (autocal) {
-        gpib_wrtf(gd, "ACAL ALL");
-        fprintf(stderr, "%s: waiting 35 sec for AC+ohms autocal\n", prog);
-        fprintf(stderr, "%s: inputs should be disconnected\n", prog);
-        sleep(35); 
-        fprintf(stderr, "%s: autocal complete\n", prog);
-    }
-
-    /* Perform selftest.
-     */
-    if (selftest) {
-        gpib_wrtf(gd, "TEST");
-        fprintf(stderr, "%s: waiting 7 sec for self-test\n", prog);
-        sleep(7); 
-        fprintf(stderr, "%s: self-test complete\n", prog);
-    }
-
-    /* Select function.
-     */
-    if (funstr) {
-        gpib_wrtf(gd, funstr);
-    }
-
-    /* Select range.
-     */
-    if (rangestr) {
-        gpib_wrtf(gd, "%s %.1lf", rangestr, range);
-        hp3457_checkrange(gd);
-    }
-
-    /* Select trigger mode.
-     */
-    if (trigstr) {
-        gpib_wrtf(gd, trigstr);
-    }
-
-    /* Select display digits.
-     */
-    if (digstr) {
-        gpib_wrtf(gd, digstr);
-    }
-
-    if (samples > 0) {
-        char buf[1024];
-        double t0, t1, t2;
-
-        if (digstr || trigstr || rangestr || funstr)
-            sleep(1);
-
-        t0 = 0;
-        while (samples-- > 0) {
-            t1 = _gettime();
-            if (t0 == 0)
-                t0 = t1;
-            gpib_rdstr(gd, buf, sizeof(buf));
-            t2 = _gettime();
-
-            /* Output suitable for gnuplot:
-             *   t(s)  sample 
-             * sample already has a crlf terminator
-             */
-            if (showtime)
-                printf("%-3.3lf\t%s\n", (t1-t0), buf); 
-            else
-                printf("%s\n", buf); 
-
-            if (samples > 0 && period > 0)
-                _sleep_sec(period - (t2-t1));
-        }
-    }
-
-    /* give back the front panel and set defaults for local operation */
-    if (local) {
-        gpib_wrtf(gd, "RESET");
-        gpib_loc(gd); 
-    }
-
-    gpib_fini(gd);
-
-    exit(0);
 }
 
 /*

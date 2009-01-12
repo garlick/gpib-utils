@@ -87,7 +87,7 @@ Get the system controller mode (8065 only).
 .TP
 \fB\-W\fR, \fB\-\-get-system-controller\fR 0|1
 Set the system controller mode (8065 only).
-If enabled, the device ill initialize at boot time as the GPIB bus controller.
+If enabled, the device will initialize at boot time as the GPIB bus controller.
 .TP
 \fB\-m\fR, \fB\-\-get-ren-mode\fR
 Get the REN mode (8065 only).

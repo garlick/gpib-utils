@@ -31,19 +31,13 @@
 
 #include "util.h"
 
-#define INVERSE_VIDEO
-
-char *prog = NULL;
-
-/* flip all the bits in a row */
-void 
-inverse(uint8_t *ptr, int nbytes)
-{
-	while (--nbytes >= 0)
-		ptr[nbytes] = ~ptr[nbytes];
-}
+static const int inverse_video = 1;
 
 #define CHUNK_SIZE 64 	/* number of rows to allocate in one go */
+
+static void inverse(uint8_t *ptr, int nbytes);
+
+char *prog = NULL;
 
 int
 main(int argc, char *argv[])
@@ -97,9 +91,8 @@ main(int argc, char *argv[])
 	/* Ref: pbm(5) */
 	printf("P4 %d %d\n", width*8, cur_row);
 	for (i = 0; i < cur_row; i++) {
-#ifndef INVERSE_VIDEO
-		inverse(row[i], width);
-#endif
+		if (!inverse_video)
+			inverse(row[i], width);
 		if (fwrite(row[i], width, 1, stdout) != 1) {
 			fprintf(stderr, "hptopbm: short write\n");
 			exit(1);
@@ -109,4 +102,12 @@ main(int argc, char *argv[])
 	free(row);
 
 	exit(0);
+}
+
+/* flip all the bits in a row */
+static void 
+inverse(uint8_t *ptr, int nbytes)
+{
+	while (--nbytes >= 0)
+		ptr[nbytes] = ~ptr[nbytes];
 }

@@ -16,22 +16,24 @@ GPIB interface.
 Override the default instrument address in @X_SYSCONFDIR@/gpib-utils.conf.
 .TP
 \fB\-c\fR, \fB\-\-clear\fR
-Clear the instrument, load power-on values, verify the model number,
-and set the date to the UNIX date.
+Clear the instrument, disable the output, load power-on values.
 .TP
 \fB\-l\fR, \fB\-\-local\fR
 Enable the front panel.
 .TP
-\fB\-i\fR, \fB\-\-ident\fR 
-Print instrument model and ROM version.
+\fB\-i\fR, \fB\-\-get-idn\fR 
+Print instrument model.
+.TP
+\fB\-R\fR, \fB\-\-get-rom\fR 
+Print instrument ROM version.
 .TP
 \fB\-S\fR, \fB\-\-selftest\fR 
 Run instrument selftest.
 .TP
-\fB\-I\fR, \fB\-\-iset\fR 
+\fB\-I\fR, \fB\-\-iset\fR float
 Set current.
 .TP
-\fB\-V\fR, \fB\-\-vset\fR 
+\fB\-V\fR, \fB\-\-vset\fR float
 Set voltage.
 .TP
 \fB\-o\fR, \fB\-\-out\fR 0|1

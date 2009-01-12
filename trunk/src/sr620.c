@@ -125,9 +125,15 @@
 #define SR620_TIC_ARM           0x08
 #define SR620_TIC_EXT_OVLD      0x10
 
+static void _usage(void);
+static void _clear(gd_t gd);
+static void _save(gd_t gd);
+static void _restore(gd_t gd);
+static void _selftest(gd_t gd);
+static void _autocal(gd_t gd);
+static int _interpret_status(gd_t gd, unsigned char status, char *msg);
                                             
 char *prog = "";
-static int verbose = 0;
 
 static strtab_t _selftest_errors[] = SR620_TEST_ERRORS;
 static strtab_t _autocal_errors[] = SR620_AUTOCAL_ERRORS;
@@ -156,8 +162,73 @@ static struct option longopts[] = {
 #define GETOPT(ac,av,opt,lopt) getopt(ac,av,opt)
 #endif
 
+int
+main(int argc, char *argv[])
+{
+    gd_t gd;
+    int print_usage = 0;
+    int c;
+
+    gd = gpib_init_args(argc, argv, OPTIONS, longopts, INSTRUMENT,
+                        _interpret_status, 0, &print_usage);
+    if (print_usage)
+        _usage();
+    if (!gd)
+        exit(1);
+
+    gpib_set_timeout(gd, SR620_GENERAL_TIMEOUT);
+
+    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
+        switch (c) {
+            case 'a': /* handled in gpib_init_args() */
+            case 'v':
+                break;
+            case 'c': /* --clear */
+                _clear(gd);
+                break;
+            case 'l': /* --local */
+                gpib_loc(gd); 
+                break;
+            case 's': /* --save */
+                _save(gd);
+                break;
+            case 'r': /* --restore */
+                _restore(gd);
+                break;
+            case 'S': /* --selftest */
+                _selftest(gd);
+                break;
+            case 't': /* --autocal */
+                _autocal(gd);
+                break;
+            case 'p': /* --graph-histogram */
+                gpib_wrtf(gd, "DGPH 0");
+                break;
+            case 'P': /* --graph-mean */
+                gpib_wrtf(gd, "DGPH 1");
+                break;
+            case 'j': /* --graph-jitter */
+                gpib_wrtf(gd, "DGPH 2");
+                break;
+            case 'C': /* --graph-clear */
+                gpib_wrtf(gd, "GCLR");
+                break;
+            case 'G': /* --graph-enable */
+                gpib_wrtf(gd, "GENA 1");
+                break;
+            case 'g': /* --graph-disable */
+                gpib_wrtf(gd, "GENA 0");
+                break;
+        }
+    }
+
+    gpib_fini(gd);
+
+    exit(0);
+}
+
 static void 
-usage(void)
+_usage(void)
 {
     char *addr = gpib_default_addr(INSTRUMENT);
 
@@ -338,7 +409,7 @@ _decode_scanpt(int i)
 /* Restore instrument state from stdin.
  */
 static void
-sr620_restore(gd_t gd)
+_restore(gd_t gd)
 {
     char buf[MAXCONFBUF];
     int n;     
@@ -492,7 +563,7 @@ sr620_restore(gd_t gd)
 /* Save instrument state to stdout.
  */
 static void
-sr620_save(gd_t gd)
+_save(gd_t gd)
 {
     char buf[MAXCONFBUF];
 
@@ -507,7 +578,7 @@ sr620_save(gd_t gd)
 /* Run instrument self-test and report results on stderr.
  */
 static void
-sr620_test(gd_t gd)
+_selftest(gd_t gd)
 {
     int result;
 
@@ -528,7 +599,7 @@ sr620_test(gd_t gd)
 /* Run instrument autocal procedure.
  */
 static void
-sr620_autocal(gd_t gd)
+_autocal(gd_t gd)
 {
     int result;
 
@@ -552,7 +623,7 @@ sr620_autocal(gd_t gd)
 /* Set instrument to default configurations and check identity.
  */
 static void
-sr620_clear(gd_t gd)
+_clear(gd_t gd)
 {
     char tmpbuf[80];
 
@@ -579,134 +650,6 @@ sr620_clear(gd_t gd)
 
     /* clear status on next power on */
     gpib_wrtf(gd, "*PSC 1"); 
-}
-
-int
-main(int argc, char *argv[])
-{
-    char *addr = NULL;
-    int c;
-    int clear = 0;
-    int local = 0;
-    int save = 0;
-    int restore = 0;
-    int test = 0;
-    int autocal = 0;
-    int graph_histogram = 0;
-    int graph_mean = 0;
-    int graph_jitter = 0;
-    int graph_clear = 0;
-    int graph_enable = 0;
-    int graph_disable = 0;
-    gd_t gd;
-
-    /*
-     * Handle options.
-     */
-    prog = basename(argv[0]);
-    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
-        switch (c) {
-        case 'a': /* --address */
-            addr = optarg;
-            break;
-        case 'c': /* --clear */
-            clear = 1;
-            break;
-        case 'l': /* --local */
-            local = 1;
-            break;
-        case 'v': /* --verbose */
-            verbose = 1;
-            break;
-        case 's': /* --save */
-            save = 1;
-            break;
-        case 'r': /* --restore */
-            restore = 1;
-            break;
-        case 'S': /* --selftest */
-            test = 1;
-            break;
-        case 't': /* --autocal */
-            autocal = 1;
-            break;
-        case 'p': /* --graph-histogram */
-            graph_histogram = 1;
-            break;
-        case 'P': /* --graph-mean */
-            graph_mean = 1;
-            break;
-        case 'j': /* --graph-jitter */
-            graph_jitter = 1;
-            break;
-        case 'C': /* --graph-clear */
-            graph_clear = 1;
-            break;
-        case 'G': /* --graph-enable */
-            graph_enable = 1;
-            break;
-        case 'g': /* --graph-disable */
-            graph_disable = 1;
-            break;
-        default:
-            usage();
-            break;
-        }
-    }
-    if (optind < argc)
-        usage();
-
-    if (!clear && !local && !save && !restore && !test && !autocal &&
-            !graph_clear && !graph_enable && !graph_disable && 
-            !graph_histogram && !graph_mean && !graph_jitter)
-        usage();
-
-    if (!addr)
-        addr = gpib_default_addr(INSTRUMENT);
-    if (!addr) {
-        fprintf(stderr, "%s: no default address for %s, use --address\n",
-                prog, INSTRUMENT);
-        exit(1);
-    }
-    gd = gpib_init(addr, _interpret_status, 0);
-    if (!gd) {
-        fprintf(stderr, "%s: device initialization failed for address %s\n", 
-                prog, addr);
-        exit(1);
-    }
-    gpib_set_verbose(gd, verbose);
-    gpib_set_timeout(gd, SR620_GENERAL_TIMEOUT);
-
-    if (clear)
-        sr620_clear(gd);
-
-    if (test)
-        sr620_test(gd);
-    if (autocal)
-        sr620_autocal(gd);
-    if (save)
-        sr620_save(gd);
-    if (restore)
-        sr620_restore(gd);
-    if (graph_enable)
-    	gpib_wrtf(gd, "GENA 1");
-    if (graph_clear)
-    	gpib_wrtf(gd, "GCLR");
-    if (graph_histogram)
-    	gpib_wrtf(gd, "DGPH 0");
-    if (graph_mean)
-    	gpib_wrtf(gd, "DGPH 1");
-    if (graph_jitter)
-    	gpib_wrtf(gd, "DGPH 2");
-    if (graph_disable)
-    	gpib_wrtf(gd, "GENA 0");
-
-    if (local)
-        gpib_loc(gd); 
-
-    gpib_fini(gd);
-
-    exit(0);
 }
 
 /*

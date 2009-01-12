@@ -36,6 +36,11 @@
 #include <ctype.h>
 #define __USE_ISOC99 /* activate vsscanf prototype in stdio.h */
 #include <stdio.h>
+#if HAVE_GETOPT_LONG
+#include <getopt.h>
+#define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
+#endif
+#include <libgen.h>
 
 #include "gpib.h"
 #include "vxi11_device.h"
@@ -770,13 +775,19 @@ gd_t
 gpib_init(char *addr, spollfun_t sf, unsigned long retry)
 {
     gd_t gd = NULL;
+    char *endptr;
+    unsigned long id = strtoul(addr, &endptr, 0);
 
     if (strchr(addr, ':') == NULL) { 
+        if (*endptr == '\0') {
 #if HAVE_LINUX_GPIB
-        gd = _ibdev(strtoul(addr, NULL, 10), sf, retry);
+            gd = _ibdev(id, sf, retry);
 #else
-        fprintf(stderr, "%s: not configured with native GPIB support\n", prog);
+            fprintf(stderr, "%s: warning: gpib-utils built without GPIB support\n", prog);
 #endif
+        } else {
+            fprintf(stderr, "%s: warning: malformed GPIB address\n", prog);
+        }
     } else
         gd = _init_vxi(addr, sf, retry);
     return gd;
@@ -823,6 +834,60 @@ _extract_dlab_len(unsigned char *data, int lenlen, int len)
     memcpy(tmpstr, data, lenlen);
     tmpstr[lenlen] = '\0';
     return strtoul(tmpstr, NULL, 10);
+}
+
+/* Handle common -v and -a option processing in each of the utilities,
+ * and initialize the GPIB connection.
+ */
+gd_t
+gpib_init_args(int argc, char *argv[], char *opts, struct option *longopts,
+               char *name, spollfun_t sf, unsigned long retry, int *opt_error)
+{
+    int c, verbose = 0, todo = 0;
+    char *addr = NULL;
+    gd_t gd = NULL;
+    int error = 0;
+
+    prog = basename(argv[0]);
+    while ((c = GETOPT(argc, argv, opts, longopts)) != EOF) {
+        switch (c) {
+        case 'a': /* --address */
+            addr = optarg;
+            break;
+        case 'v':
+            verbose = 1;
+            break;
+        case '?':
+            error++;
+            break;
+        default:
+            todo++;
+            break;
+        }
+    }
+    if (error || !todo || optind < argc) {
+        *opt_error = 1;
+        goto done;
+    }
+    *opt_error = 0;
+
+    if (!addr)
+        addr = gpib_default_addr(name);
+    if (!addr) {
+        fprintf(stderr, "%s: no default address for %s, use --address\n", 
+                prog, name);
+        goto done;
+    }
+    gd = gpib_init(addr, sf, 0);
+    if (!gd) {
+        fprintf(stderr, "%s: device initialization failed for address %s\n", 
+                prog, addr);
+        goto done;
+    }
+    gpib_set_verbose(gd, verbose);
+done:
+    optind = 0;
+    return gd;
 }
 
 /* Verify/decode some 488.2 data formats.

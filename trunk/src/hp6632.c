@@ -118,18 +118,25 @@ static strtab_t sttab[] = {
     { 0, NULL }
 };
 
-char *prog = "";
-static int verbose = 0;
+static void _usage(void);
+static int _interpret_status(gd_t gd, unsigned char status, char *msg);
+static void _get_idn(gd_t gd);
+static void _get_rom(gd_t gd);
+static int _read(gd_t gd);
+static int _selftest(gd_t gd);
 
-#define OPTIONS "a:clviSI:V:o:O:C:r"
+char *prog = "";
+
+#define OPTIONS "a:clviSI:V:o:O:C:rR"
 #if HAVE_GETOPT_LONG
 #define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
 static struct option longopts[] = {
     {"address",         required_argument, 0, 'a'},
+    {"verbose",         no_argument,       0, 'v'},
     {"clear",           no_argument,       0, 'c'},
     {"local",           no_argument,       0, 'l'},
-    {"verbose",         no_argument,       0, 'v'},
-    {"ident",           no_argument,       0, 'i'},
+    {"get-idn",         no_argument,       0, 'i'},
+    {"get-rom",         no_argument,       0, 'R'},
     {"selftest",        no_argument,       0, 'S'},
     {"iset",            required_argument, 0, 'I'},
     {"vset",            required_argument, 0, 'V'},
@@ -143,8 +150,71 @@ static struct option longopts[] = {
 #define GETOPT(ac,av,opt,lopt) getopt(ac,av,opt)
 #endif
 
+int
+main(int argc, char *argv[])
+{
+    gd_t gd;
+    int c, print_usage = 0;
+    int exit_val = 0;
+
+    gd = gpib_init_args(argc, argv, OPTIONS, longopts, INSTRUMENT,
+                        _interpret_status, 0, &print_usage);
+    if (print_usage)
+        _usage();
+    if (!gd)
+        exit(1);
+
+    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
+        switch (c) {
+        case 'a': /* -a and -v handled in gpib_init_args */
+        case 'v':
+            break;
+        case 'c': /* --clear */
+            gpib_clr(gd, 0);
+            gpib_wrtf(gd, "OUT 0;RST;CLR\n");
+            sleep(1);
+            break;
+        case 'l': /* --local */
+            gpib_loc(gd); 
+            break;
+        case 'i': /* --get-idn */
+            _get_idn(gd);
+            break;
+        case 'R': /* --get-rom */
+            _get_rom(gd);
+            break;
+        case 'S': /* --selftest */
+            if (_selftest(gd) != 0)
+                exit_val = 1;
+            break;
+        case 'I': /* --iset */
+            gpib_wrtf(gd, "ISET %s\n", optarg);
+            break;
+        case 'V': /* --vset */
+            gpib_wrtf(gd, "VSET %s\n", optarg);
+            break;
+        case 'O': /* --ovset */
+            gpib_wrtf(gd, "OVSET %s\n", optarg);
+            break;
+        case 'o': /* --out */
+            gpib_wrtf(gd, "OUT %s\n", optarg);
+            break;
+        case 'C': /* --ocp */
+            gpib_wrtf(gd, "OCP %s\n", optarg);
+            break;
+        case 'r': /* --read */
+            if (_read(gd) != 0)
+                exit_val = 1;
+            break;
+        }
+    }
+
+    gpib_fini(gd);
+    exit(exit_val);
+}
+
 static void 
-usage(void)
+_usage(void)
 {
     char *addr = gpib_default_addr(INSTRUMENT);
 
@@ -154,7 +224,8 @@ usage(void)
 "  -c,--clear              initialize instrument to default values\n"
 "  -l,--local              return instrument to local operation on exit\n"
 "  -v,--verbose            show protocol on stderr\n"
-"  -i,--ident              print instrument model and ROM version\n"
+"  -i,--get-idn            print instrument model\n"
+"  -R,--get-rom            print instrument ROM version\n"
 "  -S,--selftest           run selftest\n"
 "  -I,--iset               set current\n"
 "  -V,--vset               set voltage\n"
@@ -178,7 +249,7 @@ _interpret_status(gd_t gd, unsigned char status, char *msg)
         err = 1;
     }
     if (status & HP6032_SPOLL_PON) {
-        fprintf(stderr, "%s: power-on detected\n", prog);
+        /*fprintf(stderr, "%s: power-on detected\n", prog);*/
     }
     if (status & HP6032_SPOLL_RDY) {
     }
@@ -199,19 +270,24 @@ _interpret_status(gd_t gd, unsigned char status, char *msg)
 
 /* Print instrument ID string.
  */
-static int
+static void
 _get_idn(gd_t gd)
 {
-    char model[64], rom[64];
-    int rc = 0;
+    char model[64];
 
     gpib_wrtstr(gd, "ID?\n");
     gpib_rdstr(gd, model, sizeof(model));
+    printf("%s\n", model);
+}
+
+static void
+_get_rom(gd_t gd)
+{
+    char rom[64];
+
     gpib_wrtstr(gd, "ROM?\n");
     gpib_rdstr(gd, rom, sizeof(rom));
-    fprintf(stderr, "%s: %s, %s\n", prog, model, rom);
-
-    return rc;
+    printf("%s\n", rom);
 }
 
 /* Read current and voltage at output and print in a form
@@ -248,177 +324,9 @@ _selftest(gd_t gd)
         fprintf(stderr, "%s: parse error reading test result\n", prog);
         return -1;
     }
-    fprintf(stderr, "%s: selftest: %s\n", prog, findstr(sttab ,rc));
+    printf("%s\n", findstr(sttab ,rc));
             
     return rc;
-}
-
-static int
-_str2float(char *str, double *fp)
-{
-    char *endptr;
-
-    errno = 0;
-    *fp = strtod(str, &endptr);
-    if (errno || *endptr != '\0') {
-        fprintf(stderr, "%s: error parsing float value\n", prog);
-        return 1;
-    }
-    return 0;
-}
-
-int
-main(int argc, char *argv[])
-{
-    gd_t gd;
-    char *addr = NULL;
-    int c;
-    int clear = 0;
-    int local = 0;
-    int todo = 0;
-    int exit_val = 0;
-    int get_idn = 0;
-    int selftest = 0;
-    int iset = 0;
-    int vset = 0;
-    int ovset = 0;
-    double ovset_val, iset_val, vset_val;
-    int ocp = 0;
-    int ocp_val = 0;
-    int ropt = 0;
-    int out = 0;
-    int out_val = 0;
-
-    /*
-     * Handle options.
-     */
-    prog = basename(argv[0]);
-    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
-        switch (c) {
-        case 'a': /* --address */
-            addr = optarg;
-            break;
-        case 'v': /* --verbose */
-            verbose = 1;
-            break;
-        case 'c': /* --clear */
-            clear = 1;
-            todo++;
-            break;
-        case 'l': /* --local */
-            local = 1;
-            todo++;
-            break;
-        case 'i': /* --get-idn */
-            get_idn = 1;
-            todo++;
-            break;
-        case 'S': /* --selftest */
-            selftest = 1;
-            todo++;
-            break;
-        case 'I': /* --iset */
-            iset = 1;
-            if (_str2float(optarg, &iset_val))
-                exit(1);
-            todo++;
-            break;
-        case 'V': /* --vset */
-            vset = 1;
-            if (_str2float(optarg, &vset_val))
-                exit(1);
-            todo++;
-            break;
-        case 'O': /* --ovset */
-            ovset = 1;
-            if (_str2float(optarg, &ovset_val))
-                exit(1);
-            todo++;
-            break;
-        case 'o': /* --out */
-            out = 1;
-            if (*optarg == '0')
-                out_val = 0;
-            else if (*optarg == '1')
-                out_val = 1;
-            else {
-                fprintf(stderr, "%s: error parsing --out argument\n", prog);
-                exit(1);
-            }
-            todo++;
-            break;
-        case 'C': /* --ocp */
-            ocp = 1;
-            if (*optarg == '0')
-                ocp_val = 0;
-            else if (*optarg == '1')
-                ocp_val = 1;
-            else {
-                fprintf(stderr, "%s: error parsing --ocp argument\n", prog);
-                exit(1);
-            }
-            todo++;
-            break;
-        case 'r': /* --read */
-            ropt = 1;
-            todo++;
-            break;
-        default:
-            usage();
-            break;
-        }
-    }
-    if (optind < argc || !todo)
-        usage();
-
-    if (!addr)
-        addr = gpib_default_addr(INSTRUMENT);
-    if (!addr) {
-        fprintf(stderr, "%s: no default address for %s, use --address\n", 
-                prog, INSTRUMENT);
-        exit(1);
-    }
-    gd = gpib_init(addr, _interpret_status, 0);
-    if (!gd) {
-        fprintf(stderr, "%s: device initialization failed for address %s\n", 
-                prog, addr);
-        exit(1);
-    }
-    gpib_set_verbose(gd, verbose);
-
-    if (clear) {
-        gpib_clr(gd, 0);
-        gpib_wrtf(gd, "OUT 0;RST;CLR\n");
-        sleep(1);
-    }
-    if (get_idn && _get_idn(gd) != 0) {
-        exit_val = 1;
-        goto done;
-    }
-    if (selftest && _selftest(gd) != 0) {
-        exit_val = 1;
-        goto done;
-    }
-    if (ovset)
-        gpib_wrtf(gd, "OVSET %lf\n", ovset_val);
-    if (iset)
-        gpib_wrtf(gd, "ISET %lf\n", iset_val);
-    if (vset)
-        gpib_wrtf(gd, "VSET %lf\n", vset_val);
-    if (ocp)
-        gpib_wrtf(gd, "OCP %d\n", ocp_val);
-    if (out)
-        gpib_wrtf(gd, "OUT %d\n", out_val);
-    if (ropt && _read(gd) != 0) {
-        exit_val = 1;
-        goto done;
-    }
-    if (local)
-        gpib_loc(gd); 
-
-done:
-    gpib_fini(gd);
-    exit(exit_val);
 }
 
 /*

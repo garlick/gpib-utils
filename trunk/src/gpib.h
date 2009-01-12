@@ -77,6 +77,10 @@ int gpib_rsp(gd_t gd, unsigned char *status);
 
 void gpib_abort(gd_t gd); /* VXI only */
 
+gd_t gpib_init_args(int argc, char *argv[], char *opts, 
+                    struct option *longopts, char *name, 
+                    spollfun_t sf, unsigned long retry, int *opt_error);
+
 
 #define GPIB_DECODE_DLAB    1
 #define GPIB_DECODE_ILAB    2

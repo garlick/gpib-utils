@@ -54,42 +54,15 @@
 #define DG535_DO_D                      6       /* D output */
 #define DG535_DO_CD                     7       /* CD and -CD output */
 
-#define DG535_OUT_NAMES { \
-    { DG535_DO_T0, "t0" }, \
-    { DG535_DO_A,  "a" }, \
-    { DG535_DO_B,  "b" }, \
-    { DG535_DO_AB, "ab" }, \
-    { DG535_DO_C,  "c" }, \
-    { DG535_DO_D,  "d" }, \
-    { DG535_DO_CD, "cd" }, \
-    { 0, NULL } \
-}
-
 #define DG535_OUT_TTL                   0
 #define DG535_OUT_NIM                   1
 #define DG535_OUT_ECL                   2
 #define DG535_OUT_VAR                   3
 
-#define DG535_OUT_MODES { \
-    { DG535_OUT_TTL, "ttl" }, \
-    { DG535_OUT_NIM, "nim" }, \
-    { DG535_OUT_ECL, "ecl" }, \
-    { DG535_OUT_VAR, "var" }, \
-    { 0, NULL } \
-}
-
 #define DG535_TRIG_INT                  0
 #define DG535_TRIG_EXT                  1
 #define DG535_TRIG_SS                   2
 #define DG535_TRIG_BUR                  3
-
-#define DG535_TRIG_MODES { \
-    { DG535_TRIG_INT, "int" }, \
-    { DG535_TRIG_EXT, "ext" }, \
-    { DG535_TRIG_SS,  "ss" }, \
-    { DG535_TRIG_BUR, "bur" }, \
-    { 0, NULL } \
-}
 
 /* Error status byte values.
  */
@@ -112,11 +85,51 @@
 #define DG535_STAT_BUSY                 0x02    /* busy with timing cycle */
 #define DG535_STAT_CMDERR               0x01    /* command error detected */
 
+static void _usage(void);
+static int _interpret_status(gd_t gd, unsigned char status, char *msg);
+static int _set_delay(gd_t gd, int out_chan, char *str);
+
 char *prog = "";
-static int verbose = 0;
-static strtab_t out_names[] = DG535_OUT_NAMES;
-static strtab_t out_modes[] = DG535_OUT_MODES;
-static strtab_t trig_modes[] = DG535_TRIG_MODES;
+
+static strtab_t out_names[] = {
+    { DG535_DO_T0, "t0" },
+    { DG535_DO_A,  "a" },
+    { DG535_DO_B,  "b" },
+    { DG535_DO_AB, "ab" },
+    { DG535_DO_C,  "c" },
+    { DG535_DO_D,  "d" },
+    { DG535_DO_CD, "cd" },
+    { 0, NULL },
+};
+static strtab_t out_modes[] = {
+    { DG535_OUT_TTL, "ttl" },
+    { DG535_OUT_NIM, "nim" },
+    { DG535_OUT_ECL, "ecl" },
+    { DG535_OUT_VAR, "var" },
+    { 0, NULL },
+};
+static strtab_t trig_modes[] = {
+    { DG535_TRIG_INT, "int" },
+    { DG535_TRIG_EXT, "ext" },
+    { DG535_TRIG_SS,  "ss" },
+    { DG535_TRIG_BUR, "bur" },
+    { 0, NULL },
+};
+static strtab_t impedance[] = {
+    { 0, "lo" },
+    { 1, "hi" },
+    { 0, NULL },
+};
+static strtab_t slope[] = {
+    { 0, "falling" },
+    { 1, "rising" },
+    { 0, NULL },
+};
+static strtab_t polarity[] = {
+    { 0, "-" },
+    { 1, "+" },
+    { 0, NULL },
+};
 
 #define OPTIONS "a:clve:o:dD:qQ:gG:fF:pP:yY:tT:mM:sS:bB:zZ:D:x"
 #if HAVE_GETOPT_LONG
@@ -157,8 +170,223 @@ static struct option longopts[] = {
 #define GETOPT(ac,av,opt,lopt) getopt(ac,av,opt)
 #endif
 
+int
+main(int argc, char *argv[])
+{
+    int c, out_chan = -1;
+    int tmpi, exit_val = 0;
+    int print_usage = 0, out_chan_needed = 0;
+    double tmpd;
+    char tmpstr[1024];
+    gd_t gd;
+
+    gd = gpib_init_args(argc, argv, OPTIONS, longopts, INSTRUMENT,
+                        _interpret_status, 0, &print_usage);
+    if (print_usage)
+        _usage();
+    if (!gd)
+        exit(1);
+
+    /* preparse args to get output channel */
+    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
+        switch (c) {
+            case 'o': /* --out-chan */
+                out_chan = rfindstr(out_names, optarg);
+                if (out_chan == -1) {
+                    fprintf(stderr, "%s: bad --out-chan argument\n", prog);
+                    exit_val = 1;
+                    goto done;
+                }
+            case 'q':
+            case 'Q':
+            case 'g':
+            case 'G':
+            case 'f':
+            case 'F':
+            case 'p':
+            case 'P':
+            case 'y':
+            case 'Y':
+            case 'd':
+            case 'D':
+                out_chan_needed++;
+                break;
+        }
+    }
+    if (out_chan == -1 && out_chan_needed) {
+        fprintf(stderr, "%s: one or more arguments require --out-chan\n", prog);
+        exit_val = 1;
+        goto done;
+    }
+
+    optind = 0;
+    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
+        switch (c) {
+            case 'a': /* -a, -v, -o already parsed */
+            case 'v':
+            case 'o':
+                break;
+            case 'c': /* --clear */
+                gpib_clr(gd, 0);
+                gpib_wrtf(gd, "CL");
+                break;
+            case 'l': /* --local */
+                gpib_loc(gd); 
+                break;
+            case 'e': /* --display-string */
+                gpib_wrtf(gd, "DS %s", optarg);
+                break;
+            case 'x': /* --single-shot */
+                gpib_wrtf(gd, "SS");
+                break;
+            case 'd': /* --get-delay */
+                gpib_wrtf(gd, "DT %d", out_chan);
+                if (gpib_rdf(gd, "%d,%lf", &tmpi, &tmpd) != 2) {
+                    fprintf(stderr, "%s: error parsing DT response\n", prog);
+                    exit_val = 1;
+                    break;
+                }
+                printf("delay: %s + %lfs\n", findstr(out_names, tmpi), tmpd);
+                break;
+            case 'D': /* --set-delay */
+                if (!_set_delay(gd, out_chan, optarg))
+                    exit_val = 1;
+                break;
+            case 'q' : /* --get-out-mode */
+                gpib_wrtf(gd, "OM %d", out_chan);
+                if (gpib_rdf(gd, "%d", &tmpi) != 1) {
+                    fprintf(stderr, "%s: error parsing OM response\n", prog);
+                    exit_val = 1;
+                    break;
+                }
+                printf("output mode: %s\n", findstr(out_modes, tmpi));
+                break;
+            case 'Q': /* --set-out-mode */
+                gpib_wrtf(gd, "OM %d,%s", out_chan, rfindstr(out_modes, optarg));
+                break;
+            case 'g': /* --get-out-ampl */
+                gpib_wrtf(gd, "OA %d", out_chan);
+                gpib_rdstr(gd, tmpstr, sizeof(tmpstr));
+                printf("output amplitude: %s\n", tmpstr);
+                break;
+            case 'G': /* --set-out-ampl */
+                gpib_wrtf(gd, "OA %d,%s", out_chan, optarg);
+                break;
+            case 'f' : /* --get-out-offset */
+                gpib_wrtf(gd, "OO %d", out_chan);
+                gpib_rdstr(gd, tmpstr, sizeof(tmpstr));
+                printf("output offset: %s\n", tmpstr);
+                break;
+            case 'F': /* --set-out-offset */
+                gpib_wrtf(gd, "OO %d,%s", out_chan, optarg);
+                break;
+            case 'p': /* --get-out-polarity */
+                gpib_wrtf(gd, "OP %d", out_chan);
+                if (gpib_rdf(gd, "%d", &tmpi) != 1) {
+                    fprintf(stderr, "%s: error parsing OP response\n", prog);
+                    exit_val = 1;
+                    break;
+                }
+                printf("output polarity: %s\n", findstr(polarity, tmpi));
+                break;
+            case 'P': /* --set-out-polarity */
+                gpib_wrtf(gd, "OP %d,%d", out_chan, rfindstr(polarity, optarg));
+                break;
+            case 'y': /* --get-out-z */
+                gpib_wrtf(gd, "TZ %d", out_chan);
+                if (gpib_rdf(gd, "%d", &tmpi) != 1) {
+                    fprintf(stderr, "%s: error parsing TZ response\n", prog);
+                    exit_val = 1;
+                    break;
+                }
+                printf("output impedance: %s\n", findstr(impedance, tmpi));
+                break;
+            case 'Y': /* --set-out-z */
+                gpib_wrtf(gd, "TZ %d,%d", rfindstr(impedance, optarg));
+                break;
+            case 'm' : /* --get-trig-mode */
+                gpib_wrtf(gd, "TM");
+                if (gpib_rdf(gd, "%d", &tmpi) != 1) {
+                    fprintf(stderr, "%s: error parsing TM response\n", prog);
+                    exit_val = 1;
+                    break;
+                }
+                printf("trigger mode: %s\n", findstr(trig_modes, tmpi));
+                break;
+            case 'M' : /* --set-trig-mode */
+                gpib_wrtf(gd, "TM %d", rfindstr(trig_modes, optarg));
+                break;
+            case 't': /* --get-trig-rate */
+                gpib_wrtf(gd, "TM");
+                if (gpib_rdf(gd, "%d", &tmpi) != 1) {
+                    fprintf(stderr, "%s: error parsing TM response\n", prog);
+                    exit_val = 1;
+                    break;
+                }
+                gpib_wrtf(gd, "TR %d", tmpi == DG535_TRIG_INT ? 0 : 1);
+                if (gpib_rdf(gd, "%lf", &tmpd) != 1) {
+                    fprintf(stderr, "%s: error parsing TR response\n", prog);
+                    exit_val = 1;
+                    break;
+                }
+                printf("trigger rate: %lfhz\n", tmpd);
+                break;
+            case 'T': /* --set-trig-rate */
+                if (freqstr(optarg, &tmpd) < 0) {
+                    fprintf(stderr, "%s: error parsing trigger rate\n", prog);
+                    fprintf(stderr, "%s: use units of: %s\n", prog, FREQ_UNITS);
+                    exit_val = 1;
+                    break;
+                }
+                gpib_wrtf(gd, "TM");
+                if (gpib_rdf(gd, "%d", &tmpi) != 1) {
+                    fprintf(stderr, "%s: error parsing TM response\n", prog);
+                    exit_val = 1;
+                    break;
+                }
+                gpib_wrtf(gd, "TR %d,%lf", tmpi==DG535_TRIG_INT ? 0 : 1, tmpd);
+                break;
+            case 's' : /* --get-trig-slope */
+                gpib_wrtf(gd, "TS", out_chan);
+                if (gpib_rdf(gd, "%d", &tmpi) != 1) {
+                    fprintf(stderr, "%s: error parsing TZ response\n", prog);
+                    exit_val = 1;
+                } else
+                    printf("trigger slope: %s\n", findstr(slope, tmpi));
+                break;
+            case 'S' : /* --set-trig-slope */
+                gpib_wrtf(gd, "TS %d", rfindstr(slope, optarg));
+                break;
+            case 'b' : /* --get-trig-count */
+                gpib_wrtf(gd, "BC");
+                gpib_rdstr(gd, tmpstr, sizeof(tmpstr));
+                printf("burst count: %s\n", tmpstr);
+                break;
+            case 'B' : /* --set-trig-count */
+                gpib_wrtf(gd, "BC %s", optarg);
+                break;
+            case 'z' : /* --get-trig-z */
+                gpib_wrtf(gd, "TZ 0", out_chan);
+                if (gpib_rdf(gd, "%d", &tmpi) != 1) {
+                    fprintf(stderr, "%s: error parsing TZ response\n", prog);
+                    exit_val = 1;
+                    break;
+                }
+                printf("trigger impedance: %s\n", findstr(impedance, tmpi));
+                break;
+            case 'Z' : /* --set-trig-z */
+                gpib_wrtf(gd, "TZ 0,%d", rfindstr(impedance, optarg));
+                break;
+        }
+    }
+
+done:
+    gpib_fini(gd);
+    exit(exit_val);
+}
+
 static void 
-usage(void)
+_usage(void)
 {
     char *addr = gpib_default_addr(INSTRUMENT);
 
@@ -171,17 +399,17 @@ usage(void)
 "  -e,--display-string         display string (1-20 chars), empty to clear\n"
 "  -x,--single-shot            trigger instrument in single shot mode\n"
 "  -o,--out-chan               select output channel (t0|a|b|ab|c|d|cd)\n"
-"  -dD,--get/set-delay         output delay (chan,delay)\n"
+"  -dD,--get/set-delay         output delay (another-chan,delay)\n"
 "  -qQ,--get/set-out-mode      output mode (ttl|nim|ecl|var)\n"
 "  -gG,--get/set-out-ampl      output amplitude (-4:-0.1, +0.1:+4) volts\n"
 "  -fF,--get/set-out-offset    output offset (-4:+4) volts\n"
 "  -pP,--get/set-out-polarity  output polarity (+|-)\n"
-"  -yY,--get/set-out-z         output impedence (hi|lo)\n"
+"  -yY,--get/set-out-z         output impedance (hi|lo)\n"
 "  -mM,--get/set-trig-mode     trigger mode (int|ext|ss|bur)\n"
 "  -tT,--get/set-trig-rate     trigger rate (0.001hz:1.000mhz)\n"
 "  -sS,--get/set-trig-slope    trigger slope (rising|falling)\n"
 "  -bB,--get/set-burst-count   trigger burst count (2:19)\n"
-"  -zZ,--get/set-trig-z        trigger input impedence (hi|lo)\n"
+"  -zZ,--get/set-trig-z        trigger input impedance (hi|lo)\n"
            , prog, addr ? addr : "no default");
     exit(1);
 }
@@ -249,476 +477,26 @@ _interpret_status(gd_t gd, unsigned char status, char *msg)
 }
 
 static int
-_parse_delay(char *str, int *chanp, double *delayp)
+_set_delay(gd_t gd, int out_chan, char *str)
 {
     double f;
     char *cstr, *dstr;
-    int c;
+    int follow_chan;
+    double delay;
 
     if (!(cstr = strtok(str, ",")))
         return 0;
     if (!(dstr = strtok(NULL, ",")))
         return 0;
-    if ((c = rfindstr(out_names, cstr)) == -1)
+    if ((follow_chan = rfindstr(out_names, cstr)) == -1)
         return 0;
-    *chanp = c;
-
     if (freqstr(dstr, &f) == -1) {
         fprintf(stderr, "%s: specify time units in s, ms, us, ns, ps\n", prog);
         return 0;
     }
-    *delayp = 1.0/f;
-
+    delay = 1.0/f;
+    gpib_wrtf(gd, "DT %d,%d,%lf", out_chan, follow_chan, delay);
     return 1;
-}
-
-int
-main(int argc, char *argv[])
-{
-    char *addr = NULL;
-    int c;
-    int clear = 0;
-    int local = 0;
-    gd_t gd;
-    char *display_string = NULL;
-    int out_chan = -1;
-    int get_delay = 0;
-    double set_delay_time = 0.0;
-    int set_delay_chan = -1;
-    int get_out_mode = 0;
-    int set_out_mode = -1;
-    int get_out_ampl = 0;
-    double set_out_ampl = 0.0;
-    int Gopt = 0;
-    int get_out_offset = 0;
-    double set_out_offset = 0.0;
-    int Fopt = 0;
-    int get_out_polarity = 0;
-    int set_out_polarity = -1;
-    int get_out_z = 0;
-    int set_out_z = -1;
-    int get_trig_rate = 0;
-    double set_trig_rate = 0.0;
-    int get_trig_mode = 0;
-    int set_trig_mode = -1;
-    int get_burst_count = 0;
-    int set_burst_count = -1;
-    int get_trig_z = 0;
-    int set_trig_z = -1;
-    int get_trig_slope = 0;
-    int set_trig_slope = -1;
-    int exit_val = 0;
-    int single_shot = 0;
-    int todo = 0;
-
-    /*
-     * Handle options.
-     */
-    prog = basename(argv[0]);
-    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
-        switch (c) {
-        case 'a': /* --address */
-            addr = optarg;
-            break;
-        case 'v': /* --verbose */
-            verbose = 1;
-            break;
-        case 'c': /* --clear */
-            clear = 1;
-            todo++;
-            break;
-        case 'l': /* --local */
-            local = 1;
-            todo++;
-            break;
-        case 'e': /* --display-string */
-            display_string = optarg;
-            todo++;
-            break;
-        case 'x': /* --single-shot */
-            single_shot = 1;
-            todo++;
-            break;
-        case 'o': /* --out-chan */
-            out_chan = rfindstr(out_names, optarg);
-            if (out_chan == -1) {
-                fprintf(stderr, "%s: bad --out-chan argument\n", prog);
-                exit(1);
-            }
-            break;
-        case 'd': /* --get-delay */
-            get_delay = 1;
-            todo++;
-            break;
-        case 'D': /* --set-delay */
-            if (!_parse_delay(optarg, &set_delay_chan, &set_delay_time)) {
-                fprintf(stderr, "%s: bad --set-delay argument\n", prog);
-                exit(1);
-            }
-            todo++;
-            break;
-        case 'q' : /* --get-out-mode */
-            get_out_mode = 1;
-            todo++;
-            break;
-        case 'Q': /* --set-out-mode */
-            set_out_mode = rfindstr(out_modes, optarg);
-            if (set_out_mode == -1) {
-                fprintf(stderr, "%s: bad --out-mode optarg\n", prog);
-                exit(1);
-            }
-            todo++;
-            break;
-        case 'g': /* --get-out-ampl */
-            get_out_ampl = 1;
-            todo++;
-            break;
-        case 'G': /* --set-out-ampl */
-            set_out_ampl = strtod(optarg, NULL);
-            Gopt = 1;
-            todo++;
-            break;
-        case 'f' : /* --get-out-offset */
-            get_out_offset = 1;
-            todo++;
-            break;
-        case 'F': /* --set-out-offset */
-	    Fopt = 1;
-            set_out_offset = strtod(optarg, NULL);
-            todo++;
-            break;
-        case 'p': /* --get-out-polarity */
-            get_out_polarity = 1;
-            todo++;
-            break;
-        case 'P': /* --set-out-polarity */
-            if (!strcasecmp(optarg, "-"))
-                set_out_polarity = 0;
-            else if (!strcasecmp(optarg, "+"))
-                set_out_polarity = 1;
-            else
-                usage();
-            todo++;
-            break;
-        case 'y': /* --get-out-z */
-            get_out_z = 1;
-            todo++;
-            break;
-        case 'Y': /* --set-out-z */
-            if (!strcasecmp(optarg, "lo"))
-                set_out_z = 0;
-            else if (!strcasecmp(optarg, "hi"))
-                set_out_z = 1;
-            else
-                usage();
-            todo++;
-            break;
-        case 'm' : /* --get-trig-mode */
-            get_trig_mode = 1;
-            todo++;
-            break;
-        case 'M' : /* --set-trig-mode */
-            set_trig_mode = rfindstr(trig_modes, optarg);
-            if (set_trig_mode == -1) {
-                fprintf(stderr, "%s: bad --trig-mode optarg\n", prog);
-                exit(1);
-            }
-            todo++;
-            break;
-        case 't': /* --get-trig-rate */
-            get_trig_rate = 1;
-            todo++;
-            break;
-        case 'T': /* --set-trig-rate */
-            if (freqstr(optarg, &set_trig_rate) < 0) {
-                fprintf(stderr, "%s: error converting trigger freq\n", prog);
-                fprintf(stderr, "%s: use freq units: %s\n", prog, FREQ_UNITS);
-                fprintf(stderr, "%s: or period units: %s\n", prog,PERIOD_UNITS);
-                exit(1);
-            }
-            todo++;
-            break;
-        case 's' : /* --get-trig-slope */
-            get_trig_slope = 1;
-            todo++;
-            break;
-        case 'S' : /* --set-trig-slope */
-            if (!strcasecmp(optarg, "rising"))
-                set_trig_slope = 1;
-            else if (!strcasecmp(optarg, "falling"))
-                set_trig_slope = 0;
-            else
-                usage();
-            todo++;
-            break;
-        case 'b' : /* --get-trig-count */
-            get_burst_count = 1;
-            todo++;
-            break;
-        case 'B' : /* --set-trig-count */
-            set_burst_count = strtoul(optarg, NULL, 0);
-            todo++;
-            break;
-        case 'z' : /* --get-trig-z */
-            get_trig_z = 1;
-            todo++;
-            break;
-        case 'Z' : /* --set-trig-z */
-            if (!strcasecmp(optarg, "lo"))
-                set_trig_z = 0;
-            else if (!strcasecmp(optarg, "hi"))
-                set_trig_z = 1;
-            else
-                usage();
-            todo++;
-            break;
-        default:
-            usage();
-            break;
-        }
-    }
-    if (optind < argc || !todo)
-        usage();
-
-    if (out_chan == -1 && (get_out_mode || set_out_mode != -1)) {
-        fprintf(stderr, "%s: --get/set-out-mode needs --out-chan\n", prog);
-        exit(1);
-    }
-    if (out_chan == -1 && (get_out_ampl || Gopt)) {
-        fprintf(stderr, "%s: --get/set-out-ampl needs --out-chan\n", prog);
-        exit(1);
-    }
-    if (out_chan == -1 && (get_out_offset || Fopt)) {
-        fprintf(stderr, "%s: --get/set-output-off needs --out-chan\n", prog);
-        exit(1);
-    }
-    if (out_chan == -1 && (get_out_polarity || set_out_polarity != -1)) {
-        fprintf(stderr, "%s: --get/set-out-polarity needs --out-chan\n", prog);
-        exit(1);
-    }
-    if (out_chan == -1 && (get_out_z || set_out_z != -1)) {
-        fprintf(stderr, "%s: --get/set-out-z needs --out-chan\n", prog);
-        exit(1);
-    }
-    if (out_chan == -1 && (get_delay || set_delay_chan != -1)) {
-        fprintf(stderr, "%s: --get/set-delay needs --out-chan\n", prog);
-        exit(1);
-    }
-
-    if (!addr)
-        addr = gpib_default_addr(INSTRUMENT);
-    if (!addr) {
-        fprintf(stderr, "%s: no default address for %s, use --address\n", 
-                prog, INSTRUMENT);
-        exit(1);
-    }
-    gd = gpib_init(addr, _interpret_status, 0);
-    if (!gd) {
-        fprintf(stderr, "%s: device initialization failed for address %s\n", 
-                prog, addr);
-        exit(1);
-    }
-    gpib_set_verbose(gd, verbose);
-
-    /* clear instrument to default settings */
-    if (clear) {
-        gpib_clr(gd, 0);
-        gpib_wrtf(gd, "CL");
-    }
-
-    /* display string */
-    if (display_string)
-        gpib_wrtf(gd, "DS %s", display_string);
-
-    /* outputs */
-    if (set_out_mode != -1)
-        gpib_wrtf(gd, "OM %d,%d", out_chan, set_out_mode);
-    if (get_out_mode) {
-        int i;
-
-        gpib_wrtf(gd, "OM %d", out_chan);
-        if (gpib_rdf(gd, "%d", &i) != 1) {
-            fprintf(stderr, "%s: error reading output mode\n", prog);
-            exit_val = 1;
-            goto done;
-        }
-        fprintf(stderr, "%s: %s\n", prog, findstr(out_modes, i));
-    }
-    if (Gopt)
-        gpib_wrtf(gd, "OA %d,%lf", out_chan, set_out_ampl);
-    if (get_out_ampl) {
-        double d;
-
-        gpib_wrtf(gd, "OA %d", out_chan);
-        if (gpib_rdf(gd, "%lf", &d) != 1) {
-            fprintf(stderr, "%s: error reading output amplitude\n", prog);
-            exit_val = 1;
-            goto done;
-        }
-        fprintf(stderr, "%s: %lf\n", prog, d);
-    }
-    if (Fopt)
-        gpib_wrtf(gd, "OO %d,%lf", out_chan, set_out_offset);
-    if (get_out_offset) {
-        double d;
-
-        gpib_wrtf(gd, "OO %d", out_chan);
-        if (gpib_rdf(gd, "%lf", &d) != 1) {
-            fprintf(stderr, "%s: error reading output offset\n", prog);
-            exit_val = 1;
-            goto done;
-        }
-        fprintf(stderr, "%s: %lf\n", prog, d);
-    }
-    if (set_out_polarity != -1)
-        gpib_wrtf(gd, "OP %d,%d", out_chan, set_out_polarity);
-    if (get_out_polarity) {
-        int i;
-
-        gpib_wrtf(gd, "OP %d", out_chan);
-        if (gpib_rdf(gd, "%d", &i) != 1) {
-            fprintf(stderr, "%s: error reading output polarity\n", prog);
-            exit_val = 1;
-            goto done;
-        }
-        fprintf(stderr, "%s: %s\n", prog, i == 0 ? "-" : "+");
-    }
-    if (set_out_z != -1)
-        gpib_wrtf(gd, "TZ %d,%d", out_chan, set_out_z);
-    if (get_out_z) {
-        int i;
-
-        gpib_wrtf(gd, "TZ %d", out_chan);
-        if (gpib_rdf(gd, "%d", &i) != 1) {
-            fprintf(stderr, "%s: error reading output impedance\n", prog);
-            exit_val = 1;
-            goto done;
-        }
-        fprintf(stderr, "%s: %s\n", prog, i == 0 ? "lo" : "hi");
-    }
-
-    /* delay */
-    if (set_delay_chan != -1) {
-        gpib_wrtf(gd, "DT %d,%d,%lf", out_chan,
-                set_delay_chan, set_delay_time);
-    }
-    if (get_delay) {
-        int i;
-        double d;
-
-        gpib_wrtf(gd, "DT %d", out_chan);
-        if (gpib_rdf(gd, "%d,%lf", &i, &d) != 2) {
-            fprintf(stderr, "%s: error reading delay time\n", prog);
-            exit_val = 1;
-            goto done;
-        }
-        fprintf(stderr, "%s: %s,%lfs\n", prog, findstr(out_names, i), d);
-    }
-
-    /* trigger */
-    if (set_trig_mode != -1)
-        gpib_wrtf(gd, "TM %d", set_trig_mode);
-    if (get_trig_slope) {
-        int tmp;
-
-        gpib_wrtf(gd, "TS");
-        if (gpib_rdf(gd, "%d", &tmp) != 1) {
-            fprintf(stderr, "%s: error reading trigger slope\n", prog);
-            exit_val = 1;
-            goto done;
-        }
-        fprintf(stderr, "%s: %s\n", prog, tmp == 0 ? "falling" : "rising");
-    }
-    if (get_burst_count) {
-        int tmp;
-
-        gpib_wrtf(gd, "BC");
-        if (gpib_rdf(gd, "%d", &tmp) != 1) {
-            fprintf(stderr, "%s: error reading trigger slope\n", prog);
-            exit_val = 1;
-            goto done;
-        }
-        fprintf(stderr, "%s: %d\n", prog, tmp);
-    }
-    if (get_trig_z) {
-        int tmp;
-
-        gpib_wrtf(gd, "TZ 0");
-        if (gpib_rdf(gd, "%d", &tmp) != 1) {
-            fprintf(stderr, "%s: error reading trigger impedence\n", prog);
-            exit_val = 1;
-            goto done;
-        }
-        fprintf(stderr, "%s: %s\n", prog, tmp == 0 ? "lo" : "hi");
-    }
-    if (set_trig_rate != 0.0 || set_trig_slope != -1 || set_burst_count != -1
-            || get_trig_mode || set_trig_z != -1 || get_trig_rate
-            || single_shot) {
-        int tmode;
-
-        gpib_wrtf(gd, "TM");
-        if (gpib_rdf(gd, "%d", &tmode) != 1) {
-            fprintf(stderr, "%s: error reading trigger mode\n", prog);
-            exit_val = 1;
-            goto done;
-        }
-        if (tmode != DG535_TRIG_INT && tmode != DG535_TRIG_EXT
-                && tmode != DG535_TRIG_SS && tmode != DG535_TRIG_BUR) {
-            fprintf(stderr, "%s: read illegal trigger mode\n", prog);
-            exit_val = 1;
-            goto done;
-        }
-        if (get_trig_mode) {
-            switch(tmode) {
-                case DG535_TRIG_INT: 
-                    fprintf(stderr, "%s: int\n", prog); 
-                    break;
-                case DG535_TRIG_EXT: 
-                    fprintf(stderr, "%s: ext\n", prog); 
-                    break;
-                case DG535_TRIG_SS: 
-                    fprintf(stderr, "%s: ss\n", prog); 
-                    break;
-                case DG535_TRIG_BUR: 
-                    fprintf(stderr, "%s: bur\n", prog); 
-                    break;
-            }
-        }
-        if (set_trig_rate != 0.0 && tmode == DG535_TRIG_INT)
-            gpib_wrtf(gd, "TR 0,%lf", set_trig_rate);
-        if (set_trig_rate != 0.0 && tmode == DG535_TRIG_BUR)
-            gpib_wrtf(gd, "TR 1,%lf", set_trig_rate);
-        if (get_trig_rate) {
-            double tmp;
-
-            if (tmode == DG535_TRIG_INT)
-                gpib_wrtf(gd, "TR 0");
-            else /* DG535_TRIG_BUR */
-                gpib_wrtf(gd, "TR 1");
-            if (gpib_rdf(gd, "%lf", &tmp) != 1) {
-                fprintf(stderr, "%s: error reading trigger rate\n", prog);
-                exit_val = 1;
-                goto done;
-            }
-            fprintf(stderr, "%s: %lfhz\n", prog, tmp);
-        }
-        if (set_trig_slope != -1)
-            gpib_wrtf(gd, "TS %d", set_trig_slope);
-        if (set_burst_count != -1)
-            gpib_wrtf(gd, "BC %d", set_burst_count);
-        if (set_trig_z != -1)
-            gpib_wrtf(gd, "TZ 0,%d", set_trig_z);
-        if (single_shot)
-            gpib_wrtf(gd, "SS");
-    }
-
-    /* return front panel if requested */
-    if (local)
-        gpib_loc(gd); 
-
-done:
-    gpib_fini(gd);
-    exit(exit_val);
 }
 
 /*

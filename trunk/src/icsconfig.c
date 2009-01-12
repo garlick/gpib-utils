@@ -70,34 +70,10 @@ static struct option longopts[] = {
 #endif
 
 static void _print_errlog(ics_t ics);
+static void _usage(void);
 
 static strtab_t errtab[] = ICS_ERRLOG;
 char *prog;
-
-void
-usage(void)
-{
-    fprintf(stderr, 
-  "Usage: %s [--options]\n"
-  "  -a,--name                    instrument address\n"
-  "  -jJ,--get/set-interface-name VXI-11 logical name (e.g. ``inst'')\n"
-  "  -tT,--get/set-comm-timeout   TCP timeout (in seconds)\n"
-  "  -sS,--get/set-static-ip-mode static IP mode (0=disabled, 1=enabled)\n"
-  "  -zZ,--get/set-ip-number      static IP number (a.b.c.d)\n"
-  "  -nN,--get/set-netmask        static netmask (a.b.c.d)\n"
-  "  -gG,--get/set-gateway        static gateway (a.b.c.d)\n"
-  "  -kK,--get/set-keepalive      keepalive time (in seconds)\n"
-  "  -C,--reload-config           force reload of default config\n"
-  "  -c,--commit-config           commit (write) current config\n"
-  "  -r,--reboot                  reboot\n"
-  "  -e,--get-errlog              get error log (side effect: log is cleared)\n"
-  "The following options apply to the ICS 8065 Ethernet-GPIB controller only:\n"
-  "  -qQ,--get/set-gpib-address   gpib address\n"
-  "  -wW,--get/set-system-controller\n"
-  "                               sys controller mode (0=disabled, 1=enabled)\n"
-  "  -mM,--get/set-ren-mode       REN active at boot (0=false, 1=true)\n"
-  "  -i,--get-idn-string          get idn string\n", prog);
-}
 
 int
 main(int argc, char *argv[])
@@ -107,6 +83,8 @@ main(int argc, char *argv[])
     char *tmpstr;
     unsigned int timeout, a;
     int flag, c;
+    int work_todo = 0;
+    int print_usage = 0;
 
     prog = basename(argv[0]);
     while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
@@ -114,10 +92,16 @@ main(int argc, char *argv[])
             case 'a' :  /* --address */
                 addr = optarg;
                 break;
+            case '?':
+                print_usage ++;
+                break;
+            default:
+                work_todo++;
+                break;
         }
     }	
-    if (!addr) {
-        usage();
+    if (optind < argc || print_usage || !addr || !work_todo) {
+        _usage();
         exit(1);
     }
     if (!(ics = ics_init(addr)))
@@ -227,15 +211,36 @@ main(int argc, char *argv[])
             case 'M':   /* --set-ren-mode */
                 ics_set_ren_mode(ics, strtoul(optarg, NULL, 0));
                 break;
-            default:
-                usage();
-                break;
         }
     }
-    if (optind < argc)
-        usage();
+
     ics_fini(ics);
     exit(0);
+}
+
+static void
+_usage(void)
+{
+    fprintf(stderr, 
+  "Usage: %s [--options]\n"
+  "  -a,--name                    instrument address\n"
+  "  -jJ,--get/set-interface-name VXI-11 logical name (e.g. ``inst'')\n"
+  "  -tT,--get/set-comm-timeout   TCP timeout (in seconds)\n"
+  "  -sS,--get/set-static-ip-mode static IP mode (0=disabled, 1=enabled)\n"
+  "  -zZ,--get/set-ip-number      static IP number (a.b.c.d)\n"
+  "  -nN,--get/set-netmask        static netmask (a.b.c.d)\n"
+  "  -gG,--get/set-gateway        static gateway (a.b.c.d)\n"
+  "  -kK,--get/set-keepalive      keepalive time (in seconds)\n"
+  "  -C,--reload-config           force reload of default config\n"
+  "  -c,--commit-config           commit (write) current config\n"
+  "  -r,--reboot                  reboot\n"
+  "  -e,--get-errlog              get error log (side effect: log is cleared)\n"
+  "The following options apply to the ICS 8065 Ethernet-GPIB controller only:\n"
+  "  -qQ,--get/set-gpib-address   gpib address\n"
+  "  -wW,--get/set-system-controller\n"
+  "                               sys controller mode (0=disabled, 1=enabled)\n"
+  "  -mM,--get/set-ren-mode       REN active at boot (0=false, 1=true)\n"
+  "  -i,--get-idn-string          get idn string\n", prog);
 }
 
 static void
@@ -246,7 +251,7 @@ _print_errlog(ics_t ics)
 
     if (ics_error_logger(ics, &tmperr, &tmpcount) == 0) {
         for (i = 0; i < tmpcount ; i++)
-            printf("[%d]: %s\n", i, findstr(errtab, tmperr[i]));
+            printf("[%d] %s\n", i, findstr(errtab, tmperr[i]));
         free(tmperr);
     }
 }
