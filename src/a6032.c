@@ -68,8 +68,15 @@
 #define A6032_ESR_RQL	2	/* request control */
 #define A6032_ESR_OPC	1	/* operation complete */
 
+static void _usage(void);
+static int _print_screen(gd_t gd, char *fmt, char *palette);
+static int _restore_setup(gd_t gd);
+static int _save_setup(gd_t gd);
+static int _get_idn(gd_t gd);
+static int _setdate(gd_t gd);
+static int _interpret_status(gd_t gd, unsigned char status, char *msg);
+
 char *prog = "";
-static int verbose = 0;
 
 #define OPTIONS "a:clvisrpf:P:d"
 #if HAVE_GETOPT_LONG
@@ -92,8 +99,95 @@ static struct option longopts[] = {
 #define GETOPT(ac,av,opt,lopt) getopt(ac,av,opt)
 #endif
 
+int
+main(int argc, char *argv[])
+{
+    gd_t gd;
+    int c, exit_val = 0, print_usage = 0;
+    char *print_format = "png";
+    char *print_palette = "col";
+
+    gd = gpib_init_args(argc, argv, OPTIONS, longopts, INSTRUMENT,
+                        _interpret_status, 0, &print_usage);
+    if (print_usage)
+        _usage();
+    if (!gd)
+        exit(1);
+
+    /* preparse print modifiers */
+    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
+        switch (c) {
+            case 'f': /* --print-format */
+                if (       strncasecmp(optarg, "bmp", 3)
+                        && strncasecmp(optarg, "png", 3)
+                        && strncasecmp(optarg, "bmp8bit", 7)) {
+                    fprintf(stderr, "%s: error parsing print-format\n", prog);
+                    exit_val = 1;
+                    break;
+                }
+                print_format = optarg;
+                break;
+            case 'P': /* --print-palette */
+                if (       strncasecmp(optarg, "col", 3) 
+                        && strncasecmp(optarg, "gray", 4)) {
+                    fprintf(stderr, "%s: error parsing print-palette\n", prog);
+                    exit_val = 1;
+                    break;
+                }
+                print_palette = optarg;
+                break;
+        }
+    }
+    if (exit_val == 1)
+        goto done;
+
+    optind = 0;
+    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
+        switch (c) {
+            case 'a': /* -a and -v handled in gpib_init_args() */
+            case 'v':
+            case 'f': /* -f and -P preparsed above */
+            case 'P':
+                break;
+            case 'c': /* --clear */
+                gpib_clr(gd, 0);
+                gpib_wrtf(gd, "*CLS");
+                gpib_wrtf(gd, "*RST");
+                sleep(1);
+                break;
+            case 'l': /* --local */
+                gpib_loc(gd); 
+                break;
+            case 'i': /* --get-idn */
+                if (_get_idn(gd) == -1)
+                    exit_val = 1;
+                break;
+            case 's': /* --save-setup */
+                if (_save_setup(gd) == -1)
+                    exit_val = 1;
+                break;
+            case 'r': /* --restore-setup */
+                if (_restore_setup(gd) == -1)
+                    exit_val = 1;
+                break;
+            case 'p': /* --print-screen */
+                if (_print_screen(gd, print_format, print_palette) == -1)
+                    exit_val = 1;
+                break;
+            case 'd': /* --set-date */
+                if (_setdate(gd) == -1)
+                    exit_val = 1;
+                break;
+        }
+    }
+
+done:
+    gpib_fini(gd);
+    exit(exit_val);
+}
+
 static void 
-usage(void)
+_usage(void)
 {
     char *addr = gpib_default_addr(INSTRUMENT);
 
@@ -337,144 +431,6 @@ fail:
     return -1;
 }
 
-int
-main(int argc, char *argv[])
-{
-    gd_t gd;
-    char *addr = NULL;
-    int c;
-    int clear = 0;
-    int local = 0;
-    int todo = 0;
-    int exit_val = 0;
-    int get_idn = 0;
-    int save_setup = 0;
-    int restore_setup = 0;
-    int print_screen = 0;
-    char *print_format = "png";
-    char *print_palette = "col";
-    int set_date = 0;
-
-    /*
-     * Handle options.
-     */
-    prog = basename(argv[0]);
-    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
-        switch (c) {
-        case 'a': /* --address */
-            addr = optarg;
-            break;
-        case 'v': /* --verbose */
-            verbose = 1;
-            break;
-        case 'c': /* --clear */
-            clear = 1;
-            todo++;
-            break;
-        case 'l': /* --local */
-            local = 1;
-            todo++;
-            break;
-        case 'i': /* --get-idn */
-            get_idn = 1;
-            todo++;
-            break;
-        case 's': /* --save-setup */
-            save_setup = 1;
-            todo++;
-            break;
-        case 'r': /* --restore-setup */
-            restore_setup = 1;
-            todo++;
-            break;
-        case 'p': /* --print-screen */
-            print_screen = 1;
-            todo++;
-            break;
-        case 'f': /* --print-format */
-            if (strncasecmp(optarg, "bmp", 3) && strncasecmp(optarg, "png", 3)
-                    && strncasecmp(optarg, "bmp8bit", 7))
-                usage();
-            print_format = optarg;
-            break;
-        case 'P': /* --print-palette */
-            if (strncasecmp(optarg, "col", 3) && strncasecmp(optarg, "gray", 4))
-                usage();
-            print_palette = optarg;
-            break;
-        case 'd': /* --set-date */
-            set_date = 1;
-            todo++;
-            break;
-        default:
-            usage();
-            break;
-        }
-    }
-    if (optind < argc || !todo)
-        usage();
-
-    if (!addr)
-        addr = gpib_default_addr(INSTRUMENT);
-    if (!addr) {
-        fprintf(stderr, "%s: no default address for %s, use --address\n", 
-                prog, INSTRUMENT);
-        exit(1);
-    }
-    gd = gpib_init(addr, _interpret_status, 0);
-    if (!gd) {
-        fprintf(stderr, "%s: device initialization failed for address %s\n", 
-                prog, addr);
-        exit(1);
-    }
-    gpib_set_verbose(gd, verbose);
-
-    /* clear instrument to default settings */
-    if (clear) {
-        gpib_clr(gd, 0);
-        gpib_wrtf(gd, "*CLS");
-        gpib_wrtf(gd, "*RST");
-        sleep(1);
-    }
-    if (clear || set_date) {
-        if (_setdate(gd) == -1) {
-            exit_val = 1;
-            goto done;
-        }
-    }
-    if (get_idn) {
-        if (_get_idn(gd) == -1) {
-            exit_val = 1;
-            goto done;
-        }
-    }
-    if (save_setup) {
-        if (_save_setup(gd) == -1) {
-            exit_val = 1;
-            goto done;
-        }
-    }
-    if (restore_setup) {
-        if (_restore_setup(gd) == -1) {
-            exit_val = 1;
-            goto done;
-        }
-    }
-    if (print_screen) {
-        if (_print_screen(gd, print_format, print_palette) == -1) {
-            exit_val = 1;
-            goto done;
-        }
-    }
-
-    /* return front panel if requested */
-    if (local)
-        gpib_loc(gd); 
-
-done:
-    gpib_fini(gd);
-    exit(exit_val);
-}
 
 /*
  * vi:tabstop=4 shiftwidth=4 expandtab

@@ -48,6 +48,10 @@ struct pods {
     uint16_t pod4; /* 9 bit state */
 };
 
+static void _usage(void);
+static int _read_learn_string(uint8_t *buf, int size);
+static void _parse_learn_string(uint8_t *buf, int len);
+
 char *prog = "<unknown>";
 double clock_ns = 100; /* clock period in ns */
 
@@ -61,6 +65,53 @@ static struct option longopts[] = {
 #else
 #define GETOPT(ac,av,opt,lopt) getopt(ac,av,opt)
 #endif
+
+int
+main(int argc, char *argv[])
+{
+    int len;
+    uint8_t buf[16*1024];
+    int c;
+    double f;
+
+    /* XXX If state and timing learn strings are both on stdin, we output 
+     * a concatenated trace which is wrong.  Need to figure out how to make 
+     * properly correlated state/timing trace output.
+     */
+
+    prog = basename(argv[0]);
+    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
+        switch (c) {
+            case 'c':   /* --clock */
+                if (freqstr(optarg, &f) < 0) {
+                    fprintf(stderr, "%s: freq conversion error\n", prog);
+                    fprintf(stderr, "%s: use freq units: %s\n", prog, FREQ_UNITS);
+                    fprintf(stderr, "%s: or period units: %s\n", prog,PERIOD_UNITS);
+                    exit(1);
+                }
+                clock_ns = 1000000000.0/f;
+                break;
+            default:
+                _usage();
+        }
+    }
+
+    /* XXX We use this for timing trace even though in theory we have
+     * the sample interval in the learn string.  
+     * See note in _parse_timing_trace().
+     */
+
+    fprintf(stderr, "%s: using %.1fns clock\n", prog, clock_ns);
+
+    do {
+        len = _read_learn_string(buf, sizeof(buf));
+        if (len > 0)
+            _parse_learn_string(buf, len);
+    } while (len > 0);
+
+    exit(0);
+}
+
 
 static uint16_t 
 _getint16(uint8_t *buf)
@@ -359,52 +410,6 @@ _usage(void)
     fprintf(stderr, "Usage: %s [--clock freqstr] <state.dump >state.tra\n", 
             prog);
     exit(1);
-}
-
-int
-main(int argc, char *argv[])
-{
-    int len;
-    uint8_t buf[16*1024];
-    int c;
-    double f;
-
-    /* XXX If state and timing learn strings are both on stdin, we output 
-     * a concatenated trace which is wrong.  Need to figure out how to make 
-     * properly correlated state/timing trace output.
-     */
-
-    prog = basename(argv[0]);
-    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
-        switch (c) {
-            case 'c':   /* --clock */
-                if (freqstr(optarg, &f) < 0) {
-                    fprintf(stderr, "%s: freq conversion error\n", prog);
-                    fprintf(stderr, "%s: use freq units: %s\n", prog, FREQ_UNITS);
-                    fprintf(stderr, "%s: or period units: %s\n", prog,PERIOD_UNITS);
-                    exit(1);
-                }
-                clock_ns = 1000000000.0/f;
-                break;
-            default:
-                _usage();
-        }
-    }
-
-    /* XXX We use this for timing trace even though in theory we have
-     * the sample interval in the learn string.  
-     * See note in _parse_timing_trace().
-     */
-
-    fprintf(stderr, "%s: using %.1fns clock\n", prog, clock_ns);
-
-    do {
-        len = _read_learn_string(buf, sizeof(buf));
-        if (len > 0)
-            _parse_learn_string(buf, len);
-    } while (len > 0);
-
-    exit(0);
 }
 
 /*

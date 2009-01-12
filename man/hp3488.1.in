@@ -7,21 +7,7 @@ hp3488 \- control HP 3488A switch/control unit
 .fi
 .SH DESCRIPTION
 \fBhp3488\fR controls the HP 3488A switch/control unit via its GPIB interface.
-.PP
-\fBhp3488\fR performs actions selected on the command line in a fixed sequence:
-.IP
-.nf
-clear
-perform self test
-list installed options
-list valid channels
-open channels
-close channels
-query channel states
-start shell
-local
-.PP
-If an action is not selected on the command line, it is not performed.
+\fBhp3488\fR performs actions in the order they appear on the command line.
 .SH OPTIONS
 \fBhp3488\fR accepts the following command line options:
 .TP

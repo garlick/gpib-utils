@@ -3,6 +3,7 @@
 	* libics/ics8000.x, libics/ics.[ch] : Drop ics_reload_factory().
 
 	* src/* : Reduce use of needless preprocessor macros for ASCII cmds.
+	  Parse arguments in two stages, and perform actions in argument order.
 
 	* src/icsconfig.c : Factor ICS config from ics8064.c ics8065.c.
 

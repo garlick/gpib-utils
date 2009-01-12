@@ -5,16 +5,7 @@ hp8656 \- control HP 8656A signal generator
 .B hp8656 [\fIOPTIONS\fR]
 .SH DESCRIPTION
 \fBhp8656\fR controls the HP 8656A signal generator via its GPIB interface.
-.PP
-\fBhp8656\fR performs actions selected on the command line in a fixed sequence:
-.IP
-.nf
-clear
-configure
-local
-.fi
-.PP
-If an action is not selected on the command line, it is not peformed.
+\fBhp8656\fR performs actions in the order the appear on the command line.
 .SH OPTIONS
 \fBhp8656\fR accepts the following command line options:
 .TP

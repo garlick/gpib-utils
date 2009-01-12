@@ -9,17 +9,6 @@ dg535 \- control SRS DG535 Digital Delay/Pulse Generator
 .SH DESCRIPTION
 \fBdg535\fR controls the Stanford Research Systems, Inc. model DG535 
 four channel digital delay/pulse generator via its GPIB interface.
-.PP
-\fBdg535\fR performs actions selected on the command line in a fixed sequence:
-.IP
-.nf
-clear
-display string
-get/set output modes
-get/set delay modes
-get/set trigger modes
-local
-.PP
 \fBdg535\fR accepts the following command line options:
 .SH "OPTIONS, GENERAL"
 .TP

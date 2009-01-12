@@ -99,6 +99,20 @@
     { 44478, "1.3GHz multiplexer",    "[00-03,10-13]" }, \
 }
 
+static void _get_idn(gd_t gd);
+static void _test(gd_t gd);
+static void _clear(gd_t gd);
+static void _shell(gd_t gd);
+static void _show_config(void);
+static void _open_targets(gd_t gd, char *str);
+static void _close_targets(gd_t gd, char *str);
+static void _query_targets(gd_t gd, char *str);
+static void _list_targets();
+static void _usage(void);
+static int _interpret_status(gd_t gd, unsigned char status, char *msg);
+static int _parse_model_config(char *str);
+static void _probe_model_config(gd_t gd);
+
 typedef struct {
     int model;
     char *desc;
@@ -113,11 +127,12 @@ char *prog = "";
 static int lerr_flag = 1;   /* logic errors: 0=ignored, 1=fatal */
                             /*   See: disambiguate_ctype() */
 
-#define OPTIONS "a:clSvL0:1:q:QIC:x"
+#define OPTIONS "ia:clSvL0:1:q:QIC:x"
 #if HAVE_GETOPT_LONG
 #define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
 static struct option longopts[] = {
     {"address",         required_argument, 0, 'a'},
+    {"get-idn",         no_argument,       0, 'i'},
     {"clear",           no_argument,       0, 'c'},
     {"local",           no_argument,       0, 'l'},
     {"verbose",         no_argument,       0, 'v'},
@@ -136,17 +151,139 @@ static struct option longopts[] = {
 #define GETOPT(ac,av,opt,lopt) getopt(ac,av,opt)
 #endif
 
+int
+main(int argc, char *argv[])
+{
+    int need_valid_targets = 0;
+    int c, print_usage = 0;
+    int exit_val = 0;
+    gd_t gd;
+
+    gd = gpib_init_args(argc, argv, OPTIONS, longopts, INSTRUMENT,
+                        _interpret_status, 0, &print_usage);
+    if (print_usage) {
+        _usage();
+        exit(1);
+    }
+    if (!gd)
+        exit(1);
+
+    gpib_set_reos(gd, 1);
+
+    /* preparse args (again) to get slot config settled before doing work */
+    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
+        switch (c) {
+        case 'a': /* -a and -v handled in gpib_init_args() */
+        case 'v':
+            break;
+        case 'C': /* --config */
+            if (valid_targets) {
+                fprintf(stderr, "%s: -C may only be specified once\n", prog);
+                exit_val = 1;
+                goto done;
+            }
+            valid_targets = hostlist_create("");
+            if (_parse_model_config(optarg) == -1) {
+                exit_val = 1;
+                goto done;
+            }
+            break;
+        case 'c': /* handled below */
+        case 'l':
+        case 'S':
+        case 'i':
+            break;
+        case 'L':
+        case '0':
+        case '1':
+        case 'q':
+        case 'Q':
+        case 'I':
+        case 'x':
+            need_valid_targets++;
+            break;
+        default:
+            _usage();
+            exit_val = 1;
+            goto done;
+            /*NOTREACHED*/
+        }
+    }
+
+    if (need_valid_targets && valid_targets == NULL) {
+        valid_targets = hostlist_create("");
+        _probe_model_config(gd);
+    }
+
+    optind = 0;
+    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
+        switch (c) {
+        case 'a': /* -a and -v handled in gpib_init_args() */
+        case 'v':
+            break;
+        case 'C': /* --config (handled above) */
+            break;
+        case 'c': /* --clear */
+            _clear(gd);
+            break;
+        case 'i': /* --get-idn */
+            _get_idn(gd);
+            break;
+        case 'l': /* --local */
+            gpib_loc(gd); 
+            break;
+        case 'S': /* --selftest */
+            _test(gd);
+            break;
+        case 'L': /* --list */
+            _list_targets();
+            break;
+        case '0': /* --open */
+            _open_targets(gd, optarg);
+            break;
+        case '1': /* --close */
+            _close_targets(gd, optarg);
+            break;
+        case 'q': /* --query */
+            _query_targets(gd, optarg);
+            break;
+        case 'Q': /* --queryall */
+            _query_targets(gd, NULL);
+            break;
+        case 'I': /* --shell */
+            _shell(gd);
+            break;
+        case 'x': /* --showconfig */
+            _show_config();
+            break;
+        default:
+            _usage();
+            break;
+        }
+    }
+
+done:
+    if (valid_targets)
+        hostlist_destroy(valid_targets);
+    gpib_fini(gd);
+    exit(exit_val);
+}
+
 static void 
-usage(void)
+_usage(void)
 {
     char *addr = gpib_default_addr(INSTRUMENT);
 
     fprintf(stderr, 
 "Usage: %s [--options]\n"
 "  -a,--address                  instrument address [%s]\n"
+"  -v,--verbose                  show protocol on stderr\n"
+"  -i,--get-idn                  get instrument idn string\n"
+"  -C,--config m,m,m,m,m         specify model card in slots 1,2,3,4,5 where\n"
+"    model is 44470|44471|44472|44473|44474|44475|44476|44477|44478 (0=empty)\n"
+"  -x,--showconfig               list installed cards\n"
 "  -c,--clear                    initialize instrument to default values\n"
 "  -l,--local                    return instrument to local operation on exit\n"
-"  -v,--verbose                  show protocol on stderr\n"
 "  -S,--selftest                 execute self test\n"
 "  -L,--list                     list valid channels\n"
 "  -0,--open [targets]           open contacts for specified channels\n"
@@ -154,11 +291,7 @@ usage(void)
 "  -q,--query [targets]          view state of specified channels\n"
 "  -Q,--queryall                 view state of all channels\n"
 "  -I,--shell                    start interactive shell\n"
-"  -x,--showconfig               list installed cards\n"
-"  -C,--config m,m,m,m,m         specify model card in slots 1,2,3,4,5 where\n"
-"    model is 44470|44471|44472|44473|44474|44475|44476|44477|44478 (0=empty)\n"
            , prog, addr ? addr : "no default");
-    exit(1);
 }
 
 /* Check the error register.
@@ -232,7 +365,7 @@ _interpret_status(gd_t gd, unsigned char status, char *msg)
 
 
 /* Close a couple of relays to disambiguate 44477 and 44476 from 44471.
- * Helper for probe_model_config().
+ * Helper for _probe_model_config().
  */
 static int
 _disambiguate_ctype(gd_t gd, int slot)
@@ -302,7 +435,7 @@ modeltab_find(int model)
 /* Set slot config by command line option.
  */
 static int
-parse_model_config(char *str)
+_parse_model_config(char *str)
 {
     char *modstr;
     int slot;
@@ -333,7 +466,7 @@ parse_model_config(char *str)
 }
 
 static void
-probe_model_config(gd_t gd)
+_probe_model_config(gd_t gd)
 {
     int slot, model;
     modeltab_t *cp;
@@ -372,7 +505,7 @@ query_caddr(gd_t gd, char *caddr)
 }
 
 static void
-show_config(void)
+_show_config(void)
 {
     int i;
     modeltab_t *cp;
@@ -405,7 +538,7 @@ my_hostlist_find(hostlist_t hl, char *key)
 }
 
 static void
-query_targets(gd_t gd, char *str)
+_query_targets(gd_t gd, char *str)
 {
     hostlist_iterator_t it;
     hostlist_t hl = NULL;
@@ -426,7 +559,7 @@ query_targets(gd_t gd, char *str)
 }
 
 static void
-open_targets(gd_t gd, char *str)
+_open_targets(gd_t gd, char *str)
 {
     hostlist_iterator_t it;
     hostlist_t hl;
@@ -445,7 +578,7 @@ open_targets(gd_t gd, char *str)
 }
 
 static void
-close_targets(gd_t gd, char *str)
+_close_targets(gd_t gd, char *str)
 {
     hostlist_iterator_t it;
     hostlist_t hl;
@@ -464,7 +597,7 @@ close_targets(gd_t gd, char *str)
 }
 
 static void
-list_targets()
+_list_targets()
 {
     hostlist_iterator_t it;
     char *caddr;
@@ -478,7 +611,7 @@ list_targets()
 /* Run the instrument self test.
  */
 static void
-instrument_test(gd_t gd)
+_test(gd_t gd)
 {
     gpib_wrtf(gd, "TEST");
     /* if we don't exit via serial poll callback, we passed */
@@ -490,7 +623,7 @@ instrument_test(gd_t gd)
  * Verify identity.
  */
 static void
-instrument_clear(gd_t gd)
+_clear(gd_t gd)
 {
     char tmpbuf[64];
 
@@ -507,7 +640,7 @@ instrument_clear(gd_t gd)
 }
 
 static void 
-shell_help(void)
+_shell_help(void)
 {
     printf("Possible commands are:\n");
     printf("   on [targets]    - turn on specified channels\n");
@@ -523,13 +656,13 @@ shell_help(void)
 }
 
 static int 
-docmd(gd_t gd, char **av)
+_docmd(gd_t gd, char **av)
 {
     int rc = 0;
 
     if (av[0]) {
         if (strcmp(av[0], "help") == 0) {
-            shell_help();
+            _shell_help();
 
         } else if (strcmp(av[0], "quit") == 0) {
             rc = 1;
@@ -538,33 +671,28 @@ docmd(gd_t gd, char **av)
             if (av[1] == NULL)
                 printf("Usage: on [targets]\n");
             else
-                close_targets(gd, av[1]);
+                _close_targets(gd, av[1]);
 
         } else if (strcmp(av[0], "off") == 0) {
             if (av[1] == NULL)
                 printf("Usage: off [targets]\n");
             else
-                open_targets(gd, av[1]);
+                _open_targets(gd, av[1]);
 
         } else if (strcmp(av[0], "query") == 0) {
-            query_targets(gd, av[1]);
+            _query_targets(gd, av[1]);
 
         } else if (strcmp(av[0], "show") == 0) {
-            show_config();
+            _show_config();
 
         } else if (strcmp(av[0], "list") == 0) {
             if (av[1] != NULL)
                 printf("Usage: list\n");
             else
-                list_targets();
+                _list_targets();
 
         } else if (strcmp(av[0], "id") == 0) {
-            char tmpbuf[128];
-
-            gpib_wrtf(gd, "ID?");
-            gpib_rdstr(gd, tmpbuf, sizeof(tmpbuf));
-            printf("%s\n", tmpbuf);
-
+            _get_idn(gd);
         } else if (strcmp(av[0], "verbose") == 0) {
             if (av[1] == NULL || av[2] != NULL)
                 printf("Usage: verbose 1|0\n");
@@ -584,7 +712,7 @@ docmd(gd_t gd, char **av)
 }
 
 static void
-shell_interact(gd_t gd)
+_shell(gd_t gd)
 {
     char buf[128];
     char **av;
@@ -593,163 +721,20 @@ shell_interact(gd_t gd)
     while (rc == 0 && (xreadline("hp3488> ", buf, sizeof(buf)))) {
         if (strlen(buf) > 0) {
             av = argv_create(buf, "");
-            rc = docmd(gd, av);
+            rc = _docmd(gd, av);
             argv_destroy(av);
         } 
     }
 }
 
-int
-main(int argc, char *argv[])
+static void
+_get_idn(gd_t gd)
 {
-    char *addr = NULL;
-    gd_t gd;
-    int c;
-    int verbose = 0;
-    int clear = 0;
-    int local = 0;
-    int list = 0;
-    int selftest = 0;
-    int shell = 0;
-    int todo = 0;
-    int open = 0;
-    int close = 0;
-    int query = 0;
-    int showconfig = 0;
-    char *targets = NULL;
-    int need_valid_targets = 0;
+    char model[64];
 
-    /*
-     * Handle options.
-     */
-    prog = basename(argv[0]);
-    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
-        switch (c) {
-        case 'a': /* --address */
-            addr = optarg;
-            break;
-        case 'c': /* --clear */
-            clear = 1;
-            todo++;
-            break;
-        case 'l': /* --local */
-            local = 1;
-            todo++;
-            break;
-        case 'v': /* --verbose */
-            verbose = 1;
-            break;
-        case 'L': /* --list */
-            list = 1;
-            need_valid_targets++;
-            todo++;
-            break;
-        case '0': /* --open */
-            open = 1;
-            targets = optarg;
-            need_valid_targets++;
-            todo++;
-            break;
-        case '1': /* --close */
-            close = 1;
-            targets = optarg;
-            need_valid_targets++;
-            todo++;
-            break;
-        case 'q': /* --query */
-            query = 1;
-            targets = optarg;
-            need_valid_targets++;
-            todo++;
-            break;
-        case 'Q': /* --queryall */
-            query = 1;
-            targets = NULL;
-            need_valid_targets++;
-            todo++;
-            break;
-        case 'S': /* --selftest */
-            selftest = 1;
-            todo++;
-            break;
-        case 'I': /* --shell */
-            shell = 1;
-            need_valid_targets++;
-            todo++;
-            break;
-        case 'C': /* --config */
-            if (valid_targets) {
-                fprintf(stderr, "%s: -C may only be specified once\n", prog);
-                exit(1);
-            }
-            valid_targets = hostlist_create("");
-            if (parse_model_config(optarg) == -1)
-                exit(1);
-            break;
-        case 'x': /* --showconfig */
-            showconfig = 1;
-            todo++;
-            need_valid_targets++;
-            break;
-        default:
-            usage();
-            break;
-        }
-    }
-    if (optind < argc)
-        usage();
-    if (!todo)
-        usage();
-
-    if (!addr)
-        addr = gpib_default_addr(INSTRUMENT);
-    if (!addr) {
-        fprintf(stderr, "%s: no default address for %s, use --address\n",
-                prog, INSTRUMENT);
-        exit(1);
-    }
-    gd = gpib_init(addr , _interpret_status, 100000);
-    if (!gd) {
-        fprintf(stderr, "%s: device initialization failed for address %s\n", 
-                prog, addr);
-        exit(1);
-    }
-    gpib_set_verbose(gd, verbose);
-    gpib_set_reos(gd, 1);
-
-    if (clear)
-        instrument_clear(gd);
-
-    if (selftest)
-        instrument_test(gd);
-
-    if (need_valid_targets && valid_targets == NULL) {
-        valid_targets = hostlist_create("");
-        probe_model_config(gd);
-    }
-
-    if (showconfig)
-        show_config();
-    if (list)
-        list_targets();
-    if (open)
-        open_targets(gd, targets);
-    if (close)
-        close_targets(gd, targets);
-    if (query)
-        query_targets(gd, targets);
-    if (shell)
-        shell_interact(gd);
-
-    if (local)
-        gpib_loc(gd); 
-
-    if (valid_targets)
-        hostlist_destroy(valid_targets);
-
-    gpib_fini(gd);
-
-    exit(0);
+    gpib_wrtstr(gd, "ID?\n");
+    gpib_rdstr(gd, model, sizeof(model));
+    printf("%s\n", model);
 }
 
 /*

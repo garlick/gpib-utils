@@ -5,22 +5,7 @@ hp3457 \- control HP 3457A digital multimeter
 .B hp3457 [\fIOPTIONS\fR]
 .SH DESCRIPTION
 \fBhp3457\fR controls the HP 3457A digital multimeter via its GPIB interface.
-.PP
-\fBhp3457\fR performs actions selected on the command line in a fixed sequence:
-.IP
-.nf
-clear
-autocal
-selftest
-select function
-select range
-select trigger mode
-select display digits
-read measurements
-local
-.fi
-.PP
-If an action is not selected on the command line, it is not performed.
+\fBhp3457\fR performs actions in the order they appear on the command line.
 .SH OPTIONS
 \fBhp3457\fR accepts the following command line options:
 .TP

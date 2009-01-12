@@ -42,8 +42,9 @@
 
 #define INSTRUMENT "hp8656"
 
+static void _usage(void);
+
 char *prog = "";
-static int verbose = 0;
 
 #define OPTIONS "a:f:a:vclF:i:"
 #if HAVE_GETOPT_LONG
@@ -63,50 +64,32 @@ static struct option longopts[] = {
 #define GETOPT(ac,av,opt,lopt) getopt(ac,av,opt)
 #endif
 
-static void 
-usage(void)
-{
-    char *addr = gpib_default_addr(INSTRUMENT);
-
-    fprintf(stderr, 
-"Usage: %s [--options]\n"
-"  -a,--address                  instrument address [%s]\n"
-"  -c,--clear                    initialize instrument to default values\n"
-"  -l,--local                    return instrument to local operation on exit\n"
-"  -v,--verbose                  show protocol on stderr\n"
-"  -f,--frequency [value|up|dn]  set carrier freq [100Mhz]\n"
-"  -A,--amplitude [value|up|dn]  set carrier amplitude [-127dBm]\n"
-"  -F,--incrfreq value           set carrier freq increment [10.0MHz]\n"
-"  -i,--incrampl value           set carrier amplitude increment [10.0dB]\n"
-           , prog, addr ? addr : "no default");
-    exit(1);
-}
-
 int
 main(int argc, char *argv[])
 {
-    char *addr = NULL;
     gd_t gd;
-    char cmdstr[1024] = "";
     double f, a;
     int c;
-    int clear = 0;
-    int local = 0;
+    int print_usage = 0;
 
-    /*
-     * Handle options.
-     */
-    prog = basename(argv[0]);
+    gd = gpib_init_args(argc, argv, OPTIONS, longopts, INSTRUMENT,
+                        NULL, 0, &print_usage);
+    if (print_usage)
+        _usage();
+    if (!gd)
+        exit(1);
+
     while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
         switch (c) {
-        case 'a': /* --address */
-            addr = optarg;
+        case 'a': /* handled in gpib_init_args() */
+        case 'v':
             break;
         case 'c': /* --clear */
-            clear = 1;
+            gpib_clr(gd, 1000000);
+            sleep(2); /* settling time (worst case) */
             break;
         case 'l': /* --local */
-            local = 1;
+            gpib_loc(gd); 
             break;
         case 'F': /* --incrfreq */
             if (freqstr(optarg, &f) < 0) {
@@ -126,13 +109,14 @@ main(int argc, char *argv[])
                         prog);
                 exit(1);
             }
-            sprintf(cmdstr + strlen(cmdstr), "FRIS%.0lfHZ", f);
+            gpib_wrtf(gd, "FRIS%.0lfHZ", f);
+            sleep(2); /* settling time (worst case) */
             break;
         case 'f': /* --frequency */
             if (!strcasecmp(optarg, "up")) {
-                sprintf(cmdstr + strlen(cmdstr), "FRUP");
+                gpib_wrtf(gd, "FRUP");
             } else if (!strcasecmp(optarg, "dn") ||!strcasecmp(optarg, "down")){
-                sprintf(cmdstr + strlen(cmdstr), "FRDN");
+                gpib_wrtf(gd, "FRDN");
             } else {
                 if (freqstr(optarg, &f) < 0) {
                     fprintf(stderr, "%s: error parsing frequency arg\n", prog);
@@ -146,8 +130,9 @@ main(int argc, char *argv[])
                     fprintf(stderr, "%s: freq out of range (100kHz-990MHz)\n",prog);
                     exit(1);
                 }
-                sprintf(cmdstr + strlen(cmdstr), "FR%.0lfHZ", f);
+                gpib_wrtf(gd, "FR%.0lfHZ", f);
             }
+            sleep(2); /* settling time (worst case) */
             break;
         case 'i': /* --incrampl */
             /* XXX instrument accepts '%' units here too */
@@ -169,7 +154,7 @@ main(int argc, char *argv[])
                             prog);
                     exit(1);
                 }
-                sprintf(cmdstr + strlen(cmdstr), "APIS%.2lfDB", a);
+                gpib_wrtf(gd, "APIS%.2lfDB", a);
             } else {
                 /* XXX instrument ignored minus sign when dbm units used here */
                 a = dbmtov(a);  /* convert dbm to volts */
@@ -178,14 +163,15 @@ main(int argc, char *argv[])
                             "%s: incrampl out of range (0.01uV-1.57V)\n", prog);
                     exit(1);
                 }
-                sprintf(cmdstr + strlen(cmdstr), "APIS%.2lfUV", a*1E6);
+                gpib_wrtf(gd, "APIS%.2lfUV", a*1E6);
             }
+            sleep(2); /* settling time (worst case) */
             break;
         case 'A': /* --amplitude */
             if (!strcasecmp(optarg, "up")) {
-                sprintf(cmdstr + strlen(cmdstr), "APUP");
+                gpib_wrtf(gd, "APUP");
             } else if (!strcasecmp(optarg, "dn") ||!strcasecmp(optarg, "down")){
-                sprintf(cmdstr + strlen(cmdstr), "APDN");
+                gpib_wrtf(gd, "APDN");
             } else {
                 if (amplstr(optarg, &a) < 0) {
                     fprintf(stderr, "%s: error parsing amplitude arg\n", prog);
@@ -202,59 +188,35 @@ main(int argc, char *argv[])
                 if (a < -127.0 || a > 13.0)
                     fprintf(stderr, "%s: warning: amplitude beyond cal\n", 
                             prog);
-                sprintf(cmdstr + strlen(cmdstr), "AP%.2lfDM", a);
+                gpib_wrtf(gd, "AP%.2lfDM", a);
             }
-            break;
-        case 'v': /* --verbose */
-            verbose = 1;
-            break;
-        default:
-            usage();
+            sleep(2); /* settling time (worst case) */
             break;
         }
     }
 
-    if (!clear && !*cmdstr && !local)
-        usage();
-
-    if (!addr)
-        addr = gpib_default_addr(INSTRUMENT);
-    if (!addr) {
-        fprintf(stderr, "%s: no default address for %s, use --address\n",
-                prog, INSTRUMENT);
-        exit(1);
-    }
-    gd = gpib_init(addr, NULL, 0);
-    if (!gd) {
-        fprintf(stderr, "%s: device initialization failed for address %s\n", 
-                prog, addr);
-        exit(1);
-    }
-    gpib_set_verbose(gd, verbose);
-
-    /* clear nstrument to default settings */
-    if (clear) {
-        gpib_clr(gd, 1000000);
-    }
-
-    /* write cmd if specified */
-    if (strlen(cmdstr) > 0)
-        gpib_wrtf(gd, "%s", cmdstr);
-
-    /* Sleep 2s to accomodate worst case settling time.
-     * FIXME: The actual settling time should be calculated based 
-     * on info in the manual.
-     */
-    if (*cmdstr || clear)
-        sleep(2);
-
-    /* return front panel if requested */
-    if (local)
-        gpib_loc(gd); 
-
     gpib_fini(gd);
 
     exit(0);
+}
+
+static void 
+_usage(void)
+{
+    char *addr = gpib_default_addr(INSTRUMENT);
+
+    fprintf(stderr, 
+"Usage: %s [--options]\n"
+"  -a,--address                  instrument address [%s]\n"
+"  -c,--clear                    initialize instrument to default values\n"
+"  -l,--local                    return instrument to local operation on exit\n"
+"  -v,--verbose                  show protocol on stderr\n"
+"  -f,--frequency [value|up|dn]  set carrier freq [100Mhz]\n"
+"  -A,--amplitude [value|up|dn]  set carrier amplitude [-127dBm]\n"
+"  -F,--incrfreq value           set carrier freq increment [10.0MHz]\n"
+"  -i,--incrampl value           set carrier amplitude increment [10.0dB]\n"
+           , prog, addr ? addr : "no default");
+    exit(1);
 }
 
 /*
