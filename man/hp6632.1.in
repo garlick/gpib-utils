@@ -4,11 +4,11 @@ hp6632 \- control HP 6632A/6633A/6634A power supplies
 .SH SYNOPSIS
 .nf
 .B hp6632 [\fIOPTIONS\fR]
-
 .fi
 .SH DESCRIPTION
 \fBhp6632\fR controls the HP 6632A/6633A/6634A power supply via its 
 GPIB interface.
+\fBhp6632\fR performs actions in the order they appear on the command line.
 .SH OPTIONS
 \fBhp6632\fR accepts the following command line options:
 .TP

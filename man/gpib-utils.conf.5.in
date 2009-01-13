@@ -15,22 +15,17 @@ name and instrument address separated by white space.
 .LP
 Instrument names are the same as the gpib-utils utility name.
 .LP
-Instrument addresses can be in one of three formats: 
+Instrument addresses can be in one of two formats: 
 .TP
-\fBGPIB address\fR
-The address for a device behind a linux-gpib board is merely the 
-primary gpib address, an integer.
+\fBGPIB address\fR (0-30)
+The integer address for a device behind a local linux-gpib board.
 .TP
 \fBVXI-11 address\fR
 The address for a native VXI-11/LXI device is the device's
-IP address usually concatenated with ``:inst0''.
+IP address or host name usually concatenated with ``:inst0''.
 The address for a GPIB device behind a VXI-11/GPIB gateway is the 
 IP address of the gateway with a string representing the bus and address,
 for example ``:gpib0,15'' for bus zero, GPIB address 15.
-.TP
-\fBIP address\fR
-Some devices, for example the ICS 8065 VXI-11/GPIB gatway need only
-an IP address to be accessed for configuration purposes.
 .SH EXAMPLE
 .nf
 # These devices are behind a vxi/gpib gw
@@ -46,9 +41,6 @@ a6032		192.168.1.109:inst0
 
 # These devices are directly attached to a linux-gpib board
 sr620		15
-
-# This device just takes a hostname
-ics8065		192.168.1.77
 .fi
 
 .SH "FILES"
