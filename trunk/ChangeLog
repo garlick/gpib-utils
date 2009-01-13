@@ -1,3 +1,16 @@
+2009-01-13 Jim Garlick <garlick.jim@gmail.com>
+
+	* man/* : Change "actions will be performed in a fix order" to
+	"actions will be performed in the order listed on the command line".
+
+2009-01-12 Jim Garlick <garlick.jim@gmail.com>
+
+	* src/<devicename>.c : Cleanup:
+	- call gpib_init_args() to handle -a and -v and open device.
+	- perform actions in the getopt() loop.
+
+	* src/gpib.[ch] : Add gpib_init_args().
+
 2009-01-10 Jim Garlick <garlick.jim@gmail.com>
 
 	* libics/ics8000.x, libics/ics.[ch] : Drop ics_reload_factory().

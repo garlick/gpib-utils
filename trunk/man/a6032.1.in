@@ -9,15 +9,7 @@ a6032 \- control Agilent 6000 Series Oscilloscope
 .SH DESCRIPTION
 \fBa6032\fR controls the Agilent 6000 series oscilloscope via its LAN or
 GPIB interface.
-.PP
-\fBa6032\fR performs actions selected on the command line in a fixed sequence:
-.IP
-.nf
-clear
-set date
-get idn string
-save/restore/print operation
-local
+\fBa6032\fR performs actions in the order they appear on the command line.
 .SH OPTIONS
 \fBa6032\fR accepts the following command line options:
 .TP
