@@ -197,6 +197,7 @@ main(int argc, char *argv[])
                     exit_val = 1;
                     goto done;
                 }
+                break;
             case 'q':
             case 'Q':
             case 'g':
@@ -215,6 +216,11 @@ main(int argc, char *argv[])
     }
     if (out_chan == -1 && out_chan_needed) {
         fprintf(stderr, "%s: one or more arguments require --out-chan\n", prog);
+        exit_val = 1;
+        goto done;
+    }
+    if (out_chan != -1 && !out_chan_needed) {
+        fprintf(stderr, "%s: no arguments require --out-chan\n", prog);
         exit_val = 1;
         goto done;
     }
@@ -262,7 +268,7 @@ main(int argc, char *argv[])
                 printf("output mode: %s\n", findstr(out_modes, tmpi));
                 break;
             case 'Q': /* --set-out-mode */
-                gpib_wrtf(gd, "OM %d,%s", out_chan, rfindstr(out_modes, optarg));
+                gpib_wrtf(gd, "OM %d,%d", out_chan, rfindstr(out_modes, optarg));
                 break;
             case 'g': /* --get-out-ampl */
                 gpib_wrtf(gd, "OA %d", out_chan);
@@ -302,7 +308,7 @@ main(int argc, char *argv[])
                 printf("output impedance: %s\n", findstr(impedance, tmpi));
                 break;
             case 'Y': /* --set-out-z */
-                gpib_wrtf(gd, "TZ %d,%d", rfindstr(impedance, optarg));
+                gpib_wrtf(gd, "TZ %d,%d", out_chan,rfindstr(impedance, optarg));
                 break;
             case 'm' : /* --get-trig-mode */
                 gpib_wrtf(gd, "TM");
@@ -484,12 +490,14 @@ _set_delay(gd_t gd, int out_chan, char *str)
     int follow_chan;
     double delay;
 
-    if (!(cstr = strtok(str, ",")))
+    if (!(cstr = strtok(str, ",")) || !(dstr = strtok(NULL, ","))) {
+        fprintf(stderr, "%s: error parsing delay string\n", prog);
         return 0;
-    if (!(dstr = strtok(NULL, ",")))
+    }
+    if ((follow_chan = rfindstr(out_names, cstr)) == -1) {
+        fprintf(stderr, "%s: use a legal output (t0|a|b|ab|c|d|cd)\n", prog);
         return 0;
-    if ((follow_chan = rfindstr(out_names, cstr)) == -1)
-        return 0;
+    }
     if (freqstr(dstr, &f) == -1) {
         fprintf(stderr, "%s: specify time units in s, ms, us, ns, ps\n", prog);
         return 0;
