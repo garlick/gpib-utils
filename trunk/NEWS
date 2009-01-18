@@ -5,9 +5,10 @@ gpib-utils-1.4 Release Notes                                   2009-XX-XX
 * Added support for new devices:
   - ics8064:  ICS Electronics 8064 Ethernet to Relay interface
   - hp6632:   Hewlett-Packard 6632A/6633A/6634A System DC Power Supply
+  - hp6038:   Hewlett-Packard 603xA System DC Power Supply
   - a34401:   Agilent 34401A/34410A/34411A DMM.
 
-* Dropped --reset-factory option from ics8065 utility.
+* Changed ics8065 utility to more general purpose icsconfig utility.
 
 * Added automake/autoconf infrastructure so gpib-utils compiles with and
   without linux-gpib.

@@ -16,7 +16,8 @@ GPIB interface.
 Override the default instrument address in @X_SYSCONFDIR@/gpib-utils.conf.
 .TP
 \fB\-c\fR, \fB\-\-clear\fR
-Clear the instrument, disable the output, load power-on values.
+Clear the instrument to its power-on state, disables its output,
+and clears any OVP or OCP condition.
 .TP
 \fB\-l\fR, \fB\-\-local\fR
 Enable the front panel.
@@ -25,27 +26,39 @@ Enable the front panel.
 Print instrument model.
 .TP
 \fB\-R\fR, \fB\-\-get-rom\fR 
-Print instrument ROM version.
+Print ROM version.
 .TP
 \fB\-S\fR, \fB\-\-selftest\fR 
 Run instrument selftest.
 .TP
 \fB\-I\fR, \fB\-\-iset\fR float
-Set current.
+Set current in amps.
 .TP
 \fB\-V\fR, \fB\-\-vset\fR float
-Set voltage.
+Set voltage in volts.
 .TP
 \fB\-o\fR, \fB\-\-out\fR 0|1
 Enable/disable output.
 .TP
 \fB\-O\fR, \fB\-\-ovset\fR volts
-Set overvoltage threshold.
+Set the over-voltage threshold in volts.
+If the output ever exceeds this value, the OVP circuit shorts the output
+and disables the supply.
+To clear this condition, use the \fB\-\-clear\fR option.
 .TP
 \fB\-C\fR, \fB\-\-ocp\fR 0|1
 Enable/disable overcurrent protection.
+If OCP is enabled and output mode changes from CV (constant voltage)
+to CC (constant current mode), the OCP trips and disables the output.
+To clear this condition, use the \fB\-\-clear\fR option.
 .TP
-\fB\-r\fR, \fB\-\-read\fR
-Read and display I and V in ``I<tab>V'' format.
+\fB\-s\fR, \fB\-\-samples\fR number
+Select number of current and voltage samples to take [Default 0].
+.TP
+\fB\-p\fR, \fB\-\-period\fR period
+Set sample period [Default 0s].
 .SH FILES
 @X_SYSCONFDIR@/gpib-utils.conf
+.SH "SEE ALSO"
+"Operating Manual, HP-IB System DC Power Supplies, HP Models 6632A, 
+6633A, 6634A", May 1992.

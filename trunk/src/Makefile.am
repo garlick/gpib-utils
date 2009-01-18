@@ -20,6 +20,7 @@ common_sources = \
 
 bin_PROGRAMS = \
 	hp6632 \
+	hp6038 \
 	hp1630 \
 	hptopbm \
 	hptodino \
@@ -46,5 +47,6 @@ icsconfig_SOURCES = icsconfig.c  $(common_sources)
 a6032_SOURCES = a6032.c $(common_sources)
 a34401_SOURCES = a34401.c $(common_sources)
 hp6632_SOURCES = hp6632.c  $(common_sources)
+hp6038_SOURCES = hp6038.c  $(common_sources)
 
 

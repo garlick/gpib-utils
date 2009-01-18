@@ -1,3 +1,11 @@
+2009-01-17 Jim Garlick <garlick.jim@gmail.com>
+
+	* man/hp6038.1.in : New.
+
+	* src/hp6038.c : New.
+
+	* src/hp6632.c : Added --samples and --period options.
+
 2009-01-13 Jim Garlick <garlick.jim@gmail.com>
 
 	* man/* : Change "actions will be performed in a fix order" to

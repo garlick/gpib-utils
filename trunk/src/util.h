@@ -47,6 +47,9 @@ int     freqstr(char *str, double *freq);
 #define AMPL_LOG_UNITS  "dbm, dbf, dbv, dbmv, dbuv, dbemfv, dbemfmv, dbemfuv"
 #define AMPL_LIN_UNITS  "v, mv, uv, emfv, emfmv, emfuv"
 
+double gettime(void);
+void sleep_sec(double sec);
+
 /*
  * vi:tabstop=4 shiftwidth=4 expandtab
  */

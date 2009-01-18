@@ -17,8 +17,6 @@
    along with gpib-utils; if not, write to the Free Software Foundation, 
    Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
 
-/* HP 6632A (25V, 4A); 6633A (50V, 2A); 6634A (100V, 1A) power supplies */
-
 #if HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -40,81 +38,59 @@
 #include "gpib.h"
 #include "util.h"
 
-#define INSTRUMENT "hp6632"
+#define INSTRUMENT "hp6038"
 
 /* serial poll reg */
-#define HP6032_SPOLL_FAU    1
-#define HP6032_SPOLL_PON    2
-#define HP6032_SPOLL_RDY    16
-#define HP6032_SPOLL_ERR    32
-#define HP6032_SPOLL_RQS    64
+#define HP6038_SPOLL_FAU    1
+#define HP6038_SPOLL_PON    2
+#define HP6038_SPOLL_RDY    16
+#define HP6038_SPOLL_ERR    32
+#define HP6038_SPOLL_RQS    64
 
 /* status reg. bits (STS? - also ASTS? UNMASK? FAULT?) */
-#define HP6032_STAT_CV      1       /* constant voltage mode */
-#define HP6032_STAT_CC      2       /* positive constant current mode */
-#define HP6032_STAT_UNR     4       /* output unregulated */
-#define HP6032_STAT_OV      8       /* overvoltage protection tripped */
-#define HP6032_STAT_OT      16      /* over-temperature protection tripped */
-#define HP6032_STAT_OC      64      /* overcurrent protection tripped */
-#define HP6032_STAT_ERR     128     /* programming error */
-#define HP6032_STAT_INH     256     /* remote inhibit */
-#define HP6032_STAT_NCC     512     /* negative constant current mode */
-#define HP6032_STAT_FAST    1024    /* output in fast operating mode */
-#define HP6032_STAT_NORM    2048    /* output in normal operating mode */
+#define HP6038_STAT_CV      1
+#define HP6038_STAT_CC      2
+#define HP6038_STAT_OR      4
+#define HP6038_STAT_OV      8
+#define HP6038_STAT_OT      16
+#define HP6038_STAT_AC      32
+#define HP6038_STAT_FOLD    64
+#define HP6038_STAT_ERR     128
+#define HP6038_STAT_RI      256
 
-/* programming errors */
+/* err reg values (ERR?) */
 static strtab_t petab[] = {
     { 0, "Success" },
-    { 1, "EEPROM save failed" },
-    { 2, "Second PON after power-on" },
-    { 4, "Second DC PON after power-on" },
-    { 5, "No relay option present" },
-    { 8, "Addressed to talk and nothing to say" },
-    { 10, "Header expected" },
-    { 11, "Unrecognized header" },
-    { 20, "Number expected" },
-    { 21, "Number syntax" },
-    { 22, "Number out of internal range" },
-    { 30, "Comma expected" },
-    { 31, "Terminator expected" },
-    { 41, "Parameter out of range" },
-    { 42, "Voltage programming error" },
-    { 43, "Current programming error" },
-    { 44, "Overvoltage programming error" },
-    { 45, "Delay programming error" },
-    { 46, "Mask programming error" },
-    { 50, "Multiple CSAVE commands" },
-    { 51, "EEPROM checksum failure" },
-    { 52, "Calibration mode disabled" },
-    { 53, "CAL channel out of range" },
-    { 54, "CAL FS out of range" },
-    { 54, "CAL offset out of range" },
-    { 54, "CAL disable jumper in" },
+    { 1, "Unrecognized character" },
+    { 2, "Improper number" },
+    { 3, "Unrecognized string" },
+    { 4, "Syntax error" },
+    { 5, "Number out of range" },
+    { 6, "Attempt to exceed soft limits" },
+    { 7, "Improper soft limit" },
+    { 8, "Data requested without a query being sent" },
+    { 9, "Relay error" },
     { 0, NULL }
 };
 
 /* selftest failures */
 static strtab_t sttab[] = {
-    { 0, "Passed" },
-    { 1, "ROM checksum failure" },
-    { 2, "RAM test failure" },
-    { 3, "HP-IB chip failure" },
-    { 4, "HP-IB microprocessor timer slow" },
-    { 5, "HP-IB microprocessor timer fast" },
-    { 11, "PSI ROM checksum failure" },
-    { 12, "PSI RAM test failure" },
-    { 14, "PSI microprocessor timer slow" },
-    { 15, "PSI microprocessor timer fast" },
-    { 16, "A/D test reads high" },
-    { 17, "A/D test reads low" },
-    { 18, "CV/CC zero too high" },
-    { 19, "CV/CC zero too low" },
-    { 20, "CV ref FS too high" },
-    { 21, "CV ref FS too low" },
-    { 22, "CC ref FS too high" },
-    { 23, "CC ref FS too low" },
-    { 24, "DAC test failed" },
-    { 51, "EEPROM checksum failed" },
+    { 0,  "Passed" },
+    { 4,  "External RAM test failed" },
+    { 5,  "Internal RAM test failed" },
+    { 6,  "External ROM test failed" },
+    { 7,  "GPIB test failed" },
+    { 8,  "GPIB address set to 31" },
+    { 10, "Internal ROM test failed" },
+    { 12, "ADC zero too high" },
+    { 13, "Voltage DAC full scale low" },
+    { 14, "Voltage DAC full scale high" },
+    { 15, "Voltage DAC zero low" },
+    { 16, "Voltage DAC zero high" },
+    { 17, "Current DAC full scale low" },
+    { 18, "Current DAC full scale high" },
+    { 19, "Current DAC zero low" },
+    { 20, "Current DAC zero high" },
     { 0, NULL }
 };
 
@@ -124,7 +100,7 @@ static int _readiv(gd_t gd, double *ip, double *vp);
 
 char *prog = "";
 
-#define OPTIONS "a:clviSI:V:o:O:C:Rs:p:"
+#define OPTIONS "a:clviSI:V:o:s:p:F:"
 #if HAVE_GETOPT_LONG
 #define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
 static struct option longopts[] = {
@@ -133,13 +109,11 @@ static struct option longopts[] = {
     {"clear",           no_argument,       0, 'c'},
     {"local",           no_argument,       0, 'l'},
     {"get-idn",         no_argument,       0, 'i'},
-    {"get-rom",         no_argument,       0, 'R'},
     {"selftest",        no_argument,       0, 'S'},
     {"iset",            required_argument, 0, 'I'},
     {"vset",            required_argument, 0, 'V'},
     {"out",             required_argument, 0, 'o'},
-    {"ovset",           required_argument, 0, 'O'},
-    {"ocp",             required_argument, 0, 'C'},
+    {"foldback",        required_argument, 0, 'F'},
     {"samples",         required_argument, 0, 's'},
     {"period",          required_argument, 0, 'p'},
     {0, 0, 0, 0},
@@ -184,15 +158,10 @@ main(int argc, char *argv[])
             gpib_rdstr(gd, tmpstr, sizeof(tmpstr));
             printf("%s\n", tmpstr);
             break;
-        case 'R': /* --get-rom */
-            gpib_wrtstr(gd, "ROM?\n");
-            gpib_rdstr(gd, tmpstr, sizeof(tmpstr));
-            printf("rom version: %s\n", tmpstr);
-            break;
         case 'S': /* --selftest */
             gpib_wrtstr(gd, "TEST?\n");
             gpib_rdstr(gd, tmpstr, sizeof(tmpstr));
-            if (sscanf(tmpstr, "%d", &rc) == 1)
+            if (sscanf(tmpstr, "TEST %d", &rc) == 1)
                 printf("self-test: %s\n", findstr(sttab ,rc));
             else
                 printf("self-test: %s\n", tmpstr);
@@ -203,14 +172,12 @@ main(int argc, char *argv[])
         case 'V': /* --vset */
             gpib_wrtf(gd, "VSET %s\n", optarg);
             break;
-        case 'O': /* --ovset */
-            gpib_wrtf(gd, "OVSET %s\n", optarg);
-            break;
         case 'o': /* --out */
             gpib_wrtf(gd, "OUT %s\n", optarg);
             break;
-        case 'C': /* --ocp */
-            gpib_wrtf(gd, "OCP %s\n", optarg);
+        case 'F': /* --foldback */
+            /* N.B. do all models accept OFF|CV|CC?  If not, cvt to 0|1|2 */
+            gpib_wrtf(gd, "FOLD %s\n", optarg);
             break;
         case 's': /* --samples */
             samples = strtoul(optarg, NULL, 10);
@@ -270,13 +237,11 @@ _usage(void)
 "  -l,--local              return instrument to local operation on exit\n"
 "  -v,--verbose            show protocol on stderr\n"
 "  -i,--get-idn            print instrument model\n"
-"  -R,--get-rom            print instrument ROM version\n"
 "  -S,--selftest           run selftest\n"
 "  -I,--iset               set current\n"
 "  -V,--vset               set voltage\n"
 "  -o,--out                enable/disable output (0|1)\n"
-"  -O,--ovset              set overvoltage threshold\n"
-"  -C,--ocp                enable/disable overcurrent protection (0|1)\n"
+"  -F,--foldback           set foldback (off|cv|cc)\n"
 "  -s,--samples            number of samples [0]\n"
 "  -p,--period             sample period\n"
            , prog, addr ? addr : "no default");
@@ -289,17 +254,17 @@ _interpret_status(gd_t gd, unsigned char status, char *msg)
     char tmpstr[64];    
     int e, err = 0;
 
-    if (status & HP6032_SPOLL_FAU) {
+    if (status & HP6038_SPOLL_FAU) {
         fprintf(stderr, "%s: device fault\n", prog);
         /* FIXME: check FAULT? and/or ASTS? but only if unmasked */
         err = 1;
     }
-    if (status & HP6032_SPOLL_PON) {
+    if (status & HP6038_SPOLL_PON) {
         /*fprintf(stderr, "%s: power-on detected\n", prog);*/
     }
-    if (status & HP6032_SPOLL_RDY) {
+    if (status & HP6038_SPOLL_RDY) {
     }
-    if (status & HP6032_SPOLL_ERR) {
+    if (status & HP6038_SPOLL_ERR) {
         gpib_wrtstr(gd, "ERR?\n");
         gpib_rdstr(gd, tmpstr, sizeof(tmpstr));
         if (sscanf(tmpstr, "%d", &e) == 1)
@@ -308,7 +273,7 @@ _interpret_status(gd_t gd, unsigned char status, char *msg)
             fprintf(stderr, "%s: prog error: %s\n", prog, tmpstr);
         err = 1;
     }
-    if (status & HP6032_SPOLL_RQS) {
+    if (status & HP6038_SPOLL_RQS) {
         fprintf(stderr, "%s: device is requesting service\n", prog);
         err = 1; /* it shouldn't be unless we tell it to */
     }
