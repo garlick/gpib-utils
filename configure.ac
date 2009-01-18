@@ -79,6 +79,7 @@ AC_CONFIG_FILES( \
   man/hp3457.1 \
   man/hp3488.1 \
   man/hp6632.1 \
+  man/hp6038.1 \
   man/hp8656.1 \
   man/hptodino.1 \
   man/hptopbm.1 \

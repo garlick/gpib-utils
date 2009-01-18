@@ -33,10 +33,11 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-bin_PROGRAMS = hp6632$(EXEEXT) hp1630$(EXEEXT) hptopbm$(EXEEXT) \
-	hptodino$(EXEEXT) hp3457$(EXEEXT) hp3488$(EXEEXT) \
-	hp8656$(EXEEXT) dg535$(EXEEXT) sr620$(EXEEXT) ics8064$(EXEEXT) \
-	icsconfig$(EXEEXT) a6032$(EXEEXT) a34401$(EXEEXT)
+bin_PROGRAMS = hp6632$(EXEEXT) hp6038$(EXEEXT) hp1630$(EXEEXT) \
+	hptopbm$(EXEEXT) hptodino$(EXEEXT) hp3457$(EXEEXT) \
+	hp3488$(EXEEXT) hp8656$(EXEEXT) dg535$(EXEEXT) sr620$(EXEEXT) \
+	ics8064$(EXEEXT) icsconfig$(EXEEXT) a6032$(EXEEXT) \
+	a34401$(EXEEXT)
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -86,6 +87,12 @@ am_hp3488_OBJECTS = hp3488.$(OBJEXT) $(am__objects_1)
 hp3488_OBJECTS = $(am_hp3488_OBJECTS)
 hp3488_LDADD = $(LDADD)
 hp3488_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.a \
+	$(top_builddir)/libics/libics.a \
+	$(top_builddir)/liblsd/liblsd.a
+am_hp6038_OBJECTS = hp6038.$(OBJEXT) $(am__objects_1)
+hp6038_OBJECTS = $(am_hp6038_OBJECTS)
+hp6038_LDADD = $(LDADD)
+hp6038_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.a \
 	$(top_builddir)/libics/libics.a \
 	$(top_builddir)/liblsd/liblsd.a
 am_hp6632_OBJECTS = hp6632.$(OBJEXT) $(am__objects_1)
@@ -139,14 +146,14 @@ CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 SOURCES = $(a34401_SOURCES) $(a6032_SOURCES) $(dg535_SOURCES) \
 	$(hp1630_SOURCES) $(hp3457_SOURCES) $(hp3488_SOURCES) \
-	$(hp6632_SOURCES) $(hp8656_SOURCES) $(hptodino_SOURCES) \
-	$(hptopbm_SOURCES) $(ics8064_SOURCES) $(icsconfig_SOURCES) \
-	$(sr620_SOURCES)
+	$(hp6038_SOURCES) $(hp6632_SOURCES) $(hp8656_SOURCES) \
+	$(hptodino_SOURCES) $(hptopbm_SOURCES) $(ics8064_SOURCES) \
+	$(icsconfig_SOURCES) $(sr620_SOURCES)
 DIST_SOURCES = $(a34401_SOURCES) $(a6032_SOURCES) $(dg535_SOURCES) \
 	$(hp1630_SOURCES) $(hp3457_SOURCES) $(hp3488_SOURCES) \
-	$(hp6632_SOURCES) $(hp8656_SOURCES) $(hptodino_SOURCES) \
-	$(hptopbm_SOURCES) $(ics8064_SOURCES) $(icsconfig_SOURCES) \
-	$(sr620_SOURCES)
+	$(hp6038_SOURCES) $(hp6632_SOURCES) $(hp8656_SOURCES) \
+	$(hptodino_SOURCES) $(hptopbm_SOURCES) $(ics8064_SOURCES) \
+	$(icsconfig_SOURCES) $(sr620_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -307,6 +314,7 @@ icsconfig_SOURCES = icsconfig.c  $(common_sources)
 a6032_SOURCES = a6032.c $(common_sources)
 a34401_SOURCES = a34401.c $(common_sources)
 hp6632_SOURCES = hp6632.c  $(common_sources)
+hp6038_SOURCES = hp6038.c  $(common_sources)
 all: all-am
 
 .SUFFIXES:
@@ -381,6 +389,9 @@ hp3457$(EXEEXT): $(hp3457_OBJECTS) $(hp3457_DEPENDENCIES)
 hp3488$(EXEEXT): $(hp3488_OBJECTS) $(hp3488_DEPENDENCIES) 
 	@rm -f hp3488$(EXEEXT)
 	$(LINK) $(hp3488_OBJECTS) $(hp3488_LDADD) $(LIBS)
+hp6038$(EXEEXT): $(hp6038_OBJECTS) $(hp6038_DEPENDENCIES) 
+	@rm -f hp6038$(EXEEXT)
+	$(LINK) $(hp6038_OBJECTS) $(hp6038_LDADD) $(LIBS)
 hp6632$(EXEEXT): $(hp6632_OBJECTS) $(hp6632_DEPENDENCIES) 
 	@rm -f hp6632$(EXEEXT)
 	$(LINK) $(hp6632_OBJECTS) $(hp6632_LDADD) $(LIBS)
@@ -416,6 +427,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hp1630.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hp3457.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hp3488.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hp6038.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hp6632.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hp8656.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcrc.Po@am__quote@

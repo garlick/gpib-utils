@@ -74,8 +74,6 @@ static int _interpret_status(gd_t gd, unsigned char status, char *msg);
 static int _get_idn(gd_t gd);
 static int _restore_setup(gd_t gd);
 static int _save_setup(gd_t gd);
-static double _gettime(void);
-static void _sleep_sec(double sec);
 static int _selftest(gd_t gd);
 
 char *prog = "";
@@ -233,20 +231,20 @@ main(int argc, char *argv[])
 
         t0 = 0;
         while (samples-- > 0) {
-            t1 = _gettime();
+            t1 = gettime();
             if (t0 == 0)
                 t0 = t1;
 
             gpib_wrtf(gd, "%s", "READ?");
             gpib_rdstr(gd, buf, sizeof(buf));
-            t2 = _gettime();
+            t2 = gettime();
 
             if (showtime)
                 printf("%-3.3lf\t%s\n", (t1-t0), buf);
             else
                 printf("%s\n", buf);
             if (samples > 0 && period > 0)
-                _sleep_sec(period - (t2-t1));
+                sleep_sec(period - (t2-t1));
         }
     }
 
@@ -279,25 +277,6 @@ _usage(void)
 "  -Z,--restore-setup         restore setup from stdin\n"
            , prog, addr ? addr : "no default");
     exit(1);
-}
-
-static double
-_gettime(void)
-{
-    struct timeval t;
-
-    if (gettimeofday(&t, NULL) < 0) {
-        perror("gettimeofday");
-        exit(1);
-    }
-    return ((double)t.tv_sec + (double)t.tv_usec / 1000000);
-}
-
-static void
-_sleep_sec(double sec)
-{
-    if (sec > 0)
-        usleep((unsigned long)(sec * 1000000.0));
 }
 
 #if 0
