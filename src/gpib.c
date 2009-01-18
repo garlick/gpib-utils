@@ -61,6 +61,7 @@ struct gpib_device {
     int             sf_level;  /* serial poll recursion detection */
     unsigned long   sf_retry;  /* backoff factor for serial poll retry (uS) */
     vxi11dev_t      vxi11_handle;
+    int             fd;
 };
 
 extern char *prog;
@@ -717,7 +718,15 @@ gpib_fini(gd_t gd)
     if (gd->vxi11_handle) {
         vxi11_close(gd->vxi11_handle);
         vxi11_destroy(gd->vxi11_handle);
+        gd->vxi11_handle = NULL;
+    } else if (gd->fd >= 0) {
+        (void)close(gd->fd);
+        gd->fd = -1;
     }
+#if HAVE_LINUX_GPIB
+    else
+        ibonl(d, 0);
+#endif
     _free_gpib(gd);
 }
 
@@ -733,6 +742,7 @@ _new_gpib(void)
     new->sf_level = 0;
     new->sf_retry = 1;
     new->vxi11_handle = NULL;
+    new->fd = -1;
 
     return new;
 }
@@ -804,11 +814,11 @@ gpib_init(char *addr, spollfun_t sf, unsigned long retry)
 
     cpy = xstrdup(addr);
     if (sscanf(addr, "%d:%d,%d", &board, &pad, &sad) == 3)
-        gd = _ibdev(board, pad, 0x60 + sad, sf, retry);/* board:pad,sad */
+        gd = _ibdev(board, pad, 0x60+sad, sf, retry);/* board:pad,sad */
     else if (sscanf(addr, "%d,%d", &pad, &sad) == 2)
-        gd = _ibdev(0, pad, 0x60 + sad, sf, retry);  /* pad,sad */
+        gd = _ibdev(0,     pad, 0x60+sad, sf, retry);/* pad,sad */
     else if (sscanf(addr, "%d", &pad) == 1)
-        gd = _ibdev(0, pad, 0, sf, retry);           /* pad */
+        gd = _ibdev(0,     pad, 0,        sf, retry);/* pad */
     else if (stat(addr, &sb) == 0 && S_ISCHR(sb.st_mode))
         gd = _init_serial(addr, "9600,8n1", sf, retry); /* device */
     else if ((sfx = strchr(cpy, ':'))) {

@@ -2,12 +2,13 @@
 
 	* src/gpib.c : Allow non-zero gpib board and secondary gpib address.
 	Add code to support (future) serial and socket connection methods.
+	Call ibonl() in GPIB case when finalizing connection to device.
 
 2009-01-17 Jim Garlick <garlick.jim@gmail.com>
 
 	* man/hp6038.1.in : New.
 
-	* src/hp6038.c : New.
+	* src/hp6038.c : New, derived from hp6632.c.
 
 	* src/hp6632.c : Added --samples and --period options.
 
