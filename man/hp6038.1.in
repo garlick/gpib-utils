@@ -14,6 +14,7 @@ GPIB interface.
 .TP
 \fB\-a\fR, \fB\-\-address\fR address
 Override the default instrument address in @X_SYSCONFDIR@/gpib-utils.conf.
+See gpib-utils.conf(5) for a description of address formats.
 .TP
 \fB\-c\fR, \fB\-\-clear\fR
 Clear the instrument to its power-on state, disables its output,
@@ -51,6 +52,8 @@ Set sample period [Default 0s].
 .SH FILES
 @X_SYSCONFDIR@/gpib-utils.conf
 .SH "SEE ALSO"
+gpib-utils.conf(5)
+.PP
 "Operating Manual, Agilent 603xA Family Autoranging System DC 
 Power Supplies", Sept. 2004.
 .PP

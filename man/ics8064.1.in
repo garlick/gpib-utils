@@ -17,6 +17,7 @@ to set the configuration.
 .TP
 \fB\-a\fR, \fB\-\-address\fR address
 Override the default IP address in @X_SYSCONFDIR@/gpib-utils.conf.
+See gpib-utils.conf(5) for a description of address formats.
 .TP
 \fB\-c\fR, \fB\-\-clear\fR
 Clear instrument state.

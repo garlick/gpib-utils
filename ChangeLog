@@ -1,3 +1,8 @@
+2009-01-18 Jim Garlick <garlick.jim@gmail.com>
+
+	* src/gpib.c : Allow non-zero gpib board and secondary gpib address.
+	Add code to support (future) serial and socket connection methods.
+
 2009-01-17 Jim Garlick <garlick.jim@gmail.com>
 
 	* man/hp6038.1.in : New.

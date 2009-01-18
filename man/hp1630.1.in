@@ -14,6 +14,7 @@ hp1630 \- control HP 1630/31 logic analyzer
 .TP
 \fB\-a\fR, \fB\-\-address\fR address
 Override the default instrument address in @X_SYSCONFDIR@/gpib-utils.conf.
+See gpib-utils.conf(5) for a description of address formats.
 .TP
 \fB\-c\fR, \fB\-\-clear\fR
 Clear the instrument, load power-on values, verify the model number,
@@ -60,6 +61,8 @@ from standard input.
 .SH FILES
 @X_SYSCONFDIR@/gpib-utils.conf
 .SH "SEE ALSO"
+gpib-utils.conf(5)
+.PP
 "Hewlett Packard 1630A/D Logic Analyzer Operating Manual",
 second edition, May 1983.
 .PP

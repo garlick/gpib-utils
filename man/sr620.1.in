@@ -15,6 +15,7 @@ universal time interval counter via its GPIB interface.
 .TP
 \fB\-a\fR, \fB\-\-address\fR address
 Override the default instrument address in @X_SYSCONFDIR@/gpib-utils.conf.
+See gpib-utils.conf(5) for a description of address formats.
 .TP
 \fB\-c\fR, \fB\-\-clear\fR
 Clear the instrument, and verify the instrument ID.
@@ -54,4 +55,6 @@ Enable the front panel.
 .SH FILES
 @X_SYSCONFDIR@/gpib-utils.conf
 .SH SEE ALSO
+gpib-utils.conf(5)
+.PP
 "Model SR620 Universal Time Interval Counter", revision 2.7, Feb. 2006.

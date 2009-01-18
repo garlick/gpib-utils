@@ -15,6 +15,7 @@ four channel digital delay/pulse generator via its GPIB interface.
 .TP
 \fB\-a\fR, \fB\-\-address\fR address
 Override the default instrument address in @X_SYSCONFDIR@/gpib-utils.conf.
+See gpib-utils.conf(5) for a description of address formats.
 .TP
 \fB\-c\fR, \fB\-\-clear\fR
 Clear the instrument and load default configuration:
@@ -147,5 +148,7 @@ or \fIhi\fR (1 Mohm).
 .SH FILES
 @X_SYSCONFDIR@/gpib-utils.conf
 .SH SEE ALSO
+gpib-utils.conf(5)
+.PP
 "Model DG535 Digital Delay / Pulse Generator Operation and Service Manual", 
 revision 2.6, Nov. 2000.

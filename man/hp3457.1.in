@@ -11,6 +11,7 @@ hp3457 \- control HP 3457A digital multimeter
 .TP
 \fB\-a\fR, \fB\-\-address\fR address
 Override the default instrument address in @X_SYSCONFDIR@/gpib-utils.conf.
+See gpib-utils.conf(5) for a description of address formats.
 .TP
 \fB\-c\fR, \fB\-\-clear\fR
 Clear the instrument, verify its model number, and load defaults 
@@ -97,6 +98,8 @@ plot 'sample.dat' title "Sample Plot" with linesp;
 .SH FILES
 @X_SYSCONFDIR@/gpib-utils.conf
 .SH "SEE ALSO"
+gpib-utils.conf(5)
+.PP
 "HP 3457A Multimeter Operating Manual", May 1986.
 .PP
 "HP 3457A Multimeter Service Manual", Edition 3, Feb. 1988.

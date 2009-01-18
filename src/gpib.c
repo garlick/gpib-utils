@@ -20,6 +20,9 @@
 #if HAVE_CONFIG_H
 #include "config.h"
 #endif
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -41,6 +44,7 @@
 #define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
 #endif
 #include <libgen.h>
+
 
 #include "gpib.h"
 #include "vxi11_device.h"
@@ -733,24 +737,27 @@ _new_gpib(void)
     return new;
 }
 
-#if HAVE_LINUX_GPIB
 static gd_t
-_ibdev(int pad, spollfun_t sf, unsigned long retry)
+_ibdev(int board, int pad, int sad, spollfun_t sf, unsigned long retry)
 {
-    int handle;
     gd_t new = NULL;
+#if HAVE_LINUX_GPIB
+    int handle;
 
     /* dflt: board=0, sad=0, tmo=T30s, eot=1, bin=0, reos=0, xeos=0, eos=0xa */
-    handle = ibdev(0, pad, 0, T30s, 1, 0x0a);
+    handle = ibdev(board, pad, sad, T30s, 1, 0x0a);
     if (handle >= 0) {
         new = _new_gpib();
         new->d = handle;
         new->sf_fun = sf;
         new->sf_retry = retry;
     }
+#else
+    fprintf(stderr, "%s: ibdev(%d,%d,0x%x) failed: no GPIB support\n",
+            prog, board, pad, sad);
+#endif
     return new;
 }
-#endif
 
 static gd_t
 _init_vxi(char *name, spollfun_t sf, unsigned long retry)
@@ -771,25 +778,50 @@ _init_vxi(char *name, spollfun_t sf, unsigned long retry)
     return gd;
 }
 
+static gd_t
+_init_serial(char *host, char *flags, spollfun_t sf, unsigned long retry)
+{
+    fprintf(stderr, "%s: serial_init('%s','%s') failed: no serial support\n",
+            prog, host, flags);
+    return NULL;
+}
+
+static gd_t
+_init_socket(char *host, char *port, spollfun_t sf, unsigned long retry)
+{
+    fprintf(stderr, "%s: tcp_init('%s','%s') failed: no socket support\n",
+            prog, host, port);
+    return NULL;
+}
+
 gd_t
 gpib_init(char *addr, spollfun_t sf, unsigned long retry)
 {
     gd_t gd = NULL;
-    char *endptr;
-    unsigned long id = strtoul(addr, &endptr, 0);
+    char *endptr, *sfx, *cpy;
+    struct stat sb;
+    int board, pad, sad;
 
-    if (strchr(addr, ':') == NULL) { 
-        if (*endptr == '\0') {
-#if HAVE_LINUX_GPIB
-            gd = _ibdev(id, sf, retry);
-#else
-            fprintf(stderr, "%s: warning: gpib-utils built without GPIB support\n", prog);
-#endif
-        } else {
-            fprintf(stderr, "%s: warning: malformed GPIB address\n", prog);
-        }
+    cpy = xstrdup(addr);
+    if (sscanf(addr, "%d:%d,%d", &board, &pad, &sad) == 3)
+        gd = _ibdev(board, pad, 0x60 + sad, sf, retry);/* board:pad,sad */
+    else if (sscanf(addr, "%d,%d", &pad, &sad) == 2)
+        gd = _ibdev(0, pad, 0x60 + sad, sf, retry);  /* pad,sad */
+    else if (sscanf(addr, "%d", &pad) == 1)
+        gd = _ibdev(0, pad, 0, sf, retry);           /* pad */
+    else if (stat(addr, &sb) == 0 && S_ISCHR(sb.st_mode))
+        gd = _init_serial(addr, "9600,8n1", sf, retry); /* device */
+    else if ((sfx = strchr(cpy, ':'))) {
+        *sfx++ = '\0';
+        if (stat(cpy, &sb) == 0 && S_ISCHR(sb.st_mode))
+            gd = _init_serial(cpy, sfx, sf, retry);  /* device:flags */
+        else if (strtoul(sfx, &endptr, 10) > 0 && *endptr == '\0')
+            gd = _init_socket(cpy, sfx, sf, retry);  /* host:port */
+        else
+            gd = _init_vxi(addr, sf, retry);         /* host:inst[,pad[,sad]] */
     } else
-        gd = _init_vxi(addr, sf, retry);
+        fprintf(stderr, "%s: failed to determine address type\n", prog);
+    free(cpy);
     return gd;
 }
 

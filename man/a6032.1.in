@@ -15,6 +15,7 @@ GPIB interface.
 .TP
 \fB\-a\fR, \fB\-\-address\fR address
 Override the default instrument address in @X_SYSCONFDIR@/gpib-utils.conf.
+See gpib-utils.conf(5) for a description of address formats.
 .TP
 \fB\-c\fR, \fB\-\-clear\fR
 Clear the instrument, load default configuration,
@@ -47,4 +48,6 @@ Restore instrument configuration from standard input.
 .SH FILES
 @X_SYSCONFDIR@/gpib-utils.conf
 .SH SEE ALSO
+gpib-utils.conf(5)
+.PP
 "Agilent 6000 Series Oscilloscopes Programmer's Reference", 2007.
