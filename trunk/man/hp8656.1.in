@@ -11,6 +11,7 @@ hp8656 \- control HP 8656A signal generator
 .TP
 \fB\-a\fR, \fB\-\-address\fR address
 Override the default instrument address in @X_SYSCONFDIR@/gpib-utils.conf.
+See gpib-utils.conf(5) for a description of address formats.
 .TP
 \fB\-c\fR, \fB\-\-clear\fR
 Clear the instrument and load the following defaults:
@@ -61,4 +62,6 @@ hp8656 --local
 .SH FILES
 @X_SYSCONFDIR@/gpib-utils.conf
 .SH "SEE ALSO"
+gpib-utils.conf(5)
+.PP
 "HP 8656A Signal Generator 0.1 - 990 MHz Operating Manual", May 1981.

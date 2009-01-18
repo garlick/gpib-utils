@@ -13,6 +13,7 @@ hp3488 \- control HP 3488A switch/control unit
 .TP
 \fB\-a\fR, \fB\-\-address\fR address
 Override the default instrument address in @X_SYSCONFDIR@/gpib-utils.conf.
+See gpib-utils.conf(5) for a description of address formats.
 .TP
 \fB\-c\fR, \fB\-\-clear\fR
 Clear the instrument, verify its model number, and open all channels.
@@ -152,5 +153,7 @@ done
 .SH FILES
 @X_SYSCONFDIR@/gpib-utils.conf
 .SH "SEE ALSO"
+gpib-utils.conf(5)
+.PP
 "HP 3488A Switch/Control Unit: Operating, Programming, and Configuration 
 Manual", Sept. 1, 1995.

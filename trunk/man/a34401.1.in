@@ -16,6 +16,7 @@ emulation mode) via its LAN or GPIB interface.
 .TP
 \fB\-a\fR, \fB\-\-address\fR address
 Override the default instrument address in @X_SYSCONFDIR@/gpib-utils.conf.
+See gpib-utils.conf(5) for a description of address formats.
 .TP
 \fB\-c\fR, \fB\-\-clear\fR
 Initialize the instrument to default values.
@@ -54,3 +55,5 @@ Select number of samples to take [Default 0].
 Set sample period.
 .SH FILES
 @X_SYSCONFDIR@/gpib-utils.conf
+.SH "SEE ALSO"
+gpib-utils.conf(5)
