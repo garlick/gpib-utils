@@ -10,22 +10,13 @@ a34401 \- control Agilent 34401A DMM
 .SH DESCRIPTION
 \fBa34401\fR controls the Agilent 34401A DMM (or 34410A / 34411A in 34401A
 emulation mode) via its LAN or GPIB interface.
-.PP
-\fBa34401\fR performs actions selected on the command line in a fixed sequence:
-.IP
-.nf
-clear
-get idn string
-selftest
-save/restore operation
-set function/range/trigger
-read measurements
-local
+\fBa34401\fR performs actions in the order they appear on the command line.
 .SH OPTIONS
 \fBa34401\fR accepts the following command line options:
 .TP
 \fB\-a\fR, \fB\-\-address\fR address
 Override the default instrument address in @X_SYSCONFDIR@/gpib-utils.conf.
+See gpib-utils.conf(5) for a description of address formats.
 .TP
 \fB\-c\fR, \fB\-\-clear\fR
 Initialize the instrument to default values.
@@ -64,3 +55,5 @@ Select number of samples to take [Default 0].
 Set sample period.
 .SH FILES
 @X_SYSCONFDIR@/gpib-utils.conf
+.SH "SEE ALSO"
+gpib-utils.conf(5)

@@ -338,6 +338,25 @@ freqstr(char *str, double *freq)
     return result;
 }
 
+double
+gettime(void)
+{
+    struct timeval t;
+
+    if (gettimeofday(&t, NULL) < 0) {
+        perror("gettimeofday");
+        exit(1);
+    }
+    return ((double)t.tv_sec + (double)t.tv_usec / 1000000);
+}
+
+void
+sleep_sec(double sec)
+{
+    if (sec > 0)
+        usleep((unsigned long)(sec * 1000000.0));
+}
+
 #ifdef FREQMAIN
 char *prog = "testfreq";
 int

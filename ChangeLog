@@ -1,12 +1,57 @@
-2009-01-08 Jim Garlick <garlick.jim@gmail.com>
+2009-01-19 Jim Garlick <garlick.jim@gmail.com>
 
 	* : tag gpib-utils-1.4
 
-	* gpib-utils.spec : Droped doc reference to missing examples directory.
+	* src/gpib.c : Incomplete serial implementation.
+	Restructure code for multiple connected methods.
 
-	* src/ics8065.c, man/ics8065.1.in : Dropped --reset-factory option.
+2009-01-18 Jim Garlick <garlick.jim@gmail.com>
 
-	* src/ics8064.c, man/ics8064.1.in : Dropped --reset-factory option.
+	* src/gpib.c : Allow non-zero gpib board and secondary gpib address.
+	Add code to support (future) serial and socket connection methods.
+	Call ibonl() in GPIB case when finalizing connection to device.
+
+2009-01-17 Jim Garlick <garlick.jim@gmail.com>
+
+	* man/hp6038.1.in : New.
+
+	* src/hp6038.c : New, derived from hp6632.c.
+
+	* src/hp6632.c : Added --samples and --period options.
+
+2009-01-13 Jim Garlick <garlick.jim@gmail.com>
+
+	* man/* : Change "actions will be performed in a fix order" to
+	"actions will be performed in the order listed on the command line".
+
+2009-01-12 Jim Garlick <garlick.jim@gmail.com>
+
+	* src/<devicename>.c : Cleanup:
+	- call gpib_init_args() to handle -a and -v and open device.
+	- perform actions in the getopt() loop.
+
+	* src/gpib.[ch] : Add gpib_init_args().
+
+2009-01-10 Jim Garlick <garlick.jim@gmail.com>
+
+	* libics/ics8000.x, libics/ics.[ch] : Drop ics_reload_factory().
+
+	* src/* : Reduce use of needless preprocessor macros for ASCII cmds.
+	  Parse arguments in two stages, and perform actions in argument order.
+
+	* src/icsconfig.c : Factor ICS config from ics8064.c ics8065.c.
+
+	* src/ics8064.c : Drop ICS config portion.
+
+	* src/ics8065.c : Removed.
+
+2009-01-08 Jim Garlick <garlick.jim@gmail.com>
+
+	* gpib-utils.spec : Drop doc reference to missing examples directory.
+
+	* src/ics8065.c, man/ics8065.1.in : Drop --reset-factory option.
+
+	* src/ics8064.c, man/ics8064.1.in : Drop --reset-factory option.
 
 	* man/a34401.1.in, man/gpib-utils.conf.5.in : New.
 

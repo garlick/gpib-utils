@@ -5,21 +5,13 @@ hp8656 \- control HP 8656A signal generator
 .B hp8656 [\fIOPTIONS\fR]
 .SH DESCRIPTION
 \fBhp8656\fR controls the HP 8656A signal generator via its GPIB interface.
-.PP
-\fBhp8656\fR performs actions selected on the command line in a fixed sequence:
-.IP
-.nf
-clear
-configure
-local
-.fi
-.PP
-If an action is not selected on the command line, it is not peformed.
+\fBhp8656\fR performs actions in the order the appear on the command line.
 .SH OPTIONS
 \fBhp8656\fR accepts the following command line options:
 .TP
 \fB\-a\fR, \fB\-\-address\fR address
 Override the default instrument address in @X_SYSCONFDIR@/gpib-utils.conf.
+See gpib-utils.conf(5) for a description of address formats.
 .TP
 \fB\-c\fR, \fB\-\-clear\fR
 Clear the instrument and load the following defaults:
@@ -70,4 +62,6 @@ hp8656 --local
 .SH FILES
 @X_SYSCONFDIR@/gpib-utils.conf
 .SH "SEE ALSO"
+gpib-utils.conf(5)
+.PP
 "HP 8656A Signal Generator 0.1 - 990 MHz Operating Manual", May 1981.

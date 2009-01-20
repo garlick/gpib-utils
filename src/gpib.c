@@ -20,6 +20,9 @@
 #if HAVE_CONFIG_H
 #include "config.h"
 #endif
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -36,22 +39,69 @@
 #include <ctype.h>
 #define __USE_ISOC99 /* activate vsscanf prototype in stdio.h */
 #include <stdio.h>
+#if HAVE_GETOPT_LONG
+#include <getopt.h>
+#define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
+#else
+#define GETOPT(ac,av,opt,lopt) getopt(ac,av,opt)
+#endif
+#include <libgen.h>
+#include <termios.h>
+#include <sys/time.h>
+#include <fcntl.h>
+#include <math.h>
+
 
 #include "gpib.h"
 #include "vxi11_device.h"
 #include "util.h"
 #include "hprintf.h"
 
+typedef enum { GPIB, VXI11, SERIAL, SOCKET } contype_t;
+
 #define GPIB_DEVICE_MAGIC 0x43435334
 struct gpib_device {
     int             magic;
+    contype_t       contype;   /* type of connection */
     char           *name;      /* instrument name */
     int             verbose;   /* verbose flag (print telemetry on stderr) */
-    int             d;         /* ib instrument handle */
     spollfun_t      sf_fun;    /* app-specific serial poll function */
     int             sf_level;  /* serial poll recursion detection */
     unsigned long   sf_retry;  /* backoff factor for serial poll retry (uS) */
-    vxi11dev_t      vxi11_handle;
+    int             d;         /* handle (GPIB) */
+    int             fd;        /* file descriptor (SOCKET, SERIAL) */
+    vxi11dev_t      vxi11_handle; /* handle (VXI11) */
+    int             reos;
+    int             eos;
+    int             eot;
+    struct timeval  timeout;
+};
+
+typedef struct {
+    int baud;
+    speed_t bconst;
+} baudmap_t;
+
+static baudmap_t baudmap[] = {
+    {300,   B300},   
+    {1200,  B1200},   
+    {2400,  B2400},   
+    {4800,  B4800}, 
+    {9600,  B9600}, 
+    {19200, B19200}, 
+    {38400, B38400},
+#ifdef B57600
+    {57600, B57600},
+#endif
+#ifdef B115200
+    {115200,B115200},
+#endif
+#ifdef B230400
+    {230400,B230400},
+#endif
+#ifdef B460800
+    {460800,B460800},
+#endif
 };
 
 extern char *prog;
@@ -90,61 +140,67 @@ _serial_poll(gd_t gd, char *str)
     gd->sf_level--;
 }
 
+static int
+_generic_read(gd_t gd, char *buf, int len)
+{
+    int err, count = 0;
+
+    switch (gd->contype) {
+        case GPIB:
 #if HAVE_LINUX_GPIB
-static int
-_ibrd(gd_t gd, char *buf, int len)
-{
-    int count = 0;
-
-    do {
-        ibrd(gd->d, buf + count, len - count);
-        if (ibsta & TIMO) {
-            fprintf(stderr, "%s: ibrd timeout\n", prog);
-            gpib_fini(gd);
-            exit(1);
-        }
-        if (ibsta & ERR) {
-            fprintf(stderr, "%s: ibrd error %d\n", prog, iberr);
-            gpib_fini(gd);
-            exit(1);
-        }
-        count += ibcnt;
-    } while (count < len && !(ibsta & END));
-    if (!(ibsta & END)) {
-        fprintf(stderr, "%s: read buffer too small\n", prog);
-        gpib_fini(gd);
-        exit(1);
-    }
-    return count;
-}
+            do {
+                ibrd(gd->d, buf + count, len - count);
+                if (ibsta & TIMO) {
+                    fprintf(stderr, "%s: ibrd timeout\n", prog);
+                    gpib_fini(gd);
+                    exit(1);
+                }
+                if (ibsta & ERR) {
+                    fprintf(stderr, "%s: ibrd error %d\n", prog, iberr);
+                    gpib_fini(gd);
+                    exit(1);
+                }
+                count += ibcnt;
+            } while (count < len && !(ibsta & END));
+            if (!(ibsta & END)) {
+                fprintf(stderr, "%s: read buffer too small\n", prog);
+                gpib_fini(gd);
+                exit(1);
+            }
 #endif
-
-static int
-_vxird(gd_t gd, char *buf, int len)
-{
-    int err, count;
-
-    err = vxi11_read(gd->vxi11_handle, buf, len, &count);
-    if (err) {
-        vxi11_perror(gd->vxi11_handle, err, prog);
-        gpib_fini(gd);
-        exit(1);
+            break;
+        case VXI11:
+            if ((err = vxi11_read(gd->vxi11_handle, buf, len, &count))) {
+                vxi11_perror(gd->vxi11_handle, err, prog);
+                gpib_fini(gd);
+                exit(1);
+            }
+            break;
+        case SERIAL:
+        case SOCKET:
+            /* FIXME: use timeout */
+            if ((count = read_all(gd->fd, buf, len) < 0)) {
+                fprintf(stderr, "%s: read error: %s\n", prog, strerror(errno));
+                gpib_fini(gd);
+                exit(1);
+            } else if (count == 0) {
+                fprintf(stderr, "%s: EOF on read: %s\n", prog, strerror(errno));
+                gpib_fini(gd);
+                exit(1);
+            }
+            break;
     }
+
     return count;
 }
 
 int
 gpib_rd(gd_t gd, void *buf, int len)
 {
-    int count; 
+    int count = 0; 
 
     assert(gd->magic == GPIB_DEVICE_MAGIC);
-#if HAVE_LINUX_GPIB
-    if (gd->vxi11_handle == NULL)
-        count = _ibrd(gd, buf, len);
-    else
-#endif
-    count = _vxird(gd, buf, len);
+    count = _generic_read(gd, buf, len);
     if (gd->verbose)
         fprintf(stderr, "R: [%d bytes]\n", count);
     _serial_poll(gd, "gpib_rd");
@@ -164,19 +220,13 @@ _zap_trailing_terminators(char *buf)
 void
 gpib_rdstr(gd_t gd, char *buf, int len)
 {
-    int count;
+    int count = 0;
 
     assert(gd->magic == GPIB_DEVICE_MAGIC);
-#if HAVE_LINUX_GPIB
-    if (gd->vxi11_handle == NULL)
-        count = _ibrd(gd, buf, len - 1);
-    else
-#endif
-    count = _vxird(gd, buf, len - 1);
+    count = _generic_read(gd, buf, len - 1);
     assert(count < len);
     buf[count] = '\0';
     _zap_trailing_terminators(buf);
-
     if (gd->verbose) {
         char *cpy = xstrcpyprint(buf);
 
@@ -191,16 +241,11 @@ gpib_rdf(gd_t gd, char *fmt, ...)
 {
     va_list ap;
     char buf[1024];
-    int count;
+    int count = 0;
     int n;
 
     assert(gd->magic == GPIB_DEVICE_MAGIC);
-#if HAVE_LINUX_GPIB
-    if (gd->vxi11_handle == NULL)
-        count = _ibrd(gd, buf, sizeof(buf) - 1);
-    else
-#endif
-    count = _vxird(gd, buf, sizeof(buf) - 1);
+    count = _generic_read(gd, buf, sizeof(buf) - 1);
     assert(count < sizeof(buf) - 1);
     buf[count] = '\0';
     _zap_trailing_terminators(buf);
@@ -224,35 +269,44 @@ gpib_rdf(gd_t gd, char *fmt, ...)
     return n;
 }
 
-#if HAVE_LINUX_GPIB
 static void 
-_ibwrt(gd_t gd, void *buf, int len)
-{
-    ibwrt(gd->d, buf, len);
-    if (ibsta & TIMO) {
-        fprintf(stderr, "%s: ibwrt timeout\n", prog);
-        gpib_fini(gd);
-        exit(1);
-    }
-    if (ibsta & ERR) {
-        fprintf(stderr, "%s: ibwrt error %d\n", prog, iberr);
-        gpib_fini(gd);
-        exit(1);
-    }
-    assert(ibcnt == len);
-}
-#endif
-
-static void 
-_vxiwrt(gd_t gd, char *buf, int len)
+_generic_write(gd_t gd, void *buf, int len)
 {
     int err;
 
-    err = vxi11_write(gd->vxi11_handle, buf, len);
-    if (err) {
-        vxi11_perror(gd->vxi11_handle, err, prog);
-        gpib_fini(gd);
-        exit(1);
+    switch (gd->contype) {
+        case GPIB:
+#if HAVE_LINUX_GPIB
+            ibwrt(gd->d, buf, len);
+            if (ibsta & TIMO) {
+                fprintf(stderr, "%s: ibwrt timeout\n", prog);
+                gpib_fini(gd);
+                exit(1);
+            }
+            if (ibsta & ERR) {
+                fprintf(stderr, "%s: ibwrt error %d\n", prog, iberr);
+                gpib_fini(gd);
+                exit(1);
+            }
+            assert(ibcnt == len);
+#endif
+            break;
+        case VXI11:
+            if ((err = vxi11_write(gd->vxi11_handle, buf, len))) {
+                vxi11_perror(gd->vxi11_handle, err, prog);
+                gpib_fini(gd);
+                exit(1);
+            }
+            break;
+        case SERIAL:
+        case SOCKET:
+            /* FIXME: use timeout */
+            if (write_all(gd->fd, buf, len) < 0) {
+                fprintf(stderr, "%s: write error: %s\n", prog, strerror(errno));
+                gpib_fini(gd);
+                exit(1);
+            }
+            break;
     }
 }
 
@@ -260,12 +314,7 @@ void
 gpib_wrt(gd_t gd, void *buf, int len)
 {
     assert(gd->magic == GPIB_DEVICE_MAGIC);
-#if HAVE_LINUX_GPIB
-    if (gd->vxi11_handle == NULL)
-        _ibwrt(gd, buf, len);
-    else
-#endif
-    _vxiwrt(gd, buf, len);
+    _generic_write(gd, buf, len);
     if (gd->verbose)
         fprintf(stderr, "T: [%d bytes]\n", len);
     _serial_poll(gd, "gpib_wrt");
@@ -275,12 +324,7 @@ void
 gpib_wrtstr(gd_t gd, char *str)
 {
     assert(gd->magic == GPIB_DEVICE_MAGIC);
-#if HAVE_LINUX_GPIB
-    if (gd->vxi11_handle == NULL)
-        _ibwrt(gd, str, strlen(str));
-    else
-#endif
-    _vxiwrt(gd, str, strlen(str));
+    _generic_write(gd, str, strlen(str));
     if (gd->verbose) {
         char *cpy = xstrcpyprint(str);
 
@@ -300,12 +344,7 @@ gpib_wrtf(gd_t gd, char *fmt, ...)
     va_start(ap, fmt);
     s = hvsprintf(fmt, ap);
     va_end(ap);
-#if HAVE_LINUX_GPIB
-    if (gd->vxi11_handle == NULL)
-        _ibwrt(gd, s, strlen(s));
-    else
-#endif
-    _vxiwrt(gd, s, strlen(s));
+    _generic_write(gd, s, strlen(s));
     if (gd->verbose) {
         char *cpy = xstrcpyprint(s);
 
@@ -322,24 +361,14 @@ gpib_qry(gd_t gd, char *str, void *buf, int len)
     int count; 
 
     assert(gd->magic == GPIB_DEVICE_MAGIC);
-#if HAVE_LINUX_GPIB
-    if (gd->vxi11_handle == NULL)
-        _ibwrt(gd, str, strlen(str));
-    else
-#endif
-    _vxiwrt(gd, str, strlen(str));
+    _generic_write(gd, str, strlen(str));
     if (gd->verbose) {
         char *cpy = xstrcpyprint(str);
 
         fprintf(stderr, "T: \"%s\"\n", cpy);
         free(cpy);
     }
-#if HAVE_LINUX_GPIB
-    if (gd->vxi11_handle == NULL)
-        count = _ibrd(gd, buf, len);
-    else
-#endif
-    count = _vxird(gd, buf, len);
+    count = _generic_read(gd, buf, len);
     if (count < len && ((char *)buf)[count - 1] != '\0')
         ((char *)buf)[count++] = '\0';
     if (gd->verbose) { 
@@ -357,250 +386,216 @@ gpib_qry(gd_t gd, char *str, void *buf, int len)
     return count;
 }
 
-#if HAVE_LINUX_GPIB
-static void
-_ibloc(gd_t gd)
-{
-    ibloc(gd->d);
-    if (ibsta & ERR) {
-        fprintf(stderr, "%s: ibloc error %d\n", prog, iberr);
-        gpib_fini(gd);
-        exit(1);
-    }
-}
-#endif
-
-static void
-_vxiloc(gd_t gd)
-{
-    int err;
-
-    err = vxi11_local(gd->vxi11_handle);
-    if (err) {
-        vxi11_perror(gd->vxi11_handle, err, prog);
-        exit(1);
-    }
-}
-
 void
 gpib_loc(gd_t gd)
 {
+    int err;
+
     assert(gd->magic == GPIB_DEVICE_MAGIC);
+    switch(gd->contype) {
+        case GPIB:
 #if HAVE_LINUX_GPIB
-    if (gd->vxi11_handle == NULL)
-        _ibloc(gd);
-    else
+            ibloc(gd->d);
+            if ((ibsta & ERR)) {
+                fprintf(stderr, "%s: ibloc error %d\n", prog, iberr);
+                gpib_fini(gd);
+                exit(1);
+            }
 #endif
-    _vxiloc(gd);
+            break;
+        case VXI11:
+            if ((err = vxi11_local(gd->vxi11_handle))) {
+                vxi11_perror(gd->vxi11_handle, err, prog);
+                exit(1);
+            }
+            break;
+        case SERIAL:
+        case SOCKET:
+            break;
+    }
     if (gd->verbose)
         fprintf(stderr, "T: [ibloc]\n");
     _serial_poll(gd, "gpib_loc");
 }
 
-#if HAVE_LINUX_GPIB
-static void 
-_ibclr(gd_t gd)
-{
-    ibclr(gd->d);
-    if (ibsta & TIMO) {
-        fprintf(stderr, "%s: ibclr timeout\n", prog);
-        gpib_fini(gd);
-        exit(1);
-    }
-    if (ibsta & ERR) {
-        fprintf(stderr, "%s: ibclr error %d\n", prog, iberr);
-        gpib_fini(gd);
-        exit(1);
-    }
-}
-#endif
-
-static void 
-_vxiclr(gd_t gd)
-{
-    int err;
-
-    err = vxi11_clear(gd->vxi11_handle);
-    if (err) {
-        vxi11_perror(gd->vxi11_handle, err, prog);
-        exit(1);
-    }
-}
-
 void 
 gpib_clr(gd_t gd, unsigned long usec)
 {
+    int err;
+
     assert(gd->magic == GPIB_DEVICE_MAGIC);
+    switch(gd->contype) {
+        case GPIB:
 #if HAVE_LINUX_GPIB
-    if (gd->vxi11_handle == NULL)
-        _ibclr(gd);
-    else
+            ibclr(gd->d);
+            if ((ibsta & TIMO)) {
+                fprintf(stderr, "%s: ibclr timeout\n", prog);
+                gpib_fini(gd);
+                exit(1);
+            }
+            if ((ibsta & ERR)) {
+                fprintf(stderr, "%s: ibclr error %d\n", prog, iberr);
+                gpib_fini(gd);
+                exit(1);
+            }
 #endif
-    _vxiclr(gd);
+            break;
+        case VXI11:
+            if ((err = vxi11_clear(gd->vxi11_handle))) {
+                vxi11_perror(gd->vxi11_handle, err, prog);
+                exit(1);
+            }
+            break;
+        case SERIAL:
+        case SOCKET:
+            break;
+    }
     if (gd->verbose)
         fprintf(stderr, "T: [ibclr]\n");
     usleep(usec);
     _serial_poll(gd, "gpib_clr");
 }
 
-#if HAVE_LINUX_GPIB
-static void
-_ibtrg(gd_t gd)
-{
-    ibtrg(gd->d);
-    if (ibsta & ERR) {
-        fprintf(stderr, "%s: ibtrg error %d\n", prog, iberr);
-        gpib_fini(gd);
-        exit(1);
-    }
-}
-#endif
-
-static void
-_vxitrg(gd_t gd)
-{
-    int err;
-
-    err = vxi11_trigger(gd->vxi11_handle);
-    if (err) {
-        vxi11_perror(gd->vxi11_handle, err, prog);
-        exit(1);
-    }
-}
-
 void
 gpib_trg(gd_t gd)
 {
+    int err;
+
     assert(gd->magic == GPIB_DEVICE_MAGIC);
+    switch(gd->contype) {
+        case GPIB:
 #if HAVE_LINUX_GPIB
-    if (gd->vxi11_handle == NULL)
-        _ibtrg(gd);
-    else
+            ibtrg(gd->d);
+            if ((ibsta & ERR)) {
+                fprintf(stderr, "%s: ibtrg error %d\n", prog, iberr);
+                gpib_fini(gd);
+                exit(1);
+            }
 #endif
-    _vxitrg(gd);
+            break;
+        case VXI11:
+            if ((err = vxi11_trigger(gd->vxi11_handle))) {
+                vxi11_perror(gd->vxi11_handle, err, prog);
+                gpib_fini(gd);
+                exit(1);
+            }
+        case SERIAL:
+        case SOCKET:
+            break;
+    }
     if (gd->verbose)
         fprintf(stderr, "T: [ibtrg]\n");
     _serial_poll(gd, "gpib_trg");
 }
 
-#if HAVE_LINUX_GPIB
-static int
-_ibrsp(gd_t gd, unsigned char *status)
-{
-    ibrsp(gd->d, (char *)status); /* NOTE: modifies ibcnt */
-    if (ibsta & ERR) {
-        fprintf(stderr, "%s: ibrsp error %d\n", prog, iberr);
-        gpib_fini(gd);
-        exit(1);
-    }
-    /* nonzero means call gpib_rsp again to obtain more status info */
-    return (ibsta & RQS);
-}
-#endif
-
-static int
-_vxirsp(gd_t gd, unsigned char *status)
-{
-    int err;
-
-    err = vxi11_readstb(gd->vxi11_handle, status);
-    if (err) {
-        vxi11_perror(gd->vxi11_handle, err, prog);
-        exit(1);
-    }
-    return 0;
-}
-
+/* A nonzero return value means call gpib_rsp() again to obtain more 
+ * status info.
+ */
 int
 gpib_rsp(gd_t gd, unsigned char *status)
 {
-    int res;
+    int err, res = 0;
 
     assert(gd->magic == GPIB_DEVICE_MAGIC);
+    switch(gd->contype) {
+        case GPIB:
 #if HAVE_LINUX_GPIB
-    if (gd->vxi11_handle == NULL)
-        res = _ibrsp(gd, status);
-    else
+            ibrsp(gd->d, (char *)status); /* NOTE: modifies ibcnt */
+            if (ibsta & ERR) {
+                fprintf(stderr, "%s: ibrsp error %d\n", prog, iberr);
+                gpib_fini(gd);
+                exit(1);
+            }
+            res = (ibsta & RQS); 
 #endif
-    res = _vxirsp(gd, status);
+            break;
+        case VXI11:
+            if ((err = vxi11_readstb(gd->vxi11_handle, status))) {
+                vxi11_perror(gd->vxi11_handle, err, prog);
+                exit(1);
+            }
+            break;
+        case SERIAL:
+        case SOCKET:
+            /* FIXME */
+            *status = 0;
+            break;
+    }
     if (gd->verbose)
         fprintf(stderr, "T: [ibrsp] R: 0x%x\n", (unsigned int)*status);
     return res;
 }
 
-#if HAVE_LINUX_GPIB
-static void
-_ibsetreos(gd_t gd, int flag)
-{
-    ibconfig(gd->d, IbcEOSrd, flag ? REOS : 0);
-    if ((ibsta & ERR)) {
-        fprintf(stderr, "%s: ibconfig IbcEOSrd failed: %d\n", prog, iberr);
-        gpib_fini(gd);
-        exit(1);
-    }
-}
-#endif
-
 void
 gpib_set_reos(gd_t gd, int flag)
 {
     assert(gd->magic == GPIB_DEVICE_MAGIC);
+    switch(gd->contype) {
+        case GPIB:
 #if HAVE_LINUX_GPIB
-    if (gd->vxi11_handle == NULL)
-        _ibsetreos(gd, flag);
-    else
+            ibconfig(gd->d, IbcEOSrd, flag ? REOS : 0);
+            if ((ibsta & ERR)) {
+                fprintf(stderr, "%s: ibconfig IbcEOSrd failed: %d\n",
+                        prog, iberr);
+            }
 #endif
-    vxi11_set_termcharset(gd->vxi11_handle, flag);
-}
-
-#if HAVE_LINUX_GPIB
-static void
-_ibseteot(gd_t gd, int flag)
-{
-    ibconfig(gd->d, IbcEOT, flag);
-    if ((ibsta & ERR)) {
-        fprintf(stderr, "%s: ibconfig IbcEOT failed: %d\n", prog, iberr);
-        gpib_fini(gd);
-        exit(1);
+            break;
+        case VXI11:
+            vxi11_set_termcharset(gd->vxi11_handle, flag);
+            break;
+        case SERIAL:
+        case SOCKET:
+            gd->reos = flag;
+            break;
     }
 }
-#endif
 
 void
 gpib_set_eot(gd_t gd, int flag)
 {
     assert(gd->magic == GPIB_DEVICE_MAGIC);
+    switch(gd->contype) {
+        case GPIB:
 #if HAVE_LINUX_GPIB
-    if (gd->vxi11_handle == NULL)
-        _ibseteot(gd, flag);
-    else
+            ibconfig(gd->d, IbcEOT, flag);
+            if ((ibsta & ERR)) {
+                fprintf(stderr, "%s: ibconfig IbcEOT failed: %d\n", 
+                    prog, iberr);
+            }
 #endif
-    vxi11_set_endw(gd->vxi11_handle, flag);
-}
-
-#if HAVE_LINUX_GPIB
-static void
-_ibseteos(gd_t gd, int c)
-{
-    ibconfig(gd->d, IbcEOSchar, c);
-    if ((ibsta & ERR)) {
-        fprintf(stderr, "%s: ibconfig IbcEOSchar failed: %d\n", prog, iberr);
-        gpib_fini(gd);
-        exit(1);
+            break;
+        case VXI11:
+            vxi11_set_endw(gd->vxi11_handle, flag);
+            break;
+        case SERIAL:
+        case SOCKET:
+            gd->eot = flag;
+            break;
     }
 }
-#endif
 
 void
 gpib_set_eos(gd_t gd, int c)
 {
     assert(gd->magic == GPIB_DEVICE_MAGIC);
+    switch(gd->contype) {
+        case GPIB:
 #if HAVE_LINUX_GPIB
-    if (gd->vxi11_handle == NULL)
-        _ibseteos(gd, c);
-    else
+            ibconfig(gd->d, IbcEOSchar, c);
+            if ((ibsta & ERR)) {
+                fprintf(stderr, "%s: ibconfig IbcEOSchar failed: %d\n", 
+                        prog, iberr);
+            }
 #endif
-    vxi11_set_termchar(gd->vxi11_handle, c);
+            break;
+        case VXI11:
+            vxi11_set_termchar(gd->vxi11_handle, c);
+            break;
+        case SERIAL:
+        case SOCKET:
+            gd->eos = c;
+            break;
+    }
 }
 
 #if HAVE_LINUX_GPIB
@@ -665,12 +660,21 @@ void
 gpib_set_timeout(gd_t gd, double sec)
 {
     assert(gd->magic == GPIB_DEVICE_MAGIC);
+    switch(gd->contype) {
+        case GPIB:
 #if HAVE_LINUX_GPIB
-    if (gd->vxi11_handle == NULL)
-        _ibtmo(gd, sec);
-    else
+            _ibtmo(gd, sec);
 #endif
-        vxi11_set_iotimeout(gd->vxi11_handle, sec * 1000.0);
+             break;
+        case VXI11:
+             vxi11_set_iotimeout(gd->vxi11_handle, sec * 1000.0);
+             break;
+        case SERIAL:
+        case SOCKET:
+             gd->timeout.tv_sec = (time_t)floor(sec);
+             gd->timeout.tv_usec =  (suseconds_t)((sec - floor(sec)) / 1E6);
+             break;
+    }
 }
 
 void
@@ -683,7 +687,7 @@ gpib_set_verbose(gd_t gd, int flag)
 static void
 _free_gpib(gd_t gd)
 {
-    gd->magic = 0;
+    memset(gd, 0, sizeof(struct gpib_device));
     free(gd);
 }
 
@@ -694,10 +698,16 @@ gpib_abort(gd_t gd)
 {
     int err;
 
-    if (gd->vxi11_handle) {
-        err = vxi11_abort(gd->vxi11_handle);
-        if (err) /* N.B. non-fatal */
-            vxi11_perror(gd->vxi11_handle, err, prog);
+    switch(gd->contype) {
+        case VXI11:
+            err = vxi11_abort(gd->vxi11_handle);
+            if (err) /* N.B. non-fatal */
+                vxi11_perror(gd->vxi11_handle, err, prog);
+            break;
+        case GPIB:
+        case SERIAL:
+        case SOCKET:
+            break;
     }
 }
 
@@ -705,52 +715,78 @@ void
 gpib_fini(gd_t gd)
 {
     assert(gd->magic == GPIB_DEVICE_MAGIC);
-    if (gd->vxi11_handle) {
-        vxi11_close(gd->vxi11_handle);
-        vxi11_destroy(gd->vxi11_handle);
+    switch(gd->contype) {
+        case GPIB:
+#if HAVE_LINUX_GPIB
+            ibonl(gd->d, 0);
+#endif
+            break;
+        case VXI11:
+            if (gd->vxi11_handle) {
+                vxi11_close(gd->vxi11_handle);
+                vxi11_destroy(gd->vxi11_handle);
+                gd->vxi11_handle = NULL;
+            }
+            break;
+        case SERIAL:
+        case SOCKET:
+            if (gd->fd >= 0) {
+                (void)close(gd->fd);
+                gd->fd = -1;
+            }
+            break;
     }
     _free_gpib(gd);
 }
 
 static gd_t
-_new_gpib(void)
+_new_gpib(contype_t t)
 {
     gd_t new = xmalloc(sizeof(struct gpib_device));
 
     new->magic = GPIB_DEVICE_MAGIC;
+    new->contype = t;
     new->d = -1;
     new->verbose = 0;
     new->sf_fun = NULL;
     new->sf_level = 0;
     new->sf_retry = 1;
     new->vxi11_handle = NULL;
+    new->fd = -1;
+    new->reos = 0;
+    new->eot = 1;
+    new->eos = 0xa;
+    timerclear(&new->timeout);
 
     return new;
 }
 
-#if HAVE_LINUX_GPIB
 static gd_t
-_ibdev(int pad, spollfun_t sf, unsigned long retry)
+_init_gpib(int board, int pad, int sad, spollfun_t sf, unsigned long retry)
 {
-    int handle;
     gd_t new = NULL;
+#if HAVE_LINUX_GPIB
+    int handle;
 
     /* dflt: board=0, sad=0, tmo=T30s, eot=1, bin=0, reos=0, xeos=0, eos=0xa */
-    handle = ibdev(0, pad, 0, T30s, 1, 0x0a);
+    handle = ibdev(board, pad, sad, T30s, 1, 0x0a);
     if (handle >= 0) {
-        new = _new_gpib();
+        new = _new_gpib(GPIB);
         new->d = handle;
         new->sf_fun = sf;
         new->sf_retry = retry;
     }
+#else
+    fprintf(stderr, "%s: ibdev(%d,%d,0x%x) failed: no GPIB support\n",
+            prog, board, pad, sad);
+#endif
     return new;
 }
-#endif
 
 static gd_t
 _init_vxi(char *name, spollfun_t sf, unsigned long retry)
 {
-    gd_t gd = _new_gpib();
+    gd_t gd = _new_gpib(VXI11);
     int err;
 
     gd->sf_fun = sf;
@@ -761,24 +797,158 @@ _init_vxi(char *name, spollfun_t sf, unsigned long retry)
     err = vxi11_open(gd->vxi11_handle, name, 0);
     if (err) {
         vxi11_perror(gd->vxi11_handle, err, prog);
-        exit(1);
+        vxi11_destroy(gd->vxi11_handle);
+        gd->vxi11_handle = NULL;
+        _free_gpib(gd);
+        gd = NULL;
     }
     return gd;
+}
+
+static gd_t
+_init_serial(char *device , char *flags, spollfun_t sf, unsigned long retry)
+{
+    gd_t gd = _new_gpib(SERIAL);
+    int baud = 9600, databits = 8, stopbits = 1; 
+    char parity = 'N';
+    struct termios tio;
+    int i, res;
+
+    gd->fd = open(device, O_RDWR | O_NOCTTY);
+    if (gd->fd < 0) {
+        fprintf(stderr, "%s: open %s: %s\n", prog, device, strerror(errno));
+        goto err;
+    }
+    if (!isatty(gd->fd)) {
+        fprintf(stderr, "%s: %s is not a tty\n", prog, device);
+        goto err;
+    }
+    if (lockf(gd->fd, F_TLOCK, 0) < 0) {
+        fprintf(stderr, "%s: could not lock %s\n", prog, device);
+        goto err;
+    }
+    (void)sscanf(flags, "%d,%d%c%d", &baud, &databits, &parity, &stopbits);
+    /* 0-4 matches OK as defaults are taken if no match */
+    if (tcgetattr(gd->fd, &tio) < 0) {
+        fprintf(stderr, "%s: error getting serial attributes\n", prog);
+        goto err;
+    }
+    res = -1;
+    for (i = 0; i < sizeof(baudmap)/sizeof(baudmap_t); i++) {
+        if (baudmap[i].baud == baud) {
+            if ((res = cfsetispeed(&tio, baudmap[i].bconst)) == 0)
+                 res = cfsetospeed(&tio, baudmap[i].bconst);
+            break;
+        }
+    }
+    if (res < 0) {
+        fprintf(stderr, "%s: error setting baud rate to %d\n", prog, baud);
+        goto err;
+    }
+    switch (databits) {
+        case 7:
+            tio.c_cflag &= ~CSIZE;
+            tio.c_cflag |= CS7;
+            break;
+        case 8:
+            tio.c_cflag &= ~CSIZE;
+            tio.c_cflag |= CS8;
+            break;
+        default:
+            fprintf(stderr, "%s: error setting data bits to %d\n", 
+                    prog, databits);
+            goto err;
+    }
+
+    switch (stopbits) {
+        case 1:
+            tio.c_cflag &= ~CSTOPB;
+            break;
+        case 2:
+            tio.c_cflag |= CSTOPB;
+            break;
+        default:
+            fprintf(stderr, "%s: error setting stop bits to %d\n", 
+                    prog, stopbits);
+            goto err;
+    }
+
+    switch (parity) {
+        case 'n':
+        case 'N':
+            tio.c_cflag &= ~PARENB;
+            break;
+        case 'e':
+        case 'E':
+            tio.c_cflag |= PARENB;
+            tio.c_cflag &= ~PARODD;
+            break;
+        case 'o':
+        case 'O':
+            tio.c_cflag |= PARENB;
+            tio.c_cflag |= PARODD;
+            break;
+        default:
+            fprintf(stderr, "%s: error setting parity to %c\n", prog, parity);
+            goto err;
+    }
+
+    tio.c_oflag &= ~OPOST; /* turn off post-processing of output */
+    tio.c_iflag = tio.c_lflag = 0;
+
+    if (tcsetattr(gd->fd, TCSANOW, &tio) < 0) {
+        fprintf(stderr, "%s: error setting serial attributes\n", prog);
+        goto err;
+    }
+
+    /* FIXME: need modes for configuring xon/xoff and hardware handshaking */
+
+    /* success! */
+    return gd; 
+
+err:
+    if (gd->fd >= 0)
+        close(gd->fd);
+    _free_gpib(gd);
+    return NULL;
+}
+
+static gd_t
+_init_socket(char *host, char *port, spollfun_t sf, unsigned long retry)
+{
+    fprintf(stderr, "%s: tcp_init('%s','%s') failed: no socket support\n",
+            prog, host, port);
+    return NULL;
 }
 
 gd_t
 gpib_init(char *addr, spollfun_t sf, unsigned long retry)
 {
     gd_t gd = NULL;
+    char *endptr, *sfx, *cpy;
+    struct stat sb;
+    int board, pad, sad;
 
-    if (strchr(addr, ':') == NULL) { 
-#if HAVE_LINUX_GPIB
-        gd = _ibdev(strtoul(addr, NULL, 10), sf, retry);
-#else
-        fprintf(stderr, "%s: not configured with native GPIB support\n", prog);
-#endif
+    cpy = xstrdup(addr);
+    if (sscanf(addr, "%d:%d,%d", &board, &pad, &sad) == 3)
+        gd = _init_gpib(board, pad, 0x60+sad, sf, retry);/* board:pad,sad */
+    else if (sscanf(addr, "%d,%d", &pad, &sad) == 2)
+        gd = _init_gpib(0,pad, 0x60+sad, sf, retry);     /* pad,sad */
+    else if (sscanf(addr, "%d", &pad) == 1)
+        gd = _init_gpib(0,     pad, 0,        sf, retry);/* pad */
+    else if (stat(addr, &sb) == 0 && S_ISCHR(sb.st_mode))
+        gd = _init_serial(addr, "9600,8n1", sf, retry); /* device */
+    else if ((sfx = strchr(cpy, ':'))) {
+        *sfx++ = '\0';
+        if (stat(cpy, &sb) == 0 && S_ISCHR(sb.st_mode))
+            gd = _init_serial(cpy, sfx, sf, retry);  /* device:flags */
+        else if (strtoul(sfx, &endptr, 10) > 0 && *endptr == '\0')
+            gd = _init_socket(cpy, sfx, sf, retry);  /* host:port */
+        else
+            gd = _init_vxi(addr, sf, retry);         /* host:inst[,pad[,sad]] */
     } else
-        gd = _init_vxi(addr, sf, retry);
+        fprintf(stderr, "%s: failed to determine address type\n", prog);
+    free(cpy);
     return gd;
 }
 
@@ -823,6 +993,60 @@ _extract_dlab_len(unsigned char *data, int lenlen, int len)
     memcpy(tmpstr, data, lenlen);
     tmpstr[lenlen] = '\0';
     return strtoul(tmpstr, NULL, 10);
+}
+
+/* Handle common -v and -a option processing in each of the utilities,
+ * and initialize the GPIB connection.
+ */
+gd_t
+gpib_init_args(int argc, char *argv[], char *opts, struct option *longopts,
+               char *name, spollfun_t sf, unsigned long retry, int *opt_error)
+{
+    int c, verbose = 0, todo = 0;
+    char *addr = NULL;
+    gd_t gd = NULL;
+    int error = 0;
+
+    prog = basename(argv[0]);
+    while ((c = GETOPT(argc, argv, opts, longopts)) != EOF) {
+        switch (c) {
+        case 'a': /* --address */
+            addr = optarg;
+            break;
+        case 'v':
+            verbose = 1;
+            break;
+        case '?':
+            error++;
+            break;
+        default:
+            todo++;
+            break;
+        }
+    }
+    if (error || !todo || optind < argc) {
+        *opt_error = 1;
+        goto done;
+    }
+    *opt_error = 0;
+
+    if (!addr)
+        addr = gpib_default_addr(name);
+    if (!addr) {
+        fprintf(stderr, "%s: no default address for %s, use --address\n", 
+                prog, name);
+        goto done;
+    }
+    gd = gpib_init(addr, sf, 0);
+    if (!gd) {
+        fprintf(stderr, "%s: device initialization failed for address %s\n", 
+                prog, addr);
+        goto done;
+    }
+    gpib_set_verbose(gd, verbose);
+done:
+    optind = 0;
+    return gd;
 }
 
 /* Verify/decode some 488.2 data formats.

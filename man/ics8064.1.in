@@ -6,12 +6,18 @@ ics8064 \- control ICS 8064 Ethernet-Relay Interface
 .B ics8064 [\fIOPTIONS\fR]
 .fi
 .SH DESCRIPTION
-\fBics8064\fR is used to configure and control
+\fBics8064\fR is used to control
 the ICS Electronics 8064 Ethernet-Relay Interface via its LAN interface.
+\fBics8064\fR performs actions in the order they appear on the command line.
+.PP
+Use
+.B "icsconfig(1)"
+to set the configuration.
 .SH OPTIONS
 .TP
 \fB\-a\fR, \fB\-\-address\fR address
 Override the default IP address in @X_SYSCONFDIR@/gpib-utils.conf.
+See gpib-utils.conf(5) for a description of address formats.
 .TP
 \fB\-c\fR, \fB\-\-clear\fR
 Clear instrument state.
@@ -42,68 +48,7 @@ Set radio button mode (max of one relay closed).
 \fB\-i\fR, \fB\-\-get-idn-string\fR
 Display the 8064 idn string, which contains the firmware revision,
 model number, etc..
-.TP
-\fB\-e\fR, \fB\-\-get-errlog\fR
-Get and display the decoded 8064 error log, which contains up to 100 entries.
-As a side effect, the error log is cleared.
-.TP
-\fB\-j\fR, \fB\-\-get-interface-name\fR
-Get the VXI-11 logical name.
-.TP
-\fB\-J\fR, \fB\-\-set-interface-name\fR name
-Set the VXI-11 logical name, e.g. "inst0".  The name must be no longer
-than 31 characters.
-.TP
-\fB\-t\fR, \fB\-\-get-comm-timeout\fR
-Get the TCP timeout, in seconds.
-.TP
-\fB\-T\fR, \fB\-\-set-comm-timeout\fR secs
-Set the TCP timeout.
-An inactive TCP channel will be left open this length of time before being
-closed.  A value of zero means no timeout checking.
-The timeout only applies to the core and configuration channel settings.
-.TP
-\fB\-s\fR, \fB\-\-get-static-ip-mode\fR
-Get the static IP mode setting (0=disabled, 1=enabled).
-.TP
-\fB\-S\fR, \fB\-\-set-static-ip-mode\fR 0|1
-Set the static IP mode setting (0=disabled, 1=enabled).
-If static IP mode is disabled, dynamic IP configuration is used.
-.TP
-\fB\-z\fR, \fB\-\-get-ip-number\fR
-Get the IP address.
-.TP
-\fB\-Z\fR, \fB\-\-set-ip-number\fR ip-address
-Set the IP address.  The IP address setting only applies in static IP mode.
-.TP
-\fB\-n\fR, \fB\-\-get-netmask\fR
-Get the IP netmask.
-.TP
-\fB\-N\fR, \fB\-\-set-netmask\fR ip-address
-Set the IP netmask.  The netmask setting only applies in static IP mode.
-.TP
-\fB\-g\fR, \fB\-\-get-gateway\fR
-Get the IP gateway.
-.TP
-\fB\-G\fR, \fB\-\-set-gateway\fR ip-address
-Set the IP gateway.  The gateway setting only applies in static IP mode.
-.TP
-\fB\-k\fR, \fB\-\-get-keepalive\fR
-Get the IP keepalive time.
-.TP
-\fB\-K\fR, \fB\-\-set-keepalive\fR time
-Set the IP keepalive time, in seconds.  The keepalive time is the period
-of inactivity after which a keepalive is set.  If set to zero, keepalives will 
-not be used.
-.TP
-\fB\-C\fR, \fB\-\-reload-config\fR
-Force a reload of the default configuration settings from nonvolatile RAM.
-.TP
-\fB\-c\fR, \fB\-\-commit-config\fR
-Save the current configuration settings to nonvolatile RAM.
-.TP
-\fB\-r\fR, \fB\-\-reboot\fR
-Reboot the 8064.  Upon reboot, configuration settings from nonvolatile 
-RAM will be used.
 .SH FILES
 @X_SYSCONFDIR@/gpib-utils.conf
+.SH SEE ALSO
+icsconfig(1)

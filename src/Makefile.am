@@ -20,6 +20,7 @@ common_sources = \
 
 bin_PROGRAMS = \
 	hp6632 \
+	hp6038 \
 	hp1630 \
 	hptopbm \
 	hptodino \
@@ -28,8 +29,8 @@ bin_PROGRAMS = \
 	hp8656 \
 	dg535 \
 	sr620 \
-	ics8065 \
 	ics8064 \
+        icsconfig \
 	a6032 \
 	a34401
 
@@ -41,10 +42,11 @@ hp3488_SOURCES = hp3488.c hp3488.h $(common_sources)
 hp8656_SOURCES = hp8656.c hp8656.h $(common_sources)
 dg535_SOURCES = dg535.c dg535.h $(common_sources)
 sr620_SOURCES = sr620.c sr620.h $(common_sources)
-ics8065_SOURCES = ics8065.c $(common_sources)
 ics8064_SOURCES = ics8064.c $(common_sources)
+icsconfig_SOURCES = icsconfig.c  $(common_sources)
 a6032_SOURCES = a6032.c $(common_sources)
 a34401_SOURCES = a34401.c $(common_sources)
 hp6632_SOURCES = hp6632.c  $(common_sources)
+hp6038_SOURCES = hp6038.c  $(common_sources)
 
 

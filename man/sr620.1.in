@@ -9,21 +9,13 @@ sr620 \- control SRS SR620 Universal Time Interval Counter
 .SH DESCRIPTION
 \fBsr620\fR controls the Stanford Research Systems, Inc. model SR620 
 universal time interval counter via its GPIB interface.
-.PP
-\fBsr620\fR performs actions selected on the command line in a fixed sequence:
-.IP
-.nf
-clear
-selftest
-autocal
-save/restore config
-graph commands
-local
+\fBsr620\fR performs actions in the order the appear on the command line.
 .SH "OPTIONS"
 \fBsr620\fR accepts the following command line options:
 .TP
 \fB\-a\fR, \fB\-\-address\fR address
 Override the default instrument address in @X_SYSCONFDIR@/gpib-utils.conf.
+See gpib-utils.conf(5) for a description of address formats.
 .TP
 \fB\-c\fR, \fB\-\-clear\fR
 Clear the instrument, and verify the instrument ID.
@@ -63,4 +55,6 @@ Enable the front panel.
 .SH FILES
 @X_SYSCONFDIR@/gpib-utils.conf
 .SH SEE ALSO
+gpib-utils.conf(5)
+.PP
 "Model SR620 Universal Time Interval Counter", revision 2.7, Feb. 2006.

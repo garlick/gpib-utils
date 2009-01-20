@@ -69,8 +69,14 @@
 
 #define SETUP_STR_SIZE  3000     /* 2617 actually */
 
+static void _usage(void);
+static int _interpret_status(gd_t gd, unsigned char status, char *msg);
+static int _get_idn(gd_t gd);
+static int _restore_setup(gd_t gd);
+static int _save_setup(gd_t gd);
+static int _selftest(gd_t gd);
+
 char *prog = "";
-static int verbose = 0;
 
 #define OPTIONS "a:clviSr:R:f:t:s:p:zZ"
 #if HAVE_GETOPT_LONG
@@ -96,52 +102,184 @@ static struct option longopts[] = {
 #define GETOPT(ac,av,opt,lopt) getopt(ac,av,opt)
 #endif
 
+int
+main(int argc, char *argv[])
+{
+    int samples = 0, showtime = 0, exit_val = 0;
+    double period = 0.0;
+    int need_fun = 0, have_fun = 0, print_usage = 0;
+    char range[16] = "DEF", resolution[16] = "DEF";
+    gd_t gd;
+    int c;
+
+    gd = gpib_init_args(argc, argv, OPTIONS, longopts, INSTRUMENT,
+                        _interpret_status, 0, &print_usage);
+    if (print_usage)
+        _usage();
+    if (!gd)
+        exit(1);
+
+    /* preparse args for range and resolution */
+    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
+        switch (c) {
+            case 'r': /* --range */
+                snprintf(range, sizeof(range), "%s", optarg);
+                need_fun++;
+                break;
+            case 'R': /* --resolution */
+                snprintf(resolution, sizeof(resolution), "%s", optarg);
+                need_fun++;
+                break;
+            case 'f': /* --function */
+                have_fun++;
+                break;
+        }
+    }
+    if (need_fun && !have_fun) {
+        fprintf(stderr, "%s: range/resolution require function\n", prog);
+        exit_val = 1;
+        goto done;
+    }
+
+    optind = 0;
+    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
+        switch (c) {
+            case 'a': /* -a and -v handled in gpib_init_args() */
+            case 'v': 
+            case 'r': /* -r and -R preparsed above */
+            case 'R':
+                break;
+            case 'c': /* --clear */
+                gpib_clr(gd, 0);
+                gpib_wrtf(gd, "*CLS");
+                gpib_wrtf(gd, "*RST");
+                sleep(1);
+                break;
+            case 'l': /* --local */
+                gpib_loc(gd); 
+                break;
+            case 'i': /* --get-idn */
+                if (_get_idn(gd) == -1)
+                    exit_val = 1;
+                break;
+            case 'S': /* --selftest */
+                if (_selftest(gd) == -1)
+                    exit_val = 1;
+                break;
+            case 'f': /* --function */
+                if (!strcmp(optarg, "dcv"))
+                    gpib_wrtf(gd, "CONF:VOLT:DC %s,%s", range, resolution);
+                else if (!strcmp(optarg, "acv"))
+                    gpib_wrtf(gd, "CONF:VOLT:AC %s,%s", range, resolution);
+                else if (!strcmp(optarg, "dci"))
+                    gpib_wrtf(gd, "CONF:CURR:DC %s,%s", range, resolution);
+                else if (!strcmp(optarg, "aci"))
+                    gpib_wrtf(gd, "CONF:CURR:AC %s,%s", range, resolution);
+                else if (!strcmp(optarg, "ohm") || !strcmp(optarg, "ohm2"))
+                    gpib_wrtf(gd, "CONF:RES %s,%s", range, resolution);
+                else if (!strcmp(optarg, "ohmf") || !strcmp(optarg, "ohm4"))
+                    gpib_wrtf(gd, "CONF:FRES %s,%s", range, resolution);
+                else if (!strcmp(optarg, "freq"))
+                    gpib_wrtf(gd, "CONF:FREQ %s,%s", range, resolution);
+                else if (!strcmp(optarg, "period"))
+                    gpib_wrtf(gd, "CONF:PER %s,%s", range, resolution);
+                else {
+                    fprintf(stderr, "%s: error parsing function arg\n", prog);
+                    exit_val = 1;
+                }
+                break;
+            case 't': /* --trigger */
+                if (!strcmp(optarg, "imm"))
+                    gpib_wrtf(gd, "%s", "TRIG:SOUR IMM");
+                else if (!strcmp(optarg, "ext"))
+                    gpib_wrtf(gd, "%s", "TRIG:SOUR EXT");
+                else if (!strcmp(optarg, "bus"))
+                    gpib_wrtf(gd, "%s", "TRIG:SOUR BUS");
+                else {
+                    fprintf(stderr, "%s: error parsing trigger arg\n", prog);
+                    exit_val = 1;
+                }
+                break;
+            case 's': /* --samples */
+                samples = strtoul(optarg, NULL, 10);
+                if (samples > 1)
+                    showtime = 1;
+                break;
+            case 'p': /* --period */
+                if (freqstr(optarg, &period) < 0) {
+                    fprintf(stderr, "%s: error parsing period argument\n", prog);
+                    fprintf(stderr, "%s: use units of: %s\n", prog, PERIOD_UNITS);
+                    exit_val = 1; 
+                    break;
+                }
+                period = 1.0/period;
+                break;
+            case 'z': /* --save-setup */
+                _save_setup(gd);
+                break;
+            case 'Z': /* --restore-setup */
+                _restore_setup(gd);
+                break;
+        }
+    }
+    if (exit_val != 0)
+        goto done;
+
+    if (samples > 0) {
+        char buf[64];
+        double t0, t1, t2;
+
+        t0 = 0;
+        while (samples-- > 0) {
+            t1 = gettime();
+            if (t0 == 0)
+                t0 = t1;
+
+            gpib_wrtf(gd, "%s", "READ?");
+            gpib_rdstr(gd, buf, sizeof(buf));
+            t2 = gettime();
+
+            if (showtime)
+                printf("%-3.3lf\t%s\n", (t1-t0), buf);
+            else
+                printf("%s\n", buf);
+            if (samples > 0 && period > 0)
+                sleep_sec(period - (t2-t1));
+        }
+    }
+
+done:
+    gpib_fini(gd);
+    exit(exit_val);
+}
+
 static void 
-usage(void)
+_usage(void)
 {
     char *addr = gpib_default_addr(INSTRUMENT);
 
     fprintf(stderr, 
 "Usage: %s [--options]\n"
-"  -a,--address                       set instrument address [%s]\n"
-"  -c,--clear                         initialize instrument to default values\n"
-"  -l,--local                         return instrument to local op on exit\n"
-"  -v,--verbose                       show protocol on stderr\n"
-"  -i,--get-idn                       return instrument idn string\n"
-"  -S,--selftest                      perform instrument self-test\n"
+"  -a,--address               set instrument address [%s]\n"
+"  -c,--clear                 initialize instrument to default values\n"
+"  -l,--local                 return instrument to local op on exit\n"
+"  -v,--verbose               show protocol on stderr\n"
+"  -i,--get-idn               return instrument idn string\n"
+"  -S,--selftest              perform instrument self-test\n"
 "  -f,--function dcv|acv|dci|aci|ohm2|ohm4|freq|period\n"
-"                                     select function [dcv]\n"
-"  -r,--range                         set range: range|MIN|MAX|DEF\n"
-"  -R,--resolution                    set resolution: resolution|MIN|MAX|DEF\n"
-"  -t,--trigger imm|ext|bus           select trigger mode\n"
-"  -s,--samples                       number of samples [0]\n"
-"  -p,--period                        sample period\n"
-"  -z,--save-setup                    save setup to stdout\n"
-"  -Z,--restore-setup                 restore setup from stdin\n"
+"                             select function [dcv]\n"
+"  -r,--range                 set range: range|MIN|MAX|DEF\n"
+"  -R,--resolution            set resolution: resolution|MIN|MAX|DEF\n"
+"  -t,--trigger imm|ext|bus   select trigger mode\n"
+"  -s,--samples               number of samples [0]\n"
+"  -p,--period                sample period\n"
+"  -z,--save-setup            save setup to stdout\n"
+"  -Z,--restore-setup         restore setup from stdin\n"
            , prog, addr ? addr : "no default");
     exit(1);
 }
 
-static double
-_gettime(void)
-{
-    struct timeval t;
-
-    if (gettimeofday(&t, NULL) < 0) {
-        perror("gettimeofday");
-        exit(1);
-    }
-    return ((double)t.tv_sec + (double)t.tv_usec / 1000000);
-}
-
-static void
-_sleep_sec(double sec)
-{
-    if (sec > 0)
-        usleep((unsigned long)(sec * 1000000.0));
-}
-
-
+#if 0
 static void
 _dump_error_queue(gd_t gd)
 {
@@ -157,6 +295,7 @@ _dump_error_queue(gd_t gd)
             fprintf(stderr, "%s: system error: %s\n", prog, endptr + 1);
     } while (err);
 }
+#endif
 
 static int
 _interpret_status(gd_t gd, unsigned char status, char *msg)
@@ -223,223 +362,24 @@ _get_idn(gd_t gd)
     return 0;
 }
 
-int
-main(int argc, char *argv[])
+static int
+_selftest(gd_t gd)
 {
-    gd_t gd;
-    char *addr = NULL;
-    int c;
-    int clear = 0;
-    int local = 0;
-    int todo = 0;
-    int exit_val = 0;
-    int get_idn = 0;
-    int selftest = 0;
-    int samples = 0;
-    double period = 0.0;
-    int showtime = 0;
-    char *fun = NULL;
-    char range[16] = "DEF";
-    char resolution[16] = "DEF";
-    int setrr = 0;
-    char *trig = NULL;
-    int save = 0;
-    int restore = 0;
+    char buf[64];
 
-    /*
-     * Handle options.
-     */
-    prog = basename(argv[0]);
-    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
-        switch (c) {
-        case 'a': /* --address */
-            addr = optarg;
-            break;
-        case 'c': /* --clear */
-            clear = 1;
-            todo++;
-            break;
-        case 'l': /* --local */
-            local = 1;
-            todo++;
-            break;
-        case 'v': /* --verbose */
-            verbose = 1;
-            break;
-        case 'i': /* --get-idn */
-            get_idn = 1;
-            todo++;
-            break;
-        case 'S': /* --selftest */
-            selftest = 1;
-            todo++;
-            break;
-        case 'r': /* --range */
-            snprintf(range, sizeof(range), "%s", optarg);
-            todo++;
-            setrr++;
-            break;
-        case 'R': /* --resolution */
-            snprintf(resolution, sizeof(resolution), "%s", optarg);
-            todo++;
-            setrr++;
-            break;
-        case 'f': /* --function */
-            if (!strcmp(optarg,      "dcv"))
-                fun = "CONF:VOLT:DC";
-            else if (!strcmp(optarg, "acv"))
-                fun = "CONF:VOLT:AC";
-            else if (!strcmp(optarg, "dci"))
-                fun = "CONF:CURR:DC";
-            else if (!strcmp(optarg, "aci"))
-                fun = "CONF:CURR:AC";
-            else if (!strcmp(optarg, "ohm2"))
-                fun = "CONF:RES";
-            else if (!strcmp(optarg, "ohm4"))
-                fun = "CONF:FRES";
-            else if (!strcmp(optarg, "freq"))
-                fun = "CONF:FREQ";
-            else if (!strcmp(optarg, "period"))
-                fun = "CONF:PER";
-            else
-                usage();
-            todo++;
-            break;
-        case 't': /* --trigger */
-            if (!strcmp(optarg, "imm")) {
-                trig = "TRIG:SOUR IMM";
-            } else if (!strcmp(optarg, "ext")) {
-                trig = "TRIG:SOUR EXT";
-            } else if (!strcmp(optarg, "bus")) {
-                trig = "TRIG:SOUR BUS";
-            } else
-                usage();
-            todo++;
-            break;
-        case 's': /* --samples */
-            samples = strtoul(optarg, NULL, 10);
-            if (samples > 1)
-                showtime = 1;
-            todo++;
-            break;
-        case 'p': /* --period */
-            if (freqstr(optarg, &period) < 0) {
-                fprintf(stderr, "%s: error parsing period argument\n", prog);
-                fprintf(stderr, "%s: use freq units: %s\n", prog, FREQ_UNITS);
-                fprintf(stderr, "%s: or period units: %s\n", prog,PERIOD_UNITS);
-                exit(1);
-            }
-            period = 1.0/period;
-            break;
-        case 'z': /* --save-setup */
-            save = 1;
-            todo++;
-            break;
-        case 'Z': /* --restore-setup */
-            restore = 1;
-            todo++;
-            break;
+    gpib_qry(gd, "*TST?", buf, sizeof(buf));
+    switch (strtoul(buf, NULL, 10)) {
+        case 0:
+            printf("self-test completed successfully\n");
+            return 0;
+        case 1:
+            printf("self-test failed\n");
+            return -1;
         default:
-            usage();
-            break;
-        }
+            printf("self-test returned unexpected response\n");
+            return -1;
     }
-    if (optind < argc || !todo)
-        usage();
-    if (setrr && !fun) {
-        fprintf(stderr, "%s: range/resolution require function\n", prog);
-        exit(1);
-    }
-    if (!addr)
-        addr = gpib_default_addr(INSTRUMENT);
-    if (!addr) {
-        fprintf(stderr, "%s: no default address for %s, use --address\n", 
-                prog, INSTRUMENT);
-        exit(1);
-    }
-    gd = gpib_init(addr, _interpret_status, 0);
-    if (!gd) {
-        fprintf(stderr, "%s: device initialization failed for address %s\n", 
-                prog, addr);
-        exit(1);
-    }
-    gpib_set_verbose(gd, verbose);
-
-    if (clear) {
-        gpib_clr(gd, 0);
-        gpib_wrtf(gd, "*CLS");
-        gpib_wrtf(gd, "*RST");
-        sleep(1);
-    }
-    if (get_idn) {
-        if (_get_idn(gd) == -1) {
-            exit_val = 1;
-            goto done;
-        }
-    }
-    if (selftest) {
-        char buf[64];
-
-        gpib_qry(gd, "*TST?", buf, sizeof(buf));
-        switch (strtoul(buf, NULL, 10)) {
-            case 0:
-                fprintf(stderr, "%s: self-test completed successfully\n", prog);
-                break;
-            case 1:
-                fprintf(stderr, "%s: self-test failed\n", prog);
-                break;
-            default:
-                fprintf(stderr, "%s: self-test returned unexpected response\n",
-                        prog);
-                break;
-        }
-    }
-
-    if (save) {
-        _save_setup(gd);
-    }
-    if (restore) {
-        _restore_setup(gd);
-    }
-
-    if (fun) {
-        gpib_wrtf(gd, "%s %s,%s", fun, range, resolution);
-    }
-
-    if (trig) {
-        gpib_wrtf(gd, "%s", trig);
-    }
-
-    if (samples > 0) {
-        char buf[64];
-        double t0, t1, t2;
-
-        t0 = 0;
-        while (samples-- > 0) {
-            t1 = _gettime();
-            if (t0 == 0)
-                t0 = t1;
-
-            gpib_wrtf(gd, "%s", "READ?");
-            gpib_rdstr(gd, buf, sizeof(buf));
-            t2 = _gettime();
-
-            if (showtime)
-                printf("%-3.3lf\t%s\n", (t1-t0), buf);
-            else
-                printf("%s\n", buf);
-            if (samples > 0 && period > 0)
-                _sleep_sec(period - (t2-t1));
-        }
-    }
-
-    if (local) {
-        gpib_loc(gd); 
-    }
-
-done:
-    gpib_fini(gd);
-    exit(exit_val);
+    /*NOTREACHED*/
 }
 
 /*

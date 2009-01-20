@@ -6,11 +6,12 @@ man1_MANS = \
 	hp3457.1 \
 	hp3488.1 \
 	hp6632.1 \
+	hp6038.1 \
 	hp8656.1 \
 	hptodino.1 \
 	hptopbm.1 \
 	ics8064.1 \
-	ics8065.1 \
+        icsconfig.1 \
 	sr620.1
 
 man5_MANS = \
@@ -24,9 +25,10 @@ EXTRA_DIST = \
 	hp3457.1 \
 	hp3488.1 \
 	hp6632.1 \
+	hp6038.1 \
 	hp8656.1 \
 	hptodino.1 \
 	hptopbm.1 \
 	ics8064.1 \
-	ics8065.1 \
+        icsconfig.1 \
 	sr620.1
