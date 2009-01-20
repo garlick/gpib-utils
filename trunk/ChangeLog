@@ -1,5 +1,7 @@
 2009-01-19 Jim Garlick <garlick.jim@gmail.com>
 
+	* : tag gpib-utils-1.4
+
 	* src/gpib.c : Incomplete serial implementation.
 	Restructure code for multiple connected methods.
 
