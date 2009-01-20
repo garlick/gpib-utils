@@ -1,0 +1,43 @@
+=========================================================================
+gpib-utils-1.4 Release Notes                                   2009-01-19 
+=========================================================================
+
+* Added support for new devices:
+  - ics8064:  ICS Electronics 8064 Ethernet to Relay interface
+  - a34401:   Agilent 34401A/34410A/34411A DMM.
+  - hp6632:   Hewlett-Packard 6632A/6633A/6634A System DC Power Supply
+  - hp6038:   Hewlett-Packard 603xA System DC Power Supply
+
+* Handle non-zero GPIB board index and secondary GPIB addresses.
+
+* Changed ics8065 utility to more general purpose icsconfig utility.
+
+* Added automake/autoconf infrastructure so gpib-utils compiles with and
+  without linux-gpib.
+
+* Refactored ICS, VXI-11, and LSD code into (non-installed) libraries.
+
+=========================================================================
+gpib-utils-1.3 Release Notes                                   2007-11-23 
+=========================================================================
+
+* VXI-11 support for devices behind a Ethernet-GPIB gateway such as
+  ICS 8065, or with built-in Ethernet ports such as the Agilent 6000 
+  series oscilloscopes.
+
+* Added config file: /etc/gpib-utils.conf.  Place device addresses here
+  and overridde with -a option on command line.  If linux-gpib is used,
+  /etc/gpib.conf need only contain bus master device information.
+
+* Added support for new devices:
+  - a6032 Agilent 6000-series oscilloscopes
+  - dg535 Stanford Research Systems DG535 digital delay/pulse generator 
+  - sr620 Stanford Research Systems SR620 Universal Time Interval Counter
+  - ics8065 ICS Electroncs 8065 Ethernet-GPIB Controller
+  - hp3488 Hewlett-Packard 3488A Switch/Control Unit
+
+* Removed support for old instruments that I no longer have access to
+  and which I know of nobody using:
+  - r5005 Racal Dana model 5005 DMM
+  - hp3455 Hewlett-Packard 3455A DMM
+  - tek2230 Tektronix 2230 oscilloscope (never really working)

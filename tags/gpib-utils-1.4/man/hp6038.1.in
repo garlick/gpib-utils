@@ -1,0 +1,61 @@
+.TH hp6038 1 "@META_DATE@" "@META_ALIAS@" "@META_NAME@"
+.SH NAME
+hp6038 \- control HP 603xA power supplies
+.SH SYNOPSIS
+.nf
+.B hp6038 [\fIOPTIONS\fR]
+.fi
+.SH DESCRIPTION
+\fBhp6038\fR controls the HP/Agilent 603xA power supply via its 
+GPIB interface.
+\fBhp6038\fR performs actions in the order they appear on the command line.
+.SH OPTIONS
+\fBhp6038\fR accepts the following command line options:
+.TP
+\fB\-a\fR, \fB\-\-address\fR address
+Override the default instrument address in @X_SYSCONFDIR@/gpib-utils.conf.
+See gpib-utils.conf(5) for a description of address formats.
+.TP
+\fB\-c\fR, \fB\-\-clear\fR
+Clear the instrument to its power-on state, disables its output,
+and clears any foldback condition.
+.TP
+\fB\-l\fR, \fB\-\-local\fR
+Enable the front panel.
+.TP
+\fB\-i\fR, \fB\-\-get-idn\fR 
+Print instrument model.
+.TP
+\fB\-S\fR, \fB\-\-selftest\fR 
+Run instrument selftest.
+.TP
+\fB\-I\fR, \fB\-\-iset\fR float
+Set current in amps.
+.TP
+\fB\-V\fR, \fB\-\-vset\fR float
+Set voltage in volts.
+.TP
+\fB\-o\fR, \fB\-\-out\fR 0|1
+Enable/disable output.
+.TP
+\fB\-F\fR, \fB\-\-foldback\fR off|cv|cc
+Enables or disables foldback protection which will disable power supply 
+output if power supply switches to whatever mode, CV or CC, is defined
+as the fold (error) condition [Default off].
+Use the \fB\-\-clear\fR option to clear a foldback condition.
+.TP
+\fB\-s\fR, \fB\-\-samples\fR number
+Select number of current and voltage samples to take [Default 0].
+.TP
+\fB\-p\fR, \fB\-\-period\fR period
+Set sample period [Default 0s].
+.SH FILES
+@X_SYSCONFDIR@/gpib-utils.conf
+.SH "SEE ALSO"
+gpib-utils.conf(5)
+.PP
+"Operating Manual, Agilent 603xA Family Autoranging System DC 
+Power Supplies", Sept. 2004.
+.PP
+"Service Manual, Autoranging System DC Power Supply, Agilent Models 
+6033A and 6038A", Sept. 2000.
