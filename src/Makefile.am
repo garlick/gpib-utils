@@ -34,14 +34,14 @@ bin_PROGRAMS = \
 	a6032 \
 	a34401
 
-hp1630_SOURCES = hp1630.c hp1630.h $(common_sources)
+hp1630_SOURCES = hp1630.c $(common_sources)
 hptopbm_SOURCES =  hptopbm.c $(common_sources)
 hptodino_SOURCES =  hptodino.c $(common_sources)
-hp3457_SOURCES = hp3457.c hp3457.h $(common_sources)
-hp3488_SOURCES = hp3488.c hp3488.h $(common_sources)
-hp8656_SOURCES = hp8656.c hp8656.h $(common_sources)
-dg535_SOURCES = dg535.c dg535.h $(common_sources)
-sr620_SOURCES = sr620.c sr620.h $(common_sources)
+hp3457_SOURCES = hp3457.c $(common_sources)
+hp3488_SOURCES = hp3488.c $(common_sources)
+hp8656_SOURCES = hp8656.c $(common_sources)
+dg535_SOURCES = dg535.c $(common_sources)
+sr620_SOURCES = sr620.c $(common_sources)
 ics8064_SOURCES = ics8064.c $(common_sources)
 icsconfig_SOURCES = icsconfig.c  $(common_sources)
 a6032_SOURCES = a6032.c $(common_sources)
