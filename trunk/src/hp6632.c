@@ -172,7 +172,7 @@ main(int argc, char *argv[])
         case 'v':
             break;
         case 'c': /* --clear */
-            gpib_clr(gd, 0); /* same as 'CLR' command */
+            gpib_clr(gd, 1000000); /* same as 'CLR' command */
             gpib_wrtf(gd, "OUT 0;RST\n");
             sleep(1);
             break;

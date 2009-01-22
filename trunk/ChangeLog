@@ -1,3 +1,9 @@
+2009-01-22 Jim Garlick <garlick.jim@gmail.com>
+
+	* src/gpib.c : Handle board:pad addressing case.
+
+	* src/hp6038.c, src/hp6626.c, src/hp6632.c : Add delay to gpib_clr().
+
 2009-01-21 Jim Garlick <garlick.jim@gmail.com>
 
 	* man/hp6626.1.in : New.

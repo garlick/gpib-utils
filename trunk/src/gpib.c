@@ -501,7 +501,7 @@ gpib_rsp(gd_t gd, unsigned char *status)
         case GPIB:
 #if HAVE_LINUX_GPIB
             ibrsp(gd->d, (char *)status); /* NOTE: modifies ibcnt */
-            if (ibsta & ERR) {
+            if ((ibsta & ERR)) {
                 fprintf(stderr, "%s: ibrsp error %d\n", prog, iberr);
                 gpib_fini(gd);
                 exit(1);
@@ -932,6 +932,8 @@ gpib_init(char *addr, spollfun_t sf, unsigned long retry)
     cpy = xstrdup(addr);
     if (sscanf(addr, "%d:%d,%d", &board, &pad, &sad) == 3)
         gd = _init_gpib(board, pad, 0x60+sad, sf, retry);/* board:pad,sad */
+    if (sscanf(addr, "%d:%d", &board, &pad) == 2)
+        gd = _init_gpib(board, pad, 0, sf, retry);       /* board:pad */
     else if (sscanf(addr, "%d,%d", &pad, &sad) == 2)
         gd = _init_gpib(0,pad, 0x60+sad, sf, retry);     /* pad,sad */
     else if (sscanf(addr, "%d", &pad) == 1)
