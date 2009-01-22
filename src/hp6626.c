@@ -174,8 +174,9 @@ main(int argc, char *argv[])
             case 'v':
                 break;
             case 'c': /* --clear */
-                gpib_clr(gd, 0);
+                gpib_clr(gd, 1000000);
                 gpib_wrtf(gd, "OUT 1,0; OUT 2,0; OUT 3,0; OUT 4,0; CLR\n");
+                sleep(1);
                 break;
             case 'l': /* --local */
                 gpib_loc(gd); 
@@ -188,7 +189,7 @@ main(int argc, char *argv[])
             case 'S': /* --selftest */
                 gpib_wrtstr(gd, "TEST?\n");
                 gpib_rdstr(gd, tmpstr, sizeof(tmpstr));
-                if (sscanf(tmpstr, "TEST %d", &rc) == 1)
+                if (sscanf(tmpstr, "%d", &rc) == 1)
                     printf("self-test: %s\n", findstr(sttab ,rc));
                 else
                     printf("self-test: %s\n", tmpstr);
