@@ -5658,7 +5658,7 @@ _ACEOF
 ##
 # Epilogue
 ##
-ac_config_files="$ac_config_files Makefile libvxi11/Makefile libics/Makefile liblsd/Makefile src/Makefile man/Makefile man/a34401.1 man/a6032.1 man/dg535.1 man/hp1630.1 man/hp3457.1 man/hp3488.1 man/hp6632.1 man/hp6038.1 man/hp8656.1 man/hptodino.1 man/hptopbm.1 man/ics8064.1 man/icsconfig.1 man/sr620.1 man/gpib-utils.conf.5"
+ac_config_files="$ac_config_files Makefile libvxi11/Makefile libics/Makefile liblsd/Makefile src/Makefile man/Makefile man/a34401.1 man/a6032.1 man/dg535.1 man/hp1630.1 man/hp3457.1 man/hp3488.1 man/hp6632.1 man/hp6626.1 man/hp6038.1 man/hp8656.1 man/hptodino.1 man/hptopbm.1 man/ics8064.1 man/icsconfig.1 man/sr620.1 man/gpib-utils.conf.5"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -6259,6 +6259,7 @@ do
     "man/hp3457.1") CONFIG_FILES="$CONFIG_FILES man/hp3457.1" ;;
     "man/hp3488.1") CONFIG_FILES="$CONFIG_FILES man/hp3488.1" ;;
     "man/hp6632.1") CONFIG_FILES="$CONFIG_FILES man/hp6632.1" ;;
+    "man/hp6626.1") CONFIG_FILES="$CONFIG_FILES man/hp6626.1" ;;
     "man/hp6038.1") CONFIG_FILES="$CONFIG_FILES man/hp6038.1" ;;
     "man/hp8656.1") CONFIG_FILES="$CONFIG_FILES man/hp8656.1" ;;
     "man/hptodino.1") CONFIG_FILES="$CONFIG_FILES man/hptodino.1" ;;

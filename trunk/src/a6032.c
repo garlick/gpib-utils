@@ -49,24 +49,24 @@
 
 /* Status byte values
  */
-#define A6032_STAT_OPER	128	/* an enabled condition in OPER has occurred */
-#define A6032_STAT_RQS  32	/* device is requesting service */
-#define A6032_STAT_ESB  16	/* an enabled condition in ESR has occurred */
-#define A6032_STAT_MAV	8	/* message(s) available in the output queue */
-#define A6032_STAT_MSG	4	/* advisory has been displayed on the scope */
-#define A6032_STAT_USR	2	/* an enabled user event has occurred */
-#define A6032_STAT_TRG	1	/* trigger has occurred */
+#define A6032_STAT_OPER    128    /* an enabled condition in OPER has occurred */
+#define A6032_STAT_RQS  32    /* device is requesting service */
+#define A6032_STAT_ESB  16    /* an enabled condition in ESR has occurred */
+#define A6032_STAT_MAV    8    /* message(s) available in the output queue */
+#define A6032_STAT_MSG    4    /* advisory has been displayed on the scope */
+#define A6032_STAT_USR    2    /* an enabled user event has occurred */
+#define A6032_STAT_TRG    1    /* trigger has occurred */
 
 /* Event status register values
  */
-#define A6032_ESR_PON	128	/* power on */
-#define A6032_ESR_URQ	64	/* user request */
-#define A6032_ESR_CME	32	/* command error */
-#define A6032_ESR_EXE	16	/* execution error */
-#define A6032_ESR_DDE	8	/* device dependent error */
-#define A6032_ESR_QYE	4	/* query error */
-#define A6032_ESR_RQL	2	/* request control */
-#define A6032_ESR_OPC	1	/* operation complete */
+#define A6032_ESR_PON    128    /* power on */
+#define A6032_ESR_URQ    64    /* user request */
+#define A6032_ESR_CME    32    /* command error */
+#define A6032_ESR_EXE    16    /* execution error */
+#define A6032_ESR_DDE    8    /* device dependent error */
+#define A6032_ESR_QYE    4    /* query error */
+#define A6032_ESR_RQL    2    /* request control */
+#define A6032_ESR_OPC    1    /* operation complete */
 
 static void _usage(void);
 static int _print_screen(gd_t gd, char *fmt, char *palette);
@@ -306,7 +306,7 @@ _interpret_status(gd_t gd, unsigned char status, char *msg)
 static int
 _getunixdate(char *datestr, int len)
 {
-	FILE *pipe;
+    FILE *pipe;
     char cmd[80];
 
     if (snprintf(cmd, sizeof(cmd), "%s +'%%Y,%%m,%%d-%%H,%%M,%%S'", 
@@ -314,17 +314,17 @@ _getunixdate(char *datestr, int len)
         fprintf(stderr, "%s: out of memory", prog);
         return -1;
     }
-	if (!(pipe = popen(cmd, "r"))) {
-		perror("popen");
-		return -1;
-	}
-	if (fscanf(pipe, "%s", datestr) != 2)
-		return -1;
+    if (!(pipe = popen(cmd, "r"))) {
+        perror("popen");
+        return -1;
+    }
+    if (fscanf(pipe, "%s", datestr) != 2)
+        return -1;
     assert(strlen(datestr) < len);
-	if (pclose(pipe) < 0) {
-		perror("pclose");
-		return -1;
-	}
+    if (pclose(pipe) < 0) {
+        perror("pclose");
+        return -1;
+    }
     return 0;
 }
 
@@ -430,7 +430,6 @@ fail:
     free(buf);
     return -1;
 }
-
 
 /*
  * vi:tabstop=4 shiftwidth=4 expandtab

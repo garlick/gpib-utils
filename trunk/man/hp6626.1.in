@@ -1,0 +1,57 @@
+.TH hp6626 1 "@META_DATE@" "@META_ALIAS@" "@META_NAME@"
+.SH NAME
+hp6626 \- control HP 6625A/6626A/6628A/6629A power supplies
+.SH SYNOPSIS
+.nf
+.B hp6626 [\fIOPTIONS\fR]
+.fi
+.SH DESCRIPTION
+\fBhp6626\fR controls the HP 6625A/6626A/6628A/6629A multiple output
+power supply via its GPIB interface.
+\fBhp6626\fR performs actions in the order they appear on the command line.
+.SH OPTIONS
+\fBhp6626\fR accepts the following command line options:
+.TP
+\fB\-a\fR, \fB\-\-address\fR address
+Override the default instrument address in @X_SYSCONFDIR@/gpib-utils.conf.
+See gpib-utils.conf(5) for a description of address formats.
+.TP
+\fB\-c\fR, \fB\-\-clear\fR
+Clear the instrument to its power-on state, disables its output,
+and clears any OVP or OCP condition.
+.TP
+\fB\-l\fR, \fB\-\-local\fR
+Enable the front panel.
+.TP
+\fB\-i\fR, \fB\-\-get-idn\fR 
+Print instrument model.
+.TP
+\fB\-S\fR, \fB\-\-selftest\fR 
+Run instrument selftest.
+.TP
+\fB\-O\fR, \fB\-\-out-chan\fR \fI[1-4]\fR
+Select an output channel.
+.TP
+\fB\-I\fR, \fB\-\-iset\fR float
+Set current in amps for the selected channel.
+.TP
+\fB\-V\fR, \fB\-\-vset\fR float
+Set voltage in volts for the selected channel.
+.TP
+\fB\-o\fR, \fB\-\-out\-enable\fR 0|1
+Enable/disable output for the selected channel.
+.TP
+\fB\-s\fR, \fB\-\-samples\fR number
+Select number of current and voltage samples to take [Default 0].
+Output is in the format ``time V1 A1 V2 A2 V3 A3 V4 A4'' with all fields
+separated by tabs.  The time is omitted if only one sample is requested.
+.TP
+\fB\-p\fR, \fB\-\-period\fR period
+Set sample period [Default 0s].
+.SH FILES
+@X_SYSCONFDIR@/gpib-utils.conf
+.SH "SEE ALSO"
+gpib-utils.conf(5)
+.PP
+"Operating Manual Multiple Output Linear System DC Power Supply
+Agilent Models 6625A, 6626A, 6628A, and 6629A", Sept. 2004.
