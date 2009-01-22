@@ -1,3 +1,9 @@
+2009-01-21 Jim Garlick <garlick.jim@gmail.com>
+
+	* man/hp6626.1.in : New.
+
+	* src/hp6626.c : New.
+
 2009-01-19 Jim Garlick <garlick.jim@gmail.com>
 
 	* : tag gpib-utils-1.4

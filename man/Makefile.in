@@ -38,10 +38,10 @@ DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(srcdir)/dg535.1.in $(srcdir)/gpib-utils.conf.5.in \
 	$(srcdir)/hp1630.1.in $(srcdir)/hp3457.1.in \
 	$(srcdir)/hp3488.1.in $(srcdir)/hp6038.1.in \
-	$(srcdir)/hp6632.1.in $(srcdir)/hp8656.1.in \
-	$(srcdir)/hptodino.1.in $(srcdir)/hptopbm.1.in \
-	$(srcdir)/ics8064.1.in $(srcdir)/icsconfig.1.in \
-	$(srcdir)/sr620.1.in
+	$(srcdir)/hp6626.1.in $(srcdir)/hp6632.1.in \
+	$(srcdir)/hp8656.1.in $(srcdir)/hptodino.1.in \
+	$(srcdir)/hptopbm.1.in $(srcdir)/ics8064.1.in \
+	$(srcdir)/icsconfig.1.in $(srcdir)/sr620.1.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/ac_linux_gpib.m4 \
 	$(top_srcdir)/config/x_ac_expand_install_dirs.m4 \
@@ -51,8 +51,8 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config/config.h
 CONFIG_CLEAN_FILES = a34401.1 a6032.1 dg535.1 hp1630.1 hp3457.1 \
-	hp3488.1 hp6632.1 hp6038.1 hp8656.1 hptodino.1 hptopbm.1 \
-	ics8064.1 icsconfig.1 sr620.1 gpib-utils.conf.5
+	hp3488.1 hp6632.1 hp6626.1 hp6038.1 hp8656.1 hptodino.1 \
+	hptopbm.1 ics8064.1 icsconfig.1 sr620.1 gpib-utils.conf.5
 SOURCES =
 DIST_SOURCES =
 man1dir = $(mandir)/man1
@@ -195,6 +195,7 @@ man1_MANS = \
 	hp3457.1 \
 	hp3488.1 \
 	hp6632.1 \
+	hp6626.1 \
 	hp6038.1 \
 	hp8656.1 \
 	hptodino.1 \
@@ -214,6 +215,7 @@ EXTRA_DIST = \
 	hp3457.1 \
 	hp3488.1 \
 	hp6632.1 \
+	hp6626.1 \
 	hp6038.1 \
 	hp8656.1 \
 	hptodino.1 \
@@ -267,6 +269,8 @@ hp3457.1: $(top_builddir)/config.status $(srcdir)/hp3457.1.in
 hp3488.1: $(top_builddir)/config.status $(srcdir)/hp3488.1.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 hp6632.1: $(top_builddir)/config.status $(srcdir)/hp6632.1.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+hp6626.1: $(top_builddir)/config.status $(srcdir)/hp6626.1.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 hp6038.1: $(top_builddir)/config.status $(srcdir)/hp6038.1.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
