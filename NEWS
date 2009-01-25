@@ -1,12 +1,13 @@
 =========================================================================
-gpib-utils-1.4 Release Notes                                   2009-01-19 
+gpib-utils-1.4 Release Notes                                   2009-01-24 
 =========================================================================
 
 * Added support for new devices:
   - ics8064:  ICS Electronics 8064 Ethernet to Relay interface
   - a34401:   Agilent 34401A/34410A/34411A DMM.
-  - hp6632:   Hewlett-Packard 6632A/6633A/6634A System DC Power Supply
   - hp6038:   Hewlett-Packard 603xA System DC Power Supply
+  - hp6626:   Hewlett-Packard 6625A/6626A/6628A/6629A System DC Power Supply
+  - hp6632:   Hewlett-Packard 6632A/6633A/6634A System DC Power Supply
 
 * Handle non-zero GPIB board index and secondary GPIB addresses.
 
