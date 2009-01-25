@@ -23,13 +23,13 @@ and clears any OVP or OCP condition.
 \fB\-l\fR, \fB\-\-local\fR
 Enable the front panel.
 .TP
-\fB\-i\fR, \fB\-\-get-idn\fR 
+\fB\-i\fR, \fB\-\-get\-idn\fR 
 Print instrument model.
 .TP
 \fB\-S\fR, \fB\-\-selftest\fR 
 Run instrument selftest.
 .TP
-\fB\-O\fR, \fB\-\-out-chan\fR \fI[1-4]\fR
+\fB\-n\fR, \fB\-\-out-chan\fR \fI[1-4]\fR
 Select an output channel.
 .TP
 \fB\-I\fR, \fB\-\-iset\fR float
@@ -38,8 +38,31 @@ Set current in amps for the selected channel.
 \fB\-V\fR, \fB\-\-vset\fR float
 Set voltage in volts for the selected channel.
 .TP
+\fB\-R\fR, \fB\-\-irange\fR float
+Set current range in amps for the selected channel.
+.TP
+\fB\-r\fR, \fB\-\-vrange\fR float
+Set voltage range in volts for the selected channel.
+.TP
 \fB\-o\fR, \fB\-\-out\-enable\fR 0|1
 Enable/disable output for the selected channel.
+.TP
+\fB\-O\fR, \fB\-\-ovset\fR float
+Set the overvoltage threshold in volts for the selected channel.
+The programmable OV is a protection feature which can be set by the 
+operator to protect the load against excessive voltage.  When the actual 
+voltage exceeds the programmed overvoltage setting for a given output 
+channel, the OV is tripped. The OV circuit will fire the SCR crowbar 
+which shorts across the output and the output assumes a low impedance state.
+Use the \-\-clear option to reset the instrument after tripping the OV.
+.TP
+\fB\-C\fR, \fB\-\-ocp\fR 0|1
+Set over-current protection off or on for the selected channel.
+The OCP is a protection feature employed by the power supply to guard 
+against excessive output currents. When the output enters the + CC mode 
+and the OCP is enabled, the OCP circuit down programs the output voltage 
+and disables the output. 
+Use the \-\-clear option to reset the instrument after tripping the OCP.
 .TP
 \fB\-s\fR, \fB\-\-samples\fR number
 Select number of current and voltage samples to take [Default 0].

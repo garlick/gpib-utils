@@ -102,7 +102,7 @@ static int _readiv(gd_t gd, double *ip, double *vp);
 
 char *prog = "";
 
-#define OPTIONS "a:clviSI:V:o:s:p:O:"
+#define OPTIONS "a:clviSI:V:o:s:p:n:r:R:O:C:"
 #if HAVE_GETOPT_LONG
 #define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
 static struct option longopts[] = {
@@ -117,7 +117,11 @@ static struct option longopts[] = {
     {"out-enable",      required_argument, 0, 'o'},
     {"samples",         required_argument, 0, 's'},
     {"period",          required_argument, 0, 'p'},
-    {"out-chan",        required_argument, 0, 'O'},
+    {"out-chan",        required_argument, 0, 'n'},
+    {"vrange",          required_argument, 0, 'r'},
+    {"irange",          required_argument, 0, 'R'},
+    {"ovset",           required_argument, 0, 'O'},
+    {"ocp",             required_argument, 0, 'C'},
     {0, 0, 0, 0},
 };
 #else
@@ -128,7 +132,7 @@ int
 main(int argc, char *argv[])
 {
     gd_t gd;
-    int rc, c, print_usage = 0;
+    int i, rc, c, print_usage = 0;
     int exit_val = 0;
     char tmpstr[64];
     int samples = 0;
@@ -151,7 +155,7 @@ main(int argc, char *argv[])
             case 'o':
                 need_output = 1;
                 break;
-            case 'O':
+            case 'n':
                 output = optarg;
                 break;
         }
@@ -175,7 +179,9 @@ main(int argc, char *argv[])
                 break;
             case 'c': /* --clear */
                 gpib_clr(gd, 1000000);
-                gpib_wrtf(gd, "OUT 1,0; OUT 2,0; OUT 3,0; OUT 4,0; CLR\n");
+		for (i = 1; i <= 4; i++)
+                    gpib_wrtf(gd, "OUT %d,0;OVRST %d;OCRST %d\n", i, i, i);
+		gpib_wrtf(gd, "CLR\n");
                 sleep(1);
                 break;
             case 'l': /* --local */
@@ -202,6 +208,18 @@ main(int argc, char *argv[])
                 break;
             case 'o': /* --out-enable */
                 gpib_wrtf(gd, "OUT %s,%s\n", output, optarg);
+                break;
+            case 'r': /* --vrset */
+                gpib_wrtf(gd, "VRSET %s,%s\n", output, optarg);
+                break;
+            case 'R': /* --irset */
+                gpib_wrtf(gd, "IRSET %s,%s\n", output, optarg);
+                break;
+            case 'O': /* --ovset */
+                gpib_wrtf(gd, "OVSET %s,%s\n", output, optarg);
+                break;
+            case 'C': /* --ocp */
+                gpib_wrtf(gd, "OCP %s,%s\n", output, optarg);
                 break;
             case 's': /* --samples */
                 samples = strtoul(optarg, NULL, 10);
@@ -262,10 +280,14 @@ _usage(void)
 "  -v,--verbose            show protocol on stderr\n"
 "  -i,--get-idn            print instrument model\n"
 "  -S,--selftest           run selftest\n"
-"  -O,--out-chan           select output channel (1-4)\n"
+"  -n,--out-chan           select output channel (1-4)\n"
 "  -I,--iset               set current for selected output channel\n"
 "  -V,--vset               set voltage for selected output channel\n"
+"  -R,--irange             set current range for selected output channel\n"
+"  -r,--vrange             set voltage range for selected output channel\n"
 "  -o,--out-enable         enable/disable selected output channel (0|1)\n"
+"  -O,--ovset              set overvoltage threshold\n"
+"  -C,--ocp                enable/disable overcurrent protection (0|1)\n"
 "  -s,--samples            number of samples [default: 0]\n"
 "  -p,--period             sample period\n"
            , prog, addr ? addr : "no default");

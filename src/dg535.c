@@ -131,7 +131,7 @@ static strtab_t polarity[] = {
     { 0, NULL },
 };
 
-#define OPTIONS "a:clve:o:dD:qQ:gG:fF:pP:yY:tT:mM:sS:bB:zZ:D:x"
+#define OPTIONS "a:clve:n:dD:qQ:gG:fF:pP:yY:tT:mM:sS:bB:zZ:D:x"
 #if HAVE_GETOPT_LONG
 #define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
 static struct option longopts[] = {
@@ -141,7 +141,7 @@ static struct option longopts[] = {
     {"verbose",         no_argument,       0, 'v'},
     {"display-string",  required_argument, 0, 'e'},
     {"single-shot",     no_argument,       0, 'x'},
-    {"out-chan",        required_argument, 0, 'o'},
+    {"out-chan",        required_argument, 0, 'n'},
     {"get-delay",       no_argument,       0, 'd'},
     {"set-delay",       required_argument, 0, 'D'},
     {"get-out-mode",    no_argument,       0, 'q'},
@@ -190,7 +190,7 @@ main(int argc, char *argv[])
     /* preparse args to get output channel */
     while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
         switch (c) {
-            case 'o': /* --out-chan */
+            case 'n': /* --out-chan */
                 out_chan = rfindstr(out_names, optarg);
                 if (out_chan == -1) {
                     fprintf(stderr, "%s: bad --out-chan argument\n", prog);
@@ -404,7 +404,7 @@ _usage(void)
 "  -v,--verbose                show protocol on stderr\n"
 "  -e,--display-string         display string (1-20 chars), empty to clear\n"
 "  -x,--single-shot            trigger instrument in single shot mode\n"
-"  -o,--out-chan               select output channel (t0|a|b|ab|c|d|cd)\n"
+"  -n,--out-chan               select output channel (t0|a|b|ab|c|d|cd)\n"
 "  -dD,--get/set-delay         output delay (another-chan,delay)\n"
 "  -qQ,--get/set-out-mode      output mode (ttl|nim|ecl|var)\n"
 "  -gG,--get/set-out-ampl      output amplitude (-4:-0.1, +0.1:+4) volts\n"

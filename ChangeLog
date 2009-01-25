@@ -1,3 +1,7 @@
+2009-01-24 Jim Garlick <garlick.jim@gmail.com>
+
+	* src/hp6626.c : Added over-voltage, over-current proection.
+
 2009-01-22 Jim Garlick <garlick.jim@gmail.com>
 
 	* src/gpib.c : Handle board:pad addressing case.
@@ -11,8 +15,6 @@
 	* src/hp6626.c : New.
 
 2009-01-19 Jim Garlick <garlick.jim@gmail.com>
-
-	* : tag gpib-utils-1.4
 
 	* src/gpib.c : Incomplete serial implementation.
 	Restructure code for multiple connected methods.
