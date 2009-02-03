@@ -1,0 +1,54 @@
+.TH ics8064 1 "@META_DATE@" "@META_ALIAS@" "@META_NAME@"
+.SH NAME
+ics8064 \- control ICS 8064 Ethernet-Relay Interface  
+.SH SYNOPSIS
+.nf
+.B ics8064 [\fIOPTIONS\fR]
+.fi
+.SH DESCRIPTION
+\fBics8064\fR is used to control
+the ICS Electronics 8064 Ethernet-Relay Interface via its LAN interface.
+\fBics8064\fR performs actions in the order they appear on the command line.
+.PP
+Use
+.B "icsconfig(1)"
+to set the configuration.
+.SH OPTIONS
+.TP
+\fB\-a\fR, \fB\-\-address\fR address
+Override the default IP address in @X_SYSCONFDIR@/gpib-utils.conf.
+See gpib-utils.conf(5) for a description of address formats.
+.TP
+\fB\-c\fR, \fB\-\-clear\fR
+Clear instrument state.
+.TP
+\fB\-o\fR, \fB\-\-open\fR relay(s)
+Open the specified relays.  Relays are numbered 1-16.  
+You may use commas and hyphenated ranges to specify multiple relays.
+.TP
+\fB\-c\fR, \fB\-\-close\fR relay(s)
+Close the specified relays. Relays are numbered 1-16.
+You may use commas and hyphenated ranges to specify multiple relays.
+.TP
+\fB\-q\fR, \fB\-\-query\fR
+Query the state of all relays.
+.TP
+\fB\-Q\fR, \fB\-\-query-digital\fR
+Query the state of digital inputs.
+.TP
+\fB\-I\fR, \fB\-\-shell\fR
+Start interactive interface.  Type ``?'' for a list of commands.
+.TP
+\fB\-L\fR, \fB\-\-selftest\fR
+Execute instrument selftest.
+.TP
+\fB\-R\fR, \fB\-\-radio\fR
+Set radio button mode (max of one relay closed).
+.TP
+\fB\-i\fR, \fB\-\-get-idn-string\fR
+Display the 8064 idn string, which contains the firmware revision,
+model number, etc..
+.SH FILES
+@X_SYSCONFDIR@/gpib-utils.conf
+.SH SEE ALSO
+icsconfig(1)
