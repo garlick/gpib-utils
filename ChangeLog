@@ -1,3 +1,7 @@
+2009-02-02 Jim Garlick <garlick.jim@gmail.com>
+
+	* : tag gpib-utils-1-4
+
 2009-01-24 Jim Garlick <garlick.jim@gmail.com>
 
 	* src/hp6626.c : Added over-voltage, over-current proection.
