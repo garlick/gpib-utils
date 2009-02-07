@@ -34,6 +34,7 @@
 
 extern char *prog;
 
+/* read to expected length or EOF */
 int
 read_all(int fd, void *buf, int len)
 {

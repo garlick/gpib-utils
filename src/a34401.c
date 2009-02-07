@@ -38,8 +38,8 @@
 #include <math.h>
 #include <stdint.h>
 
-#include "gpib.h"
 #include "util.h"
+#include "gpib.h"
 
 #define INSTRUMENT "a34401"
 
@@ -69,38 +69,51 @@
 
 #define SETUP_STR_SIZE  3000     /* 2617 actually */
 
-static void _usage(void);
 static int _interpret_status(gd_t gd, unsigned char status, char *msg);
-static int _get_idn(gd_t gd);
-static int _restore_setup(gd_t gd);
-static int _save_setup(gd_t gd);
-static int _selftest(gd_t gd);
 
 char *prog = "";
+const char *options = OPTIONS_COMMON "cisoRrSf:g:G:t:N:p:";
 
-#define OPTIONS "a:clviSr:R:f:t:s:p:zZ"
 #if HAVE_GETOPT_LONG
 #define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
 static struct option longopts[] = {
-    {"address",         required_argument, 0, 'a'},
+    OPTIONS_COMMON_LONG,
     {"clear",           no_argument,       0, 'c'},
-    {"local",           no_argument,       0, 'l'},
-    {"verbose",         no_argument,       0, 'v'},
     {"get-idn",         no_argument,       0, 'i'},
+    {"save-config",     no_argument,       0, 's'},
+    {"get-opt",         no_argument,       0, 'o'},
+    {"reset",           no_argument,       0, 'R'},
+    {"restore",         no_argument,       0, 'r'},
     {"selftest",        no_argument,       0, 'S'},
     {"function",        required_argument, 0, 'f'},
-    {"range",           required_argument, 0, 'r'},
-    {"resolution",      required_argument, 0, 'R'},
+    {"range",           required_argument, 0, 'g'},
+    {"resolution",      required_argument, 0, 'G'},
     {"trigger",         required_argument, 0, 't'},
-    {"samples",         required_argument, 0, 's'},
+    {"samples",         required_argument, 0, 'N'},
     {"period",          required_argument, 0, 'p'},
-    {"save-setup",      no_argument,       0, 'z'},
-    {"restore-setup",   no_argument,       0, 'Z'},
     {0, 0, 0, 0},
 };
 #else
 #define GETOPT(ac,av,opt,lopt) getopt(ac,av,opt)
 #endif
+
+static opt_desc_t optdesc[] = {
+    OPTIONS_COMMON_DESC,
+    {"c", "clear",       "initialize instrument to default values" },
+    {"R", "reset",       "reset instrument to std. settings" },
+    {"S", "selftest",    "execute instrument self test" },
+    {"i", "get-idn",     "display instrument idn string" },
+    {"o", "get-opt",     "display instrument installed options" },
+    {"s", "save-config", "save instrument config on stdout" },
+    {"r", "restore",     "restore instrument config from stdin" },
+    {"f", "function",   "select function" },
+    {"g", "range",      "select range: (range|MIN|MAX|DEF)" },
+    {"G", "resolution", "select resolution: (resolution|MIN|MAX|DEF)" },
+    {"t", "trigger",    "select trigger mode" },
+    {"N", "samples",    "number of samples [0]" },
+    {"p", "period",     "sample period" },
+    {0, 0},
+};
 
 int
 main(int argc, char *argv[])
@@ -112,21 +125,21 @@ main(int argc, char *argv[])
     gd_t gd;
     int c;
 
-    gd = gpib_init_args(argc, argv, OPTIONS, longopts, INSTRUMENT,
+    gd = gpib_init_args(argc, argv, options, longopts, INSTRUMENT,
                         _interpret_status, 0, &print_usage);
     if (print_usage)
-        _usage();
+        usage(optdesc);
     if (!gd)
         exit(1);
 
     /* preparse args for range and resolution */
-    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
+    while ((c = GETOPT(argc, argv, options, longopts)) != EOF) {
         switch (c) {
-            case 'r': /* --range */
+            case 'g': /* --range */
                 snprintf(range, sizeof(range), "%s", optarg);
                 need_fun++;
                 break;
-            case 'R': /* --resolution */
+            case 'G': /* --resolution */
                 snprintf(resolution, sizeof(resolution), "%s", optarg);
                 need_fun++;
                 break;
@@ -142,29 +155,32 @@ main(int argc, char *argv[])
     }
 
     optind = 0;
-    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
+    while ((c = GETOPT(argc, argv, options, longopts)) != EOF) {
         switch (c) {
-            case 'a': /* -a and -v handled in gpib_init_args() */
-            case 'v': 
-            case 'r': /* -r and -R preparsed above */
-            case 'R':
+            OPTIONS_COMMON_SWITCH
+            case 'g': /* -g, -G handled above */
+            case 'G':
                 break;
             case 'c': /* --clear */
-                gpib_clr(gd, 0);
-                gpib_wrtf(gd, "*CLS");
-                gpib_wrtf(gd, "*RST");
-                sleep(1);
+                gpib_488_2_cls(gd);
                 break;
-            case 'l': /* --local */
-                gpib_loc(gd); 
-                break;
-            case 'i': /* --get-idn */
-                if (_get_idn(gd) == -1)
-                    exit_val = 1;
+            case 'R': /* --reset */
+                gpib_488_2_rst(gd, 5);
                 break;
             case 'S': /* --selftest */
-                if (_selftest(gd) == -1)
-                    exit_val = 1;
+                gpib_488_2_tst(gd, NULL);
+                break;
+            case 'i': /* --get-idn */
+                gpib_488_2_idn(gd);
+                break;
+            case 'o': /* --get-opt */
+                gpib_488_2_opt(gd);
+                break;
+            case 's': /* --save-config */
+                gpib_488_2_lrn(gd);
+                break;
+            case 'r': /* --restore */
+                gpib_488_2_restore(gd);
                 break;
             case 'f': /* --function */
                 if (!strcmp(optarg, "dcv"))
@@ -200,7 +216,7 @@ main(int argc, char *argv[])
                     exit_val = 1;
                 }
                 break;
-            case 's': /* --samples */
+            case 'N': /* --samples */
                 samples = strtoul(optarg, NULL, 10);
                 if (samples > 1)
                     showtime = 1;
@@ -213,12 +229,6 @@ main(int argc, char *argv[])
                     break;
                 }
                 period = 1.0/period;
-                break;
-            case 'z': /* --save-setup */
-                _save_setup(gd);
-                break;
-            case 'Z': /* --restore-setup */
-                _restore_setup(gd);
                 break;
         }
     }
@@ -251,32 +261,6 @@ main(int argc, char *argv[])
 done:
     gpib_fini(gd);
     exit(exit_val);
-}
-
-static void 
-_usage(void)
-{
-    char *addr = gpib_default_addr(INSTRUMENT);
-
-    fprintf(stderr, 
-"Usage: %s [--options]\n"
-"  -a,--address               set instrument address [%s]\n"
-"  -c,--clear                 initialize instrument to default values\n"
-"  -l,--local                 return instrument to local op on exit\n"
-"  -v,--verbose               show protocol on stderr\n"
-"  -i,--get-idn               return instrument idn string\n"
-"  -S,--selftest              perform instrument self-test\n"
-"  -f,--function dcv|acv|dci|aci|ohm2|ohm4|freq|period\n"
-"                             select function [dcv]\n"
-"  -r,--range                 set range: range|MIN|MAX|DEF\n"
-"  -R,--resolution            set resolution: resolution|MIN|MAX|DEF\n"
-"  -t,--trigger imm|ext|bus   select trigger mode\n"
-"  -s,--samples               number of samples [0]\n"
-"  -p,--period                sample period\n"
-"  -z,--save-setup            save setup to stdout\n"
-"  -Z,--restore-setup         restore setup from stdin\n"
-           , prog, addr ? addr : "no default");
-    exit(1);
 }
 
 #if 0
@@ -312,74 +296,6 @@ _interpret_status(gd_t gd, unsigned char status, char *msg)
     }
 
     return err;
-}
-
-/* Save setup to stdout.
- */
-static int
-_save_setup(gd_t gd)
-{
-    unsigned char *buf = xmalloc(SETUP_STR_SIZE);
-    int len;
-
-    len = gpib_qry(gd, "*LRN?", buf, SETUP_STR_SIZE);
-    if (write_all(1, buf, len) < 0) {
-        perror("write");
-        return -1;
-    }
-    fprintf(stderr, "%s: save setup: %d bytes\n", prog, len);
-    free(buf);
-    return 0;
-}
-
-/* Restore setup from stdin.
- */
-static int
-_restore_setup(gd_t gd)
-{
-    unsigned char buf[SETUP_STR_SIZE];
-    int len;
-
-    len = read_all(0, buf, sizeof(buf));
-    if (len < 0) {
-        perror("read");
-        return -1;
-    }
-    gpib_wrt(gd, buf, len);
-    fprintf(stderr, "%s: restore setup: %d bytes\n", prog, len);
-    return 0;
-}
-
-/* Print instrument idn string.
- */
-static int
-_get_idn(gd_t gd)
-{
-    char tmpstr[64];
-
-    gpib_qry(gd, "*IDN?", tmpstr, sizeof(tmpstr) - 1);
-    fprintf(stderr, "%s: %s", prog, tmpstr);
-    return 0;
-}
-
-static int
-_selftest(gd_t gd)
-{
-    char buf[64];
-
-    gpib_qry(gd, "*TST?", buf, sizeof(buf));
-    switch (strtoul(buf, NULL, 10)) {
-        case 0:
-            printf("self-test completed successfully\n");
-            return 0;
-        case 1:
-            printf("self-test failed\n");
-            return -1;
-        default:
-            printf("self-test returned unexpected response\n");
-            return -1;
-    }
-    /*NOTREACHED*/
 }
 
 /*

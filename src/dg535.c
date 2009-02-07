@@ -17,8 +17,7 @@
    along with gpib-utils; if not, write to the Free Software Foundation, 
    Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
 
-/* Stanford Research Systems DG535
- * Digital Delay / Pulse Generator.
+/* Stanford Research Systems DG535 Digital Delay / Pulse Generator.
  */
 
 #if HAVE_CONFIG_H
@@ -40,8 +39,8 @@
 #include <math.h>
 #include <stdint.h>
 
-#include "gpib.h"
 #include "util.h"
+#include "gpib.h"
 
 #define INSTRUMENT "dg535"
 
@@ -85,7 +84,6 @@
 #define DG535_STAT_BUSY                 0x02    /* busy with timing cycle */
 #define DG535_STAT_CMDERR               0x01    /* command error detected */
 
-static void _usage(void);
 static int _interpret_status(gd_t gd, unsigned char status, char *msg);
 static int _set_delay(gd_t gd, int out_chan, char *str);
 
@@ -131,14 +129,13 @@ static strtab_t polarity[] = {
     { 0, NULL },
 };
 
-#define OPTIONS "a:clve:n:dD:qQ:gG:fF:pP:yY:tT:mM:sS:bB:zZ:D:x"
+static const char *options = OPTIONS_COMMON \
+                             "ce:n:dD:qQ:gG:fF:pP:yY:tT:mM:sS:bB:zZ:D:x";
 #if HAVE_GETOPT_LONG
 #define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
 static struct option longopts[] = {
-    {"address",         required_argument, 0, 'a'},
+    OPTIONS_COMMON_LONG,
     {"clear",           no_argument,       0, 'c'},
-    {"local",           no_argument,       0, 'l'},
-    {"verbose",         no_argument,       0, 'v'},
     {"display-string",  required_argument, 0, 'e'},
     {"single-shot",     no_argument,       0, 'x'},
     {"out-chan",        required_argument, 0, 'n'},
@@ -170,6 +167,26 @@ static struct option longopts[] = {
 #define GETOPT(ac,av,opt,lopt) getopt(ac,av,opt)
 #endif
 
+static opt_desc_t optdesc[] = {
+    OPTIONS_COMMON_DESC,
+    { "c",  "clear",          "initialize instrument to default values" },
+    { "e",  "display-string", "display string (1-20 chars), empty to clear" },
+    { "x",  "single-shot",    "trigger instrument in single shot mode" },
+    { "n",  "out-chan",       "select output channel (t0|a|b|ab|c|d|cd)" },
+    { "dD", "get/set-delay",  "output delay (another-chan,delay)" },
+    { "qQ", "get/set-out-mode", "output mode (ttl|nim|ecl|var)" },
+    { "gG", "get/set-out-ampl", "output amplitude (-4:-0.1, +0.1:+4) volts" },
+    { "fF", "get/set-out-offset", "output offset (-4:+4) volts" },
+    { "pP", "get/set-out-polarity", "output polarity (+|-)" },
+    { "yY", "get/set-out-z",  "output impedance (hi|lo)" },
+    { "mM", "get/set-trig-mode", "trigger mode (int|ext|ss|bur)" },
+    { "tT", "get/set-trig-rate", "trigger rate (0.001hz:1.000mhz)" },
+    { "sS", "get/set-trig-slope", "trigger slope (rising|falling)" },
+    { "bB", "get/set-burst-count", "trigger burst count (2:19)" },
+    { "zZ", "get/set-trig-z", "trigger input impedance (hi|lo)" },
+    { 0, 0, 0 },
+};
+
 int
 main(int argc, char *argv[])
 {
@@ -180,15 +197,15 @@ main(int argc, char *argv[])
     char tmpstr[1024];
     gd_t gd;
 
-    gd = gpib_init_args(argc, argv, OPTIONS, longopts, INSTRUMENT,
+    gd = gpib_init_args(argc, argv, options, longopts, INSTRUMENT,
                         _interpret_status, 0, &print_usage);
     if (print_usage)
-        _usage();
+        usage(optdesc);
     if (!gd)
         exit(1);
 
     /* preparse args to get output channel */
-    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
+    while ((c = GETOPT(argc, argv, options, longopts)) != EOF) {
         switch (c) {
             case 'n': /* --out-chan */
                 out_chan = rfindstr(out_names, optarg);
@@ -226,18 +243,14 @@ main(int argc, char *argv[])
     }
 
     optind = 0;
-    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
+    while ((c = GETOPT(argc, argv, options, longopts)) != EOF) {
         switch (c) {
-            case 'a': /* -a, -v, -o already parsed */
-            case 'v':
+            OPTIONS_COMMON_SWITCH
             case 'o':
                 break;
             case 'c': /* --clear */
                 gpib_clr(gd, 0);
                 gpib_wrtf(gd, "CL");
-                break;
-            case 'l': /* --local */
-                gpib_loc(gd); 
                 break;
             case 'e': /* --display-string */
                 gpib_wrtf(gd, "DS %s", optarg);
@@ -389,35 +402,6 @@ main(int argc, char *argv[])
 done:
     gpib_fini(gd);
     exit(exit_val);
-}
-
-static void 
-_usage(void)
-{
-    char *addr = gpib_default_addr(INSTRUMENT);
-
-    fprintf(stderr, 
-"Usage: %s [--options]\n"
-"  -a,--address                instrument address [%s]\n"
-"  -c,--clear                  initialize instrument to default values\n"
-"  -l,--local                  return instrument to local operation on exit\n"
-"  -v,--verbose                show protocol on stderr\n"
-"  -e,--display-string         display string (1-20 chars), empty to clear\n"
-"  -x,--single-shot            trigger instrument in single shot mode\n"
-"  -n,--out-chan               select output channel (t0|a|b|ab|c|d|cd)\n"
-"  -dD,--get/set-delay         output delay (another-chan,delay)\n"
-"  -qQ,--get/set-out-mode      output mode (ttl|nim|ecl|var)\n"
-"  -gG,--get/set-out-ampl      output amplitude (-4:-0.1, +0.1:+4) volts\n"
-"  -fF,--get/set-out-offset    output offset (-4:+4) volts\n"
-"  -pP,--get/set-out-polarity  output polarity (+|-)\n"
-"  -yY,--get/set-out-z         output impedance (hi|lo)\n"
-"  -mM,--get/set-trig-mode     trigger mode (int|ext|ss|bur)\n"
-"  -tT,--get/set-trig-rate     trigger rate (0.001hz:1.000mhz)\n"
-"  -sS,--get/set-trig-slope    trigger slope (rising|falling)\n"
-"  -bB,--get/set-burst-count   trigger burst count (2:19)\n"
-"  -zZ,--get/set-trig-z        trigger input impedance (hi|lo)\n"
-           , prog, addr ? addr : "no default");
-    exit(1);
 }
 
 static void

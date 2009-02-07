@@ -10,4 +10,6 @@ liblsd_a_SOURCES = \
 	hprintf.c \
 	hprintf.h \
 	list.c \
-	list.h
+	list.h \
+	cbuf.c \
+	cbuf.h

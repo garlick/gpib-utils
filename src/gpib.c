@@ -52,9 +52,9 @@
 #include <math.h>
 
 
+#include "util.h"
 #include "gpib.h"
 #include "vxi11_device.h"
-#include "util.h"
 #include "hprintf.h"
 
 typedef enum { GPIB, VXI11, SERIAL, SOCKET } contype_t;
@@ -105,6 +105,9 @@ static baudmap_t baudmap[] = {
 };
 
 extern char *prog;
+
+static int _raw_serial(gd_t gd);
+static int _canon_serial(gd_t gd);
 
 /* If a serial poll function is defined, call it with the instrument
  * status byte.
@@ -177,6 +180,21 @@ _generic_read(gd_t gd, char *buf, int len)
             }
             break;
         case SERIAL:
+            /* FIXME: use timeout */
+            if (gd->reos)
+                count = read(gd->fd, buf, len);
+            else
+                count = read_all(gd->fd, buf, len);
+            if (count < 0) {
+                fprintf(stderr, "%s: read error: %s\n", prog, strerror(errno));
+                gpib_fini(gd);
+                exit(1);
+            } else if (count == 0) {
+                fprintf(stderr, "%s: EOF on read: %s\n", prog, strerror(errno));
+                gpib_fini(gd);
+                exit(1);
+            }
+            break;
         case SOCKET:
             /* FIXME: use timeout */
             if ((count = read_all(gd->fd, buf, len) < 0)) {
@@ -386,6 +404,27 @@ gpib_qry(gd_t gd, char *str, void *buf, int len)
     return count;
 }
 
+int 
+gpib_qrystr(gd_t gd, char *str, char *buf, int len)
+{
+    int count;
+
+    count = gpib_qry(gd, str, buf, len - 1);
+    buf[count > 0 ? count : 0] = '\0';
+    _zap_trailing_terminators(buf);
+    return count;
+}
+
+int 
+gpib_qryint(gd_t gd, char *str)
+{
+    char buf[16];
+
+    gpib_qrystr(gd, str, buf, sizeof(buf));
+
+    return strtoul(buf, NULL, 10); /* 0 - 255 */
+}
+
 void
 gpib_loc(gd_t gd)
 {
@@ -544,6 +583,12 @@ gpib_set_reos(gd_t gd, int flag)
             vxi11_set_termcharset(gd->vxi11_handle, flag);
             break;
         case SERIAL:
+            gd->reos = flag;
+            if (flag)
+                _canon_serial(gd);
+            else
+                _raw_serial(gd);
+            break;
         case SOCKET:
             gd->reos = flag;
             break;
@@ -592,6 +637,10 @@ gpib_set_eos(gd_t gd, int c)
             vxi11_set_termchar(gd->vxi11_handle, c);
             break;
         case SERIAL:
+            gd->eos = c;
+            if (gd->reos)
+                _canon_serial(gd);
+            break;
         case SOCKET:
             gd->eos = c;
             break;
@@ -755,7 +804,7 @@ _new_gpib(contype_t t)
     new->fd = -1;
     new->reos = 0;
     new->eot = 1;
-    new->eos = 0xa;
+    new->eos = '\n';
     timerclear(&new->timeout);
 
     return new;
@@ -805,12 +854,56 @@ _init_vxi(char *name, spollfun_t sf, unsigned long retry)
     return gd;
 }
 
+static int
+_canon_serial(gd_t gd)
+{
+    struct termios tio;
+
+    if (tcgetattr(gd->fd, &tio) < 0) {
+        fprintf(stderr, "%s: error getting serial attributes\n", prog);
+        return -1;
+    }
+
+    tio.c_lflag |= ICANON;
+
+    tio.c_cc[VEOL] = gd->eos;
+    tio.c_cc[VEOF] = 4; /* ctrl-D */
+
+    if (tcsetattr(gd->fd, TCSANOW, &tio) < 0) {
+        fprintf(stderr, "%s: error setting serial attributes\n", prog);
+        return -1;
+    }
+    return 0;
+}
+
+static int
+_raw_serial(gd_t gd)
+{
+    struct termios tio;
+
+    if (tcgetattr(gd->fd, &tio) < 0) {
+        fprintf(stderr, "%s: error getting serial attributes\n", prog);
+        return -1;
+    }
+
+    tio.c_lflag &= ~ICANON;
+
+    tio.c_cc[VMIN] = 1;
+    tio.c_cc[VTIME] = 0;
+ 
+    if (tcsetattr(gd->fd, TCSANOW, &tio) < 0) {
+        fprintf(stderr, "%s: error setting serial attributes\n", prog);
+        return -1;
+    }
+    return 0;
+}
+
 static gd_t
 _init_serial(char *device , char *flags, spollfun_t sf, unsigned long retry)
 {
     gd_t gd = _new_gpib(SERIAL);
     int baud = 9600, databits = 8, stopbits = 1; 
-    char parity = 'N';
+    char parity = 'N', flowctl = 'N';
     struct termios tio;
     int i, res;
 
@@ -827,7 +920,8 @@ _init_serial(char *device , char *flags, spollfun_t sf, unsigned long retry)
         fprintf(stderr, "%s: could not lock %s\n", prog, device);
         goto err;
     }
-    (void)sscanf(flags, "%d,%d%c%d", &baud, &databits, &parity, &stopbits);
+    (void)sscanf(flags, "%d,%d%c%d,%c", &baud, &databits, &parity, &stopbits,
+                 &flowctl);
     /* 0-4 matches OK as defaults are taken if no match */
     if (tcgetattr(gd->fd, &tio) < 0) {
         fprintf(stderr, "%s: error getting serial attributes\n", prog);
@@ -893,15 +987,49 @@ _init_serial(char *device , char *flags, spollfun_t sf, unsigned long retry)
             goto err;
     }
 
-    tio.c_oflag &= ~OPOST; /* turn off post-processing of output */
-    tio.c_iflag = tio.c_lflag = 0;
+    switch (flowctl) {
+        case 'n':	/* none */
+        case 'N':
+            tio.c_iflag &= ~(IXON|IXANY|IXOFF);
+#ifdef CRTSCTS
+            tio.c_cflag &= ~(CRTSCTS);
+#else
+            tio.c_cflag &= ~(CNEW_RTSCTS);
+#endif
+            break;
+        case 'x':	/* xon/xoff */
+        case 'X':
+            tio.c_iflag |= (IXON|IXANY|IXOFF);
+            break;
+        case 'h':	/* hardware handshaking (RTS/CTS) */
+        case 'H':
+#ifdef CRTSCTS
+            tio.c_cflag |= CRTSCTS;
+#else
+            tio.c_cflag |= CNEW_RTSCTS;
+#endif
+            break;
+        default:
+            fprintf(stderr, "%s: unsupported flow control type: %c\n",
+                    prog, flowctl);
+            goto err;
+    }
 
+    tio.c_iflag |= (INPCK | ISTRIP);
+    tio.c_cflag |= CLOCAL;
+    tio.c_oflag &= ~OPOST;
+
+    /* Set raw mode - _canon_serial() and _raw_serial() may change this
+     * when processing eos/reos.
+     */
+    tio.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
+    tio.c_cc[VMIN] = 1;
+    tio.c_cc[VTIME] = 0;
+ 
     if (tcsetattr(gd->fd, TCSANOW, &tio) < 0) {
         fprintf(stderr, "%s: error setting serial attributes\n", prog);
         goto err;
     }
-
-    /* FIXME: need modes for configuring xon/xoff and hardware handshaking */
 
     /* success! */
     return gd; 
@@ -939,7 +1067,7 @@ gpib_init(char *addr, spollfun_t sf, unsigned long retry)
     else if (sscanf(addr, "%d", &pad) == 1)
         gd = _init_gpib(0,     pad, 0,        sf, retry);/* pad */
     else if (stat(addr, &sb) == 0 && S_ISCHR(sb.st_mode))
-        gd = _init_serial(addr, "9600,8n1", sf, retry); /* device */
+        gd = _init_serial(addr, "9600,8n1", sf, retry);  /* device */
     else if ((sfx = strchr(cpy, ':'))) {
         *sfx++ = '\0';
         if (stat(cpy, &sb) == 0 && S_ISCHR(sb.st_mode))
@@ -985,45 +1113,37 @@ gpib_default_addr(char *name)
     return res;
 }
 
-static int
-_extract_dlab_len(unsigned char *data, int lenlen, int len)
-{
-    char tmpstr[64];
-  
-    if (lenlen > len || lenlen > sizeof(tmpstr) - 1)
-       return -1;
-    memcpy(tmpstr, data, lenlen);
-    tmpstr[lenlen] = '\0';
-    return strtoul(tmpstr, NULL, 10);
-}
-
 /* Handle common -v and -a option processing in each of the utilities,
  * and initialize the GPIB connection.
  */
 gd_t
-gpib_init_args(int argc, char *argv[], char *opts, struct option *longopts,
-               char *name, spollfun_t sf, unsigned long retry, int *opt_error)
+gpib_init_args(int argc, char *argv[], const char *opts, 
+               struct option *longopts, char *name, spollfun_t sf, 
+               unsigned long retry, int *opt_error)
 {
     int c, verbose = 0, todo = 0;
     char *addr = NULL;
     gd_t gd = NULL;
-    int error = 0;
+    int local = 0, error = 0;
 
     prog = basename(argv[0]);
     while ((c = GETOPT(argc, argv, opts, longopts)) != EOF) {
         switch (c) {
-        case 'a': /* --address */
-            addr = optarg;
-            break;
-        case 'v':
-            verbose = 1;
-            break;
-        case '?':
-            error++;
-            break;
-        default:
-            todo++;
-            break;
+            case 'a': /* --address */
+                addr = optarg;
+                break;
+            case 'v': /* --verbose */
+                verbose = 1;
+                break;
+            case 'l': /* --local */
+                local = 1;
+                break;
+            case '?':
+                error++;
+                break;
+            default:
+                todo++;
+                break;
         }
     }
     if (error || !todo || optind < argc) {
@@ -1046,9 +1166,45 @@ gpib_init_args(int argc, char *argv[], char *opts, struct option *longopts,
         goto done;
     }
     gpib_set_verbose(gd, verbose);
+    if (local)
+        gpib_loc(gd);
 done:
     optind = 0;
     return gd;
+}
+
+void 
+usage(opt_desc_t *tab)
+{
+    int i;
+    int width = 23;
+
+    printf("Usage: %s [--options]\n", prog);
+    for (i = 0; (tab[i].sopt && tab[i].lopt && tab[i].desc); i++) {
+#if HAVE_GETOPT_LONG
+        if (strlen(tab[i].lopt) + strlen(tab[i].sopt) + 4 > width)
+            printf("  -%s,--%s\n  %-*s", tab[i].sopt, tab[i].lopt, width, "");
+        else
+            printf("  -%s,--%-*s", tab[i].sopt, 
+            width - 4 - strlen(tab[i].sopt), tab[i].lopt);
+#else
+        printf("  -%-2s", tab[i].sopt);
+#endif
+        printf(" %s\n", tab[i].desc);
+    }
+    exit(1);
+}
+
+static int
+_extract_dlab_len(unsigned char *data, int lenlen, int len)
+{
+    char tmpstr[64];
+  
+    if (lenlen > len || lenlen > sizeof(tmpstr) - 1)
+       return -1;
+    memcpy(tmpstr, data, lenlen);
+    tmpstr[lenlen] = '\0';
+    return strtoul(tmpstr, NULL, 10);
 }
 
 /* Verify/decode some 488.2 data formats.
@@ -1095,11 +1251,112 @@ gpib_decode_488_2_data(unsigned char *data, int *lenp, int flags)
             *lenp = dlen;
         }
     } else {
-        fprintf(stderr, "%s : unexpected or garbled 488.2 response\n", prog);
+        fprintf(stderr, "%s: unexpected or garbled 488.2 response\n", prog);
         return -1;
     }
 
     return 0;
+}
+
+/* 
+ * 488.2 common commands 
+ */
+
+void
+gpib_488_2_cls(gd_t gd)
+{
+    gpib_wrtstr(gd, "*CLS\n");
+}
+
+void
+gpib_488_2_rst(gd_t gd, int delay_secs)
+{
+    gpib_wrtstr(gd, "*RST\n");
+    sleep(delay_secs);
+}
+
+void
+gpib_488_2_idn(gd_t gd)
+{
+    char buf[128];
+
+    gpib_qrystr(gd, "*IDN?\n", buf, sizeof(buf));
+    printf("%s: idn-string: %s\n", prog, buf);
+}
+
+void
+gpib_488_2_opt(gd_t gd)
+{
+    char buf[128];
+
+    gpib_qrystr(gd, "*OPT?\n", buf, sizeof(buf));
+    printf("%s: installed-options: %s\n", prog, buf);
+}
+
+void
+gpib_488_2_tst(gd_t gd, strtab_t *tab)
+{
+    int result = gpib_qryint(gd, "*TST?\n");
+
+    if (result == 0)
+        printf("self-test: passed\n");
+    else if (tab)
+        printf("self-test: failed: %s\n", findstr(tab, result));
+    else
+        printf("self-test: failed (code %d)\n", result);
+}
+
+void
+gpib_488_2_lrn(gd_t gd)
+{
+    char buf[32768];
+    int len;
+
+    len = gpib_qrystr(gd, "*LRN?\n", buf, sizeof(buf));
+    if (write_all(1, buf, len) < 0) {
+        fprintf(stderr, "%s: write error on stdout: %s\n",
+                prog, strerror(errno));
+        exit(1);
+    }
+}
+
+void
+gpib_488_2_restore(gd_t gd)
+{
+    char buf[32768];
+    int len;
+
+    if ((len = read_all(0, buf, sizeof(buf)) < 0)) {
+        fprintf(stderr, "%s: read error on stdin: %s\n",
+                prog, strerror(errno));
+        exit(1);
+    }
+    gpib_wrt(gd, buf, len);
+    fprintf(stderr, "%s: restore setup: %d bytes\n", prog, len);
+}
+
+int
+gpib_488_2_stb(gd_t gd)
+{
+    return gpib_qryint(gd, "*STB?\n");
+}
+
+int
+gpib_488_2_esr(gd_t gd)
+{
+    return gpib_qryint(gd, "*ESR?\n");
+}
+
+int
+gpib_488_2_ese(gd_t gd)
+{
+    return gpib_qryint(gd, "*ESE?\n");
+}
+
+int
+gpib_488_2_sre(gd_t gd)
+{
+    return gpib_qryint(gd, "*SRE?\n");
 }
 
 /*

@@ -1,3 +1,16 @@
+2009-02-07 Jim Garlick <garlick.jim@gmail.com>
+
+	* src/gpib.[ch] : Add 488.2 common command functions.
+
+	* src/a6032.c, src/a34401.c : Use new common command functions.
+
+	* src/hp1650.c : New, not yet working.
+
+	* src/gpib.[ch] : Add common usage() that uses opt_desc_t 
+	option description, and gpib_init_args() initialization function.
+
+	* src/*.[ch] : Switch to common usage() and gpib_init_args() above.
+
 2009-02-02 Jim Garlick <garlick.jim@gmail.com>
 
 	* : tag gpib-utils-1-4
