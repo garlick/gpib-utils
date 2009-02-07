@@ -69,6 +69,8 @@ void gpib_wrtstr(gd_t gd, char *str);
 void gpib_wrtf(gd_t gd, char *fmt, ...);
 
 int gpib_qry(gd_t gd, char *str, void *buf, int len);
+int gpib_qryint(gd_t gd, char *str);
+int gpib_qrystr(gd_t gd, char *str, char *buf, int len);
 
 void gpib_loc(gd_t gd);
 void gpib_clr(gd_t gd, unsigned long usec);
@@ -77,10 +79,35 @@ int gpib_rsp(gd_t gd, unsigned char *status);
 
 void gpib_abort(gd_t gd); /* VXI only */
 
-gd_t gpib_init_args(int argc, char *argv[], char *opts, 
+typedef struct {
+    char *sopt;
+    char *lopt;
+    char *desc;
+} opt_desc_t;
+
+void usage(opt_desc_t *tab);
+
+#define OPTIONS_COMMON "a:lv"
+#define OPTIONS_COMMON_LONG \
+    {"address",         required_argument, 0, 'a'}, \
+    {"local",           no_argument,       0, 'l'}, \
+    {"verbose",         no_argument,       0, 'v'}
+
+#define OPTIONS_COMMON_DESC \
+    {"a", "address",   "set instrument address" }, \
+    {"l", "local",     "return instrument to front panel control" }, \
+    {"v", "verbose",   "show protocol on stderr" }
+
+#define OPTIONS_COMMON_SWITCH \
+    case 'a': \
+    case 'l': \
+    case 'v':
+
+gd_t gpib_init_args(int argc, char *argv[], const char *opts, 
                     struct option *longopts, char *name, 
                     spollfun_t sf, unsigned long retry, int *opt_error);
 
+/* 488.2 functions */
 
 #define GPIB_DECODE_DLAB    1
 #define GPIB_DECODE_ILAB    2
@@ -88,6 +115,24 @@ gd_t gpib_init_args(int argc, char *argv[], char *opts,
 #define GPIB_VERIFY_ILAB    8
 int gpib_decode_488_2_data(unsigned char *data, int *lenp, int flags);
 
+/* required status reporting common commands */
+void gpib_488_2_cls(gd_t gd);
+int gpib_488_2_ese(gd_t gd);
+int gpib_488_2_esr(gd_t gd);
+int gpib_488_2_sre(gd_t gd);
+int gpib_488_2_stb(gd_t gd);
+
+/* required internal operation common commands */
+void gpib_488_2_idn(gd_t gd);
+void gpib_488_2_rst(gd_t gd, int delay_secs);
+void gpib_488_2_tst(gd_t gd, strtab_t *tab);
+
+/* optional learn command (and restore helper function) */
+void gpib_488_2_lrn(gd_t gd);
+void gpib_488_2_restore(gd_t gd);
+
+/* optional option identification command */
+void gpib_488_2_opt(gd_t gd);
 
 /*
  * vi:tabstop=4 shiftwidth=4 expandtab

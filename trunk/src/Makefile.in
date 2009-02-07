@@ -34,10 +34,10 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 bin_PROGRAMS = hp6632$(EXEEXT) hp6626$(EXEEXT) hp6038$(EXEEXT) \
-	hp1630$(EXEEXT) hptopbm$(EXEEXT) hptodino$(EXEEXT) \
-	hp3457$(EXEEXT) hp3488$(EXEEXT) hp8656$(EXEEXT) dg535$(EXEEXT) \
-	sr620$(EXEEXT) ics8064$(EXEEXT) icsconfig$(EXEEXT) \
-	a6032$(EXEEXT) a34401$(EXEEXT)
+	hp1630$(EXEEXT) hp1650$(EXEEXT) hptopbm$(EXEEXT) \
+	hptodino$(EXEEXT) hp3457$(EXEEXT) hp3488$(EXEEXT) \
+	hp8656$(EXEEXT) dg535$(EXEEXT) sr620$(EXEEXT) ics8064$(EXEEXT) \
+	icsconfig$(EXEEXT) a6032$(EXEEXT) a34401$(EXEEXT)
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -75,6 +75,12 @@ am_hp1630_OBJECTS = hp1630.$(OBJEXT) $(am__objects_1)
 hp1630_OBJECTS = $(am_hp1630_OBJECTS)
 hp1630_LDADD = $(LDADD)
 hp1630_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.a \
+	$(top_builddir)/libics/libics.a \
+	$(top_builddir)/liblsd/liblsd.a
+am_hp1650_OBJECTS = hp1650.$(OBJEXT) $(am__objects_1)
+hp1650_OBJECTS = $(am_hp1650_OBJECTS)
+hp1650_LDADD = $(LDADD)
+hp1650_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.a \
 	$(top_builddir)/libics/libics.a \
 	$(top_builddir)/liblsd/liblsd.a
 am_hp3457_OBJECTS = hp3457.$(OBJEXT) $(am__objects_1)
@@ -151,15 +157,17 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 SOURCES = $(a34401_SOURCES) $(a6032_SOURCES) $(dg535_SOURCES) \
-	$(hp1630_SOURCES) $(hp3457_SOURCES) $(hp3488_SOURCES) \
-	$(hp6038_SOURCES) $(hp6626_SOURCES) $(hp6632_SOURCES) \
-	$(hp8656_SOURCES) $(hptodino_SOURCES) $(hptopbm_SOURCES) \
-	$(ics8064_SOURCES) $(icsconfig_SOURCES) $(sr620_SOURCES)
+	$(hp1630_SOURCES) $(hp1650_SOURCES) $(hp3457_SOURCES) \
+	$(hp3488_SOURCES) $(hp6038_SOURCES) $(hp6626_SOURCES) \
+	$(hp6632_SOURCES) $(hp8656_SOURCES) $(hptodino_SOURCES) \
+	$(hptopbm_SOURCES) $(ics8064_SOURCES) $(icsconfig_SOURCES) \
+	$(sr620_SOURCES)
 DIST_SOURCES = $(a34401_SOURCES) $(a6032_SOURCES) $(dg535_SOURCES) \
-	$(hp1630_SOURCES) $(hp3457_SOURCES) $(hp3488_SOURCES) \
-	$(hp6038_SOURCES) $(hp6626_SOURCES) $(hp6632_SOURCES) \
-	$(hp8656_SOURCES) $(hptodino_SOURCES) $(hptopbm_SOURCES) \
-	$(ics8064_SOURCES) $(icsconfig_SOURCES) $(sr620_SOURCES)
+	$(hp1630_SOURCES) $(hp1650_SOURCES) $(hp3457_SOURCES) \
+	$(hp3488_SOURCES) $(hp6038_SOURCES) $(hp6626_SOURCES) \
+	$(hp6632_SOURCES) $(hp8656_SOURCES) $(hptodino_SOURCES) \
+	$(hptopbm_SOURCES) $(ics8064_SOURCES) $(icsconfig_SOURCES) \
+	$(sr620_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -287,7 +295,6 @@ target_alias = @target_alias@
 target_cpu = @target_cpu@
 target_os = @target_os@
 target_vendor = @target_vendor@
-top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CFLAGS = @GCCWARN@
@@ -309,6 +316,7 @@ common_sources = \
 	hpcrc.h
 
 hp1630_SOURCES = hp1630.c $(common_sources)
+hp1650_SOURCES = hp1650.c $(common_sources)
 hptopbm_SOURCES = hptopbm.c $(common_sources)
 hptodino_SOURCES = hptodino.c $(common_sources)
 hp3457_SOURCES = hp3457.c $(common_sources)
@@ -391,6 +399,9 @@ dg535$(EXEEXT): $(dg535_OBJECTS) $(dg535_DEPENDENCIES)
 hp1630$(EXEEXT): $(hp1630_OBJECTS) $(hp1630_DEPENDENCIES) 
 	@rm -f hp1630$(EXEEXT)
 	$(LINK) $(hp1630_OBJECTS) $(hp1630_LDADD) $(LIBS)
+hp1650$(EXEEXT): $(hp1650_OBJECTS) $(hp1650_DEPENDENCIES) 
+	@rm -f hp1650$(EXEEXT)
+	$(LINK) $(hp1650_OBJECTS) $(hp1650_LDADD) $(LIBS)
 hp3457$(EXEEXT): $(hp3457_OBJECTS) $(hp3457_DEPENDENCIES) 
 	@rm -f hp3457$(EXEEXT)
 	$(LINK) $(hp3457_OBJECTS) $(hp3457_LDADD) $(LIBS)
@@ -436,6 +447,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dg535.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gpib.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hp1630.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hp1650.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hp3457.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hp3488.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hp6038.Po@am__quote@

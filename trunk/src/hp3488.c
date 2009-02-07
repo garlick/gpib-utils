@@ -45,8 +45,8 @@
 #include <sys/time.h>
 #include <math.h>
 
-#include "gpib.h"
 #include "util.h"
+#include "gpib.h"
 #include "argv.h"
 #include "hostlist.h"
 
@@ -108,7 +108,6 @@ static void _open_targets(gd_t gd, char *str);
 static void _close_targets(gd_t gd, char *str);
 static void _query_targets(gd_t gd, char *str);
 static void _list_targets();
-static void _usage(void);
 static int _interpret_status(gd_t gd, unsigned char status, char *msg);
 static int _parse_model_config(char *str);
 static void _probe_model_config(gd_t gd);
@@ -127,15 +126,14 @@ char *prog = "";
 static int lerr_flag = 1;   /* logic errors: 0=ignored, 1=fatal */
                             /*   See: disambiguate_ctype() */
 
-#define OPTIONS "ia:clSvL0:1:q:QIC:x"
+static const char *options = OPTIONS_COMMON "icSL0:1:q:QIC:x";
+
 #if HAVE_GETOPT_LONG
 #define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
 static struct option longopts[] = {
-    {"address",         required_argument, 0, 'a'},
+    OPTIONS_COMMON_LONG,
     {"get-idn",         no_argument,       0, 'i'},
     {"clear",           no_argument,       0, 'c'},
-    {"local",           no_argument,       0, 'l'},
-    {"verbose",         no_argument,       0, 'v'},
     {"selftest",        no_argument,       0, 'S'},
     {"list",            no_argument,       0, 'L'},
     {"showconfig",      no_argument,       0, 'x'},
@@ -151,6 +149,23 @@ static struct option longopts[] = {
 #define GETOPT(ac,av,opt,lopt) getopt(ac,av,opt)
 #endif
 
+static opt_desc_t optdesc[] = {
+    OPTIONS_COMMON_DESC,
+    { "c", "clear", "initialize instrument to default values" },
+    { "i", "get-idn", "get instrument idn string" },
+    { "C", "config m,m,m,m,m", "specify model card in slots 1,2,3,4,5 where\n\
+model is 44470|44471|44472|44473|44474|44475|44476|44477|44478 (0=empty)" },
+    { "x", "showconfig", "list installed cards" },
+    { "S", "selftest", "execute self test" },
+    { "L", "list", "list valid channels" },
+    { "0", "open [targets]", "open contacts for specified channels" },
+    { "1", "close [targets]", "close contacts for specified channels" },
+    { "q", "query [targets]", "view state of specified channels" },
+    { "Q", "queryall", "view state of all channels" },
+    { "I", "shell", "start interactive shell" },
+    { 0, 0, 0 },
+};
+
 int
 main(int argc, char *argv[])
 {
@@ -159,10 +174,10 @@ main(int argc, char *argv[])
     int exit_val = 0;
     gd_t gd;
 
-    gd = gpib_init_args(argc, argv, OPTIONS, longopts, INSTRUMENT,
+    gd = gpib_init_args(argc, argv, options, longopts, INSTRUMENT,
                         _interpret_status, 0, &print_usage);
     if (print_usage) {
-        _usage();
+        usage(optdesc);
         exit(1);
     }
     if (!gd)
@@ -171,42 +186,35 @@ main(int argc, char *argv[])
     gpib_set_reos(gd, 1);
 
     /* preparse args (again) to get slot config settled before doing work */
-    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
+    while ((c = GETOPT(argc, argv, options, longopts)) != EOF) {
         switch (c) {
-        case 'a': /* -a and -v handled in gpib_init_args() */
-        case 'v':
-            break;
-        case 'C': /* --config */
-            if (valid_targets) {
-                fprintf(stderr, "%s: -C may only be specified once\n", prog);
-                exit_val = 1;
-                goto done;
-            }
-            valid_targets = hostlist_create("");
-            if (_parse_model_config(optarg) == -1) {
-                exit_val = 1;
-                goto done;
-            }
-            break;
-        case 'c': /* handled below */
-        case 'l':
-        case 'S':
-        case 'i':
-            break;
-        case 'L':
-        case '0':
-        case '1':
-        case 'q':
-        case 'Q':
-        case 'I':
-        case 'x':
-            need_valid_targets++;
-            break;
-        default:
-            _usage();
-            exit_val = 1;
-            goto done;
-            /*NOTREACHED*/
+            OPTIONS_COMMON_SWITCH
+                break;
+            case 'C': /* --config */
+                if (valid_targets) {
+                    fprintf(stderr, "%s: -C may only be used once\n", prog);
+                    exit_val = 1;
+                    goto done;
+                }
+                valid_targets = hostlist_create("");
+                if (_parse_model_config(optarg) == -1) {
+                    exit_val = 1;
+                    goto done;
+                }
+                break;
+            case 'c': /* handled below */
+            case 'S':
+            case 'i':
+                break;
+            case 'L':
+            case '0':
+            case '1':
+            case 'q':
+            case 'Q':
+            case 'I':
+            case 'x':
+                need_valid_targets++;
+                break;
         }
     }
 
@@ -216,49 +224,42 @@ main(int argc, char *argv[])
     }
 
     optind = 0;
-    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
+    while ((c = GETOPT(argc, argv, options, longopts)) != EOF) {
         switch (c) {
-        case 'a': /* -a and -v handled in gpib_init_args() */
-        case 'v':
-            break;
-        case 'C': /* --config (handled above) */
-            break;
-        case 'c': /* --clear */
-            _clear(gd);
-            break;
-        case 'i': /* --get-idn */
-            _get_idn(gd);
-            break;
-        case 'l': /* --local */
-            gpib_loc(gd); 
-            break;
-        case 'S': /* --selftest */
-            _test(gd);
-            break;
-        case 'L': /* --list */
-            _list_targets();
-            break;
-        case '0': /* --open */
-            _open_targets(gd, optarg);
-            break;
-        case '1': /* --close */
-            _close_targets(gd, optarg);
-            break;
-        case 'q': /* --query */
-            _query_targets(gd, optarg);
-            break;
-        case 'Q': /* --queryall */
-            _query_targets(gd, NULL);
-            break;
-        case 'I': /* --shell */
-            _shell(gd);
-            break;
-        case 'x': /* --showconfig */
-            _show_config();
-            break;
-        default:
-            _usage();
-            break;
+            OPTIONS_COMMON_SWITCH
+                break;
+            case 'C': /* --config (handled above) */
+                break;
+            case 'c': /* --clear */
+                _clear(gd);
+                break;
+            case 'i': /* --get-idn */
+                _get_idn(gd);
+                break;
+            case 'S': /* --selftest */
+                _test(gd);
+                break;
+            case 'L': /* --list */
+                _list_targets();
+                break;
+            case '0': /* --open */
+                _open_targets(gd, optarg);
+                break;
+            case '1': /* --close */
+                _close_targets(gd, optarg);
+                break;
+            case 'q': /* --query */
+                _query_targets(gd, optarg);
+                break;
+            case 'Q': /* --queryall */
+                _query_targets(gd, NULL);
+                break;
+            case 'I': /* --shell */
+                _shell(gd);
+                break;
+            case 'x': /* --showconfig */
+                _show_config();
+                break;
         }
     }
 
@@ -267,31 +268,6 @@ done:
         hostlist_destroy(valid_targets);
     gpib_fini(gd);
     exit(exit_val);
-}
-
-static void 
-_usage(void)
-{
-    char *addr = gpib_default_addr(INSTRUMENT);
-
-    fprintf(stderr, 
-"Usage: %s [--options]\n"
-"  -a,--address                  instrument address [%s]\n"
-"  -v,--verbose                  show protocol on stderr\n"
-"  -i,--get-idn                  get instrument idn string\n"
-"  -C,--config m,m,m,m,m         specify model card in slots 1,2,3,4,5 where\n"
-"    model is 44470|44471|44472|44473|44474|44475|44476|44477|44478 (0=empty)\n"
-"  -x,--showconfig               list installed cards\n"
-"  -c,--clear                    initialize instrument to default values\n"
-"  -l,--local                    return instrument to local operation on exit\n"
-"  -S,--selftest                 execute self test\n"
-"  -L,--list                     list valid channels\n"
-"  -0,--open [targets]           open contacts for specified channels\n"
-"  -1,--close [targets]          close contacts for specified channels\n"
-"  -q,--query [targets]          view state of specified channels\n"
-"  -Q,--queryall                 view state of all channels\n"
-"  -I,--shell                    start interactive shell\n"
-           , prog, addr ? addr : "no default");
 }
 
 /* Check the error register.

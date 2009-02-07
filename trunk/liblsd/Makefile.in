@@ -50,7 +50,7 @@ ARFLAGS = cru
 liblsd_a_AR = $(AR) $(ARFLAGS)
 liblsd_a_LIBADD =
 am_liblsd_a_OBJECTS = argv.$(OBJEXT) hostlist.$(OBJEXT) \
-	hprintf.$(OBJEXT) list.$(OBJEXT)
+	hprintf.$(OBJEXT) list.$(OBJEXT) cbuf.$(OBJEXT)
 liblsd_a_OBJECTS = $(am_liblsd_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/config
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
@@ -188,7 +188,6 @@ target_alias = @target_alias@
 target_cpu = @target_cpu@
 target_os = @target_os@
 target_vendor = @target_vendor@
-top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CFLAGS = @GCCWARN@
@@ -201,7 +200,9 @@ liblsd_a_SOURCES = \
 	hprintf.c \
 	hprintf.h \
 	list.c \
-	list.h
+	list.h \
+	cbuf.c \
+	cbuf.h
 
 all: all-am
 
@@ -251,6 +252,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/argv.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cbuf.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hostlist.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hprintf.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/list.Po@am__quote@

@@ -83,7 +83,6 @@
 #define HP3457_AUXERR_RAM      0x2000      /* volatile RAM failure */
 #define HP3457_AUXERR_CALRAM   0x4000      /* cal RAM protection failure */
 
-static void _usage(void);
 static void _checkid(gd_t gd);
 static void _checkrange(gd_t gd);
 static double _gettime(void);
@@ -94,14 +93,13 @@ static void _checkrange(gd_t gd);
 
 char *prog = "";
 
-#define OPTIONS "a:f:r:t:m:H:s:T:d:vclAS"
+static const char *options = OPTIONS_COMMON "f:r:t:m:H:s:T:d:cAS";
+
 #if HAVE_GETOPT_LONG
 #define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
 static struct option longopts[] = {
-    {"address",         required_argument, 0, 'a'},
+    OPTIONS_COMMON_LONG,
     {"clear",           no_argument,       0, 'c'},
-    {"local",           no_argument,       0, 'l'},
-    {"verbose",         no_argument,       0, 'v'},
     {"function",        required_argument, 0, 'f'},
     {"range",           required_argument, 0, 'r'},
     {"trigger",         required_argument, 0, 't'},
@@ -117,6 +115,20 @@ static struct option longopts[] = {
 #define GETOPT(ac,av,opt,lopt) getopt(ac,av,opt)
 #endif
 
+static opt_desc_t optdesc[] = {
+    OPTIONS_COMMON_DESC,
+    { "c", "clear", "clear instrument, set remote defaults" },
+    { "A", "autocal", "autocalibrate" },
+    { "S", "selftest", "run selftest" },
+    { "f", "function", "select function [dcv]" },
+    { "r", "range", "select range [auto]" },
+    { "t", "trigger", "select trigger mode [syn]" },
+    { "d", "digits", "number of digits [5]" },
+    { "s", "samples", "number of samples [0]" },
+    { "T", "period", "sample period [0]" },
+    { 0, 0, 0 },
+};
+
 int
 main(int argc, char *argv[])
 {
@@ -125,10 +137,10 @@ main(int argc, char *argv[])
     int c, samples = 0;
     int print_usage = 0, showtime = 0;
 
-    gd = gpib_init_args(argc, argv, OPTIONS, longopts, INSTRUMENT,
+    gd = gpib_init_args(argc, argv, options, longopts, INSTRUMENT,
                         _interpret_status, 0, &print_usage);
     if (print_usage)
-        _usage();
+        usage(optdesc);
     if (!gd)
         exit(1);
 
@@ -137,63 +149,60 @@ main(int argc, char *argv[])
     /*
      * Handle options.
      */
-    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
+    while ((c = GETOPT(argc, argv, options, longopts)) != EOF) {
         switch (c) {
-        case 'a': /* -a and -v handled in gpib_init_args () */
-        case 'v': /* --verbose */
-            break;
-        case 'c': /* --clear */
-            gpib_clr(gd, 1000000);
-            _checkid(gd);
-            gpib_wrtf(gd, "PRESET");
-            break;
-        case 'l': /* --local */
-            gpib_wrtf(gd, "RESET"); /* sets defaults for local operation */
-            gpib_loc(gd); 
-            break;
-        case 'A': /* --autocal */
-            gpib_wrtf(gd, "ACAL ALL");
-            fprintf(stderr, "%s: waiting 35 sec for AC+ohms autocal\n", prog);
-            fprintf(stderr, "%s: inputs should be disconnected\n", prog);
-            sleep(35); 
-            fprintf(stderr, "%s: autocal complete\n", prog);
-            break;
-        case 'S': /* --selftest */
-            gpib_wrtf(gd, "TEST");
-            fprintf(stderr, "%s: waiting 7 sec for self-test\n", prog);
-            sleep(7); 
-            fprintf(stderr, "%s: self-test complete\n", prog);
-            break;
-        case 'T': /* --period */
-            if (freqstr(optarg, &freq) < 0) {
-                fprintf(stderr, "%s: error parsing period argument\n", prog);
-                fprintf(stderr, "%s: use freq units: %s\n", prog, FREQ_UNITS);
-                fprintf(stderr, "%s: or period units: %s\n", prog,PERIOD_UNITS);
-                exit(1);
-            }
-            period = 1.0/freq;
-            break;
-        case 's': /* --samples */
-            samples = (int)strtoul(optarg, NULL, 10);
-            if (samples > 1)
-                showtime = 1;
-            break;
-        case 't': /* --trigger */
-            gpib_wrtf(gd, "TRIG %s", optarg);
-            break;
-        case 'r': /* --range */
-            if (!strcasecmp(optarg, "auto"))
-                gpib_wrtf(gd, "RANGE -1");
-            else
-                gpib_wrtf(gd, "RANGE %s", optarg);
-            _checkrange(gd);
-            break;
-        case 'd': /* --digits */
-            gpib_wrtf(gd, "NDIG %s", optarg);
-            break;
-        case 'f': /* --function */
-            gpib_wrtf(gd, "FUNC %s", optarg);
-            break;
+            OPTIONS_COMMON_SWITCH;
+                break;
+            case 'c': /* --clear */
+                gpib_clr(gd, 1000000);
+                _checkid(gd);
+                gpib_wrtf(gd, "PRESET");
+                break;
+            case 'A': /* --autocal */
+                gpib_wrtf(gd, "ACAL ALL");
+                fprintf(stderr, "%s: waiting 35s for AC+ohms autocal\n", prog);
+                fprintf(stderr, "%s: inputs should be disconnected\n", prog);
+                sleep(35); 
+                fprintf(stderr, "%s: autocal complete\n", prog);
+                break;
+            case 'S': /* --selftest */
+                gpib_wrtf(gd, "TEST");
+                fprintf(stderr, "%s: waiting 7 sec for self-test\n", prog);
+                sleep(7); 
+                fprintf(stderr, "%s: self-test complete\n", prog);
+                break;
+            case 'T': /* --period */
+                if (freqstr(optarg, &freq) < 0) {
+                    fprintf(stderr, "%s: error parsing period arg\n", prog);
+                    fprintf(stderr, "%s: use freq units: %s\n", 
+                            prog, FREQ_UNITS);
+                    fprintf(stderr, "%s: or period units: %s\n", 
+                            prog, PERIOD_UNITS);
+                    exit(1);
+                }
+                period = 1.0/freq;
+                break;
+            case 's': /* --samples */
+                samples = (int)strtoul(optarg, NULL, 10);
+                if (samples > 1)
+                    showtime = 1;
+                break;
+            case 't': /* --trigger */
+                gpib_wrtf(gd, "TRIG %s", optarg);
+                break;
+            case 'r': /* --range */
+                if (!strcasecmp(optarg, "auto"))
+                    gpib_wrtf(gd, "RANGE -1");
+                else
+                    gpib_wrtf(gd, "RANGE %s", optarg);
+                _checkrange(gd);
+                break;
+            case 'd': /* --digits */
+                gpib_wrtf(gd, "NDIG %s", optarg);
+                break;
+            case 'f': /* --function */
+                gpib_wrtf(gd, "FUNC %s", optarg);
+                break;
         }
     }
 
@@ -228,30 +237,6 @@ main(int argc, char *argv[])
     gpib_fini(gd);
 
     exit(0);
-}
-
-static void 
-_usage(void)
-{
-    char *addr = gpib_default_addr(INSTRUMENT);
-
-    fprintf(stderr, 
-"Usage: %s [--options]\n"
-"  -a,--address                       instrument address [%s]\n"
-"  -c,--clear                         clear instrument, set remote defaults\n"
-"  -l,--local                         enable front panel, set local defaults\n"
-"  -v,--verbose                       show protocol on stderr\n"
-"  -A,--autocal                       autocalibrate\n"
-"  -S,--selftest                      run selftest\n"
-"  -f,--function dcv|acv|acdcv|dci|aci|acdci|ohm|ohmf|freq|period\n"
-"                                     select function [dcv]\n"
-"  -r,--range <maxval>|auto           select range [auto]\n"
-"  -t,--trigger auto|ext|sgl|hold|syn select trigger mode [syn]\n"
-"  -d,--digits 3|4|5|6                number of digits [5]\n"
-"  -s,--samples                       number of samples [0]\n"
-"  -T,--period                        sample period [0]\n"
-           , prog, addr ? addr : "no default");
-    exit(1);
 }
 
 static double 

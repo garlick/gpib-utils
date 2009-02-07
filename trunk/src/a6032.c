@@ -37,8 +37,8 @@
 #include <math.h>
 #include <stdint.h>
 
-#include "gpib.h"
 #include "util.h"
+#include "gpib.h"
 
 #define PATH_DATE "/bin/date"
 
@@ -68,27 +68,25 @@
 #define A6032_ESR_RQL    2    /* request control */
 #define A6032_ESR_OPC    1    /* operation complete */
 
-static void _usage(void);
 static int _print_screen(gd_t gd, char *fmt, char *palette);
-static int _restore_setup(gd_t gd);
-static int _save_setup(gd_t gd);
-static int _get_idn(gd_t gd);
 static int _setdate(gd_t gd);
 static int _interpret_status(gd_t gd, unsigned char status, char *msg);
 
 char *prog = "";
+static char *options = OPTIONS_COMMON "cisoRrSpf:P:d";
 
-#define OPTIONS "a:clvisrpf:P:d"
+
 #if HAVE_GETOPT_LONG
 #define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
 static struct option longopts[] = {
-    {"address",         required_argument, 0, 'a'},
+    OPTIONS_COMMON_LONG,
     {"clear",           no_argument,       0, 'c'},
-    {"local",           no_argument,       0, 'l'},
-    {"verbose",         no_argument,       0, 'v'},
     {"get-idn",         no_argument,       0, 'i'},
-    {"save-setup",      no_argument,       0, 's'},
-    {"restore-setup",   no_argument,       0, 'r'},
+    {"save-config",     no_argument,       0, 's'},
+    {"get-opt",         no_argument,       0, 'o'},
+    {"reset",           no_argument,       0, 'R'},
+    {"restore",         no_argument,       0, 'r'},
+    {"selftest",        no_argument,       0, 'S'},
     {"print-screen",    no_argument,       0, 'p'},
     {"print-format",    required_argument, 0, 'f'},
     {"print-palette",   required_argument, 0, 'P'},
@@ -99,6 +97,22 @@ static struct option longopts[] = {
 #define GETOPT(ac,av,opt,lopt) getopt(ac,av,opt)
 #endif
 
+static opt_desc_t optdesc[] = {
+    OPTIONS_COMMON_DESC,
+    {"c", "clear",       "initialize instrument to default values" },
+    {"R", "reset",       "reset instrument to std. settings" },
+    {"S", "selftest",    "execute instrument self test" },
+    {"i", "get-idn",     "display instrument idn string" },
+    {"o", "get-opt",     "display instrument installed options" },
+    {"s", "save-config", "save instrument config on stdout" },
+    {"r", "restore",     "restore instrument config from stdin" },
+    { "p", "print-screen",  "send screen dump to stdout" },
+    { "f", "print-format",  "select print format (bmp|bmp8bit|png) [png]" },
+    { "P", "print-palette", "select print palette (gray|col) [col]" },
+    { "d", "set-date",      "set date and time to match UNIX" },
+    { 0, 0 },
+};
+
 int
 main(int argc, char *argv[])
 {
@@ -107,15 +121,15 @@ main(int argc, char *argv[])
     char *print_format = "png";
     char *print_palette = "col";
 
-    gd = gpib_init_args(argc, argv, OPTIONS, longopts, INSTRUMENT,
+    gd = gpib_init_args(argc, argv, options, longopts, INSTRUMENT,
                         _interpret_status, 0, &print_usage);
     if (print_usage)
-        _usage();
+        usage(optdesc);
     if (!gd)
         exit(1);
 
     /* preparse print modifiers */
-    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
+    while ((c = GETOPT(argc, argv, options, longopts)) != EOF) {
         switch (c) {
             case 'f': /* --print-format */
                 if (       strncasecmp(optarg, "bmp", 3)
@@ -142,33 +156,32 @@ main(int argc, char *argv[])
         goto done;
 
     optind = 0;
-    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
+    while ((c = GETOPT(argc, argv, options, longopts)) != EOF) {
         switch (c) {
-            case 'a': /* -a and -v handled in gpib_init_args() */
-            case 'v':
-            case 'f': /* -f and -P preparsed above */
+            OPTIONS_COMMON_SWITCH
+            case 'f': /* -f -P handled above */
             case 'P':
                 break;
             case 'c': /* --clear */
-                gpib_clr(gd, 0);
-                gpib_wrtf(gd, "*CLS");
-                gpib_wrtf(gd, "*RST");
-                sleep(1);
+                gpib_488_2_cls(gd);
                 break;
-            case 'l': /* --local */
-                gpib_loc(gd); 
+            case 'R': /* --reset */
+                gpib_488_2_rst(gd, 5);
+                break;
+            case 'S': /* --selftest */
+                gpib_488_2_tst(gd, NULL);
                 break;
             case 'i': /* --get-idn */
-                if (_get_idn(gd) == -1)
-                    exit_val = 1;
+                gpib_488_2_idn(gd);
                 break;
-            case 's': /* --save-setup */
-                if (_save_setup(gd) == -1)
-                    exit_val = 1;
+            case 'o': /* --get-opt */
+                gpib_488_2_opt(gd);
                 break;
-            case 'r': /* --restore-setup */
-                if (_restore_setup(gd) == -1)
-                    exit_val = 1;
+            case 's': /* --save-config */
+                gpib_488_2_lrn(gd);
+                break;
+            case 'r': /* --restore */
+                gpib_488_2_restore(gd);
                 break;
             case 'p': /* --print-screen */
                 if (_print_screen(gd, print_format, print_palette) == -1)
@@ -186,27 +199,6 @@ done:
     exit(exit_val);
 }
 
-static void 
-_usage(void)
-{
-    char *addr = gpib_default_addr(INSTRUMENT);
-
-    fprintf(stderr, 
-"Usage: %s [--options]\n"
-"  -a,--address            set instrument address [%s]\n"
-"  -c,--clear              initialize instrument to default values\n"
-"  -l,--local              return instrument to local operation on exit\n"
-"  -v,--verbose            show protocol on stderr\n"
-"  -i,--get-idn            return instrument idn string\n"
-"  -s,--save-setup         save setup to stdout\n"
-"  -r,--restore-setup      restore setup from stdin\n"
-"  -p,--print-screen       send screen dump to stdout\n"
-"  -f,--print-format       select print format (bmp|bmp8bit|png) [png]\n"
-"  -P,--print-palette      select print palette (gray|col) [col]\n"
-"  -d,--set-date           set date and time to match UNIX\n"
-           , prog, addr ? addr : "no default");
-    exit(1);
-}
 
 static void
 _dump_error_queue(gd_t gd)
@@ -346,59 +338,6 @@ _setdate(gd_t gd)
 
     gpib_wrtf(gd, ":SYSTEM:DATE %s", datestr);
     gpib_wrtf(gd, ":SYSTEM:TIME %s", timestr);
-    return 0;
-}
-
-/* Print scope idn string.
- */
-static int
-_get_idn(gd_t gd)
-{
-    char tmpstr[64];
-    int len;
-
-    len = gpib_qry(gd, "*IDN?", tmpstr, sizeof(tmpstr) - 1);
-    if (tmpstr[len - 1] == '\n')
-        len -= 1;
-    tmpstr[len] = '\0';
-    fprintf(stderr, "%s: %s\n", prog,tmpstr);
-    return 0;
-}
-
-/* Save scope setup to stdout.
- */
-static int
-_save_setup(gd_t gd)
-{
-    unsigned char *buf = xmalloc(SETUP_STR_SIZE);
-    int len;
-
-    len = gpib_qry(gd, "*LRN?", buf, SETUP_STR_SIZE);
-    if (write_all(1, buf, len) < 0) {
-        perror("write");
-        return -1;
-    }
-    fprintf(stderr, "%s: save setup: %d bytes\n", prog, len);
-    free(buf);
-    return 0;
-}
-
-
-/* Restore scope setup from stdin.
- */
-static int
-_restore_setup(gd_t gd)
-{
-    unsigned char buf[SETUP_STR_SIZE];
-    int len;
-
-    len = read_all(0, buf, sizeof(buf));
-    if (len < 0) {
-        perror("read");
-        return -1;
-    }
-    gpib_wrt(gd, buf, len);
-    fprintf(stderr, "%s: restore setup: %d bytes\n", prog, len);
     return 0;
 }
 

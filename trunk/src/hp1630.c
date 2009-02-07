@@ -37,8 +37,8 @@
 #include <stdarg.h>
 #include <stdint.h>
 
-#include "gpib.h"
 #include "util.h"
+#include "gpib.h"
 #include "hpcrc.h"
 
 /* Status byte 0 - only bits enabled by service request mask
@@ -115,7 +115,6 @@
     { 0,    NULL },                                     \
 }
 
-static void _usage(void);
 static int _interpret_status(gd_t gd, unsigned char status, char *msg);
 static void _setdate(gd_t gd);
 static void _verify_model(gd_t gd);
@@ -135,14 +134,13 @@ static strtab_t _sb4_errors[] = SB4_ERRORS;
 #define MAXPRINTBUF (128*1024)
 #define MAXMODELBUF (16)
 
-#define OPTIONS "a:clvpPsCSTArdV"
+static const char *options = OPTIONS_COMMON "cpPsCSTArdV";
+
 #if HAVE_GETOPT_LONG
 #define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
 static struct option longopts[] = {
-    {"address",         required_argument, 0, 'a'},
+    OPTIONS_COMMON_LONG,
     {"clear",           no_argument, 0, 'c'},
-    {"local",           no_argument, 0, 'l'},
-    {"verbose",         no_argument, 0, 'v'},
     {"print-screen",    no_argument, 0, 'p'},
     {"print-all",       no_argument, 0, 'P'},
     {"save-all",        no_argument, 0, 's'},
@@ -159,16 +157,32 @@ static struct option longopts[] = {
 #define GETOPT(ac,av,opt,lopt) getopt(ac,av,opt)
 #endif
 
+static opt_desc_t optdesc[] = {
+    OPTIONS_COMMON_DESC,
+    { "c", "clear",         "set default values, verify model no., set date" },
+    { "p", "print-screen",  "print screen to stdout" },
+    { "P", "print-all",     "print all to stdout" },
+    { "s", "save-all",      "save complete analyzer state to stdout" },
+    { "C", "save-config",   "save config to stdout" },
+    { "S", "save-state",    "save state acquisition data to stdout" },
+    { "T", "save-timing",   "save timing acquisition data to stdout" },
+    { "A", "save-analog",   "save analog data to stdout (1631 only)" },
+    { "r", "restore",       "restore analyzer state from stdin" },
+    { "V", "verify",        "verify checksums of analyzer state from stdin" },
+    { "d", "date",          "set date"},
+    { 0, 0, 0},
+};
+
 int
 main(int argc, char *argv[])
 {
     int c, print_usage = 0;
     gd_t gd;
 
-    gd = gpib_init_args(argc, argv, OPTIONS, longopts, INSTRUMENT,
+    gd = gpib_init_args(argc, argv, options, longopts, INSTRUMENT,
                         _interpret_status, 0, &print_usage);
     if (print_usage)
-        _usage();
+        usage(optdesc);
     if (!gd)
         exit(1);
 
@@ -179,80 +193,52 @@ main(int argc, char *argv[])
      * Handle options.
      */
     prog = basename(argv[0]);
-    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
+    while ((c = GETOPT(argc, argv, options, longopts)) != EOF) {
         switch (c) {
-        case 'a':   /* -a and -v handled in gpib_init_args() */
-        case 'v':
-            break;
-        case 'l':   /* --local */
-            gpib_loc(gd);
-            break;
-        case 'c':   /* --clear */
-            gpib_clr(gd, 1000000);
-            gpib_wrtf(gd, "PU\r\n");
-            _verify_model(gd);
-            _setdate(gd);
-            break;
-        case 'p':   /* --print-screen */
-            _printscreen(gd, 0);
-            break;
-        case 'P':   /* --print-all */
-            _printscreen(gd, 1);
-            break;
-        case 's':   /* --save-all */
-            _save(gd, "TE");
-            break;
-        case 'C':   /* --save-config */
-            _save(gd, "TC");
-            break;
-        case 'S':   /* --save-state */
-            _save(gd, "TS");
-            break;
-        case 'T':   /* --save-timing */
-            _save(gd, "TT");
-            break;
-        case 'A':   /* --save-analog (1631 only) */
-            _save(gd, "TA");
-            break;
-        case 'r':   /* --restore */
-            _restore(gd, 0);
-            break;
-        case 'V':   /* --verify */
-            _restore(gd, 1);
-            break;
-        case 'd':   /* --date */
-            _setdate(gd);
-            break;
+            OPTIONS_COMMON_SWITCH
+                break;
+            case 'c':   /* --clear */
+                gpib_clr(gd, 1000000);
+                gpib_wrtf(gd, "PU\r\n");
+                _verify_model(gd);
+                _setdate(gd);
+                break;
+            case 'p':   /* --print-screen */
+                _printscreen(gd, 0);
+                break;
+            case 'P':   /* --print-all */
+                _printscreen(gd, 1);
+                break;
+            case 's':   /* --save-all */
+                _save(gd, "TE");
+                break;
+            case 'C':   /* --save-config */
+                _save(gd, "TC");
+                break;
+            case 'S':   /* --save-state */
+                _save(gd, "TS");
+                break;
+            case 'T':   /* --save-timing */
+                _save(gd, "TT");
+                break;
+            case 'A':   /* --save-analog (1631 only) */
+                _save(gd, "TA");
+                break;
+            case 'r':   /* --restore */
+                _restore(gd, 0);
+                break;
+            case 'V':   /* --verify */
+                _restore(gd, 1);
+                break;
+            case 'd':   /* --date */
+                _setdate(gd);
+                break;
         }
     }
 
     gpib_fini(gd);
 
     exit(0);
-}
-static void 
-_usage(void)
-{
-    char *addr = gpib_default_addr(INSTRUMENT);
-
-    fprintf(stderr, 
-"Usage: %s [--options]\n"
-"  -a,--address addr  instrument address [%s]\n"
-"  -c,--clear         set default values, verify model no., set date\n"
-"  -l,--local         return instrument to local operation on exit\n"
-"  -v,--verbose       show protocol on stderr\n"
-"  -p,--print-screen  print screen to stdout\n"
-"  -P,--print-all     print all to stdout\n"
-"  -s,--save-all      save complete analyzer state to stdout\n"
-"  -C,--save-config   save config to stdout\n"
-"  -S,--save-state    save state acquisition data to stdout\n"
-"  -T,--save-timing   save timing acquisition data to stdout\n"
-"  -A,--save-analog   save analog data to stdout (1631 only)\n"
-"  -r,--restore       restore analyzer state (partial or complete) from stdin\n"
-"  -V,--verify        verify checksums of analyzer state from stdin\n"
-"  -d,--date          set date\n"
-           , prog, addr ? addr : "no default");
-    exit(1);
 }
 
 /* Interpet serial poll results (status byte)

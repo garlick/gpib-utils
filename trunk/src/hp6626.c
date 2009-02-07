@@ -35,8 +35,8 @@
 #include <math.h>
 #include <stdint.h>
 
-#include "gpib.h"
 #include "util.h"
+#include "gpib.h"
 
 #define INSTRUMENT "hp6626"
 
@@ -153,6 +153,10 @@ main(int argc, char *argv[])
             case 'I':
             case 'V':
             case 'o':
+            case 'r':
+            case 'R':
+            case 'O':
+            case 'C':
                 need_output = 1;
                 break;
             case 'n':
@@ -274,22 +278,22 @@ _usage(void)
 
     fprintf(stderr, 
 "Usage: %s [--options]\n"
-"  -a,--address            set instrument address [%s]\n"
-"  -c,--clear              initialize instrument to default values\n"
-"  -l,--local              return instrument to local operation on exit\n"
-"  -v,--verbose            show protocol on stderr\n"
-"  -i,--get-idn            print instrument model\n"
-"  -S,--selftest           run selftest\n"
-"  -n,--out-chan           select output channel (1-4)\n"
-"  -I,--iset               set current for selected output channel\n"
-"  -V,--vset               set voltage for selected output channel\n"
-"  -R,--irange             set current range for selected output channel\n"
-"  -r,--vrange             set voltage range for selected output channel\n"
-"  -o,--out-enable         enable/disable selected output channel (0|1)\n"
-"  -O,--ovset              set overvoltage threshold\n"
-"  -C,--ocp                enable/disable overcurrent protection (0|1)\n"
-"  -s,--samples            number of samples [default: 0]\n"
-"  -p,--period             sample period\n"
+"  -a,--address     set instrument address [%s]\n"
+"  -c,--clear       initialize instrument to default values\n"
+"  -l,--local       return instrument to local operation on exit\n"
+"  -v,--verbose     show protocol on stderr\n"
+"  -i,--get-idn     print instrument model\n"
+"  -S,--selftest    run selftest\n"
+"  -n,--out-chan    select output channel (1-4)\n"
+"  -I,--iset        set current for selected channel (amps)\n"
+"  -V,--vset        set voltage for selected channel (volts)\n"
+"  -R,--irange      set current range for selected channel (amps)\n"
+"  -r,--vrange      set voltage range for selected channel (volts)\n"
+"  -o,--out-enable  enable/disable selected channel (0|1)\n"
+"  -O,--ovset       set overvoltage threshold for selected channel (volts)\n"
+"  -C,--ocp         set overcurrent protection for selected channel (0|1)\n"
+"  -s,--samples     number of samples [default: 0]\n"
+"  -p,--period      sample period [default: 0]\n"
            , prog, addr ? addr : "no default");
     exit(1);
 }

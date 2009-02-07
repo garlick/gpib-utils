@@ -23,6 +23,7 @@ bin_PROGRAMS = \
 	hp6626 \
 	hp6038 \
 	hp1630 \
+	hp1650 \
 	hptopbm \
 	hptodino \
 	hp3457 \
@@ -36,6 +37,7 @@ bin_PROGRAMS = \
 	a34401
 
 hp1630_SOURCES = hp1630.c $(common_sources)
+hp1650_SOURCES = hp1650.c $(common_sources)
 hptopbm_SOURCES =  hptopbm.c $(common_sources)
 hptodino_SOURCES =  hptodino.c $(common_sources)
 hp3457_SOURCES = hp3457.c $(common_sources)

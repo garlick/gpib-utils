@@ -35,8 +35,8 @@
 #include <math.h>
 #include <stdint.h>
 
-#include "gpib.h"
 #include "util.h"
+#include "gpib.h"
 
 #define INSTRUMENT "hp6038"
 
@@ -94,16 +94,17 @@ static strtab_t sttab[] = {
     { 0, NULL }
 };
 
-static void _usage(void);
 static int _interpret_status(gd_t gd, unsigned char status, char *msg);
 static int _readiv(gd_t gd, double *ip, double *vp);
 
 char *prog = "";
 
-#define OPTIONS "a:clviSI:V:o:s:p:F:"
+static const char *options = OPTIONS_COMMON "ciSI:V:o:s:p:F:";
+
 #if HAVE_GETOPT_LONG
 #define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
 static struct option longopts[] = {
+    OPTIONS_COMMON_LONG,
     {"address",         required_argument, 0, 'a'},
     {"verbose",         no_argument,       0, 'v'},
     {"clear",           no_argument,       0, 'c'},
@@ -122,6 +123,20 @@ static struct option longopts[] = {
 #define GETOPT(ac,av,opt,lopt) getopt(ac,av,opt)
 #endif
 
+static opt_desc_t optdesc[] = {
+    OPTIONS_COMMON_DESC,
+    { "c", "clear", "initialize instrument to default values" },
+    { "i", "get-idn", "print instrument model" },
+    { "S", "selftest", "run selftest" },
+    { "I", "iset", "set current" },
+    { "V", "vset", "set voltage" },
+    { "o", "out", "enable/disable output (0|1)" },
+    { "F", "foldback", "set foldback (off|cv|cc)" },
+    { "s", "samples", "number of samples [0]" },
+    { "p", "period", "sample period" },
+    { 0, 0, 0 },
+};
+
 int
 main(int argc, char *argv[])
 {
@@ -133,66 +148,63 @@ main(int argc, char *argv[])
     double period = 0.0;
     int showtime = 0;
 
-    gd = gpib_init_args(argc, argv, OPTIONS, longopts, INSTRUMENT,
+    gd = gpib_init_args(argc, argv, options, longopts, INSTRUMENT,
                         _interpret_status, 0, &print_usage);
     if (print_usage)
-        _usage();
+        usage(optdesc);
     if (!gd)
         exit(1);
 
-    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
+    while ((c = GETOPT(argc, argv, options, longopts)) != EOF) {
         switch (c) {
-        case 'a': /* -a and -v handled in gpib_init_args */
-        case 'v':
-            break;
-        case 'c': /* --clear */
-            gpib_clr(gd, 1000000); /* same as 'CLR' command */
-            gpib_wrtf(gd, "OUT 0;RST\n");
-            sleep(1);
-            break;
-        case 'l': /* --local */
-            gpib_loc(gd); 
-            break;
-        case 'i': /* --get-idn */
-            gpib_wrtstr(gd, "ID?\n");
-            gpib_rdstr(gd, tmpstr, sizeof(tmpstr));
-            printf("%s\n", tmpstr);
-            break;
-        case 'S': /* --selftest */
-            gpib_wrtstr(gd, "TEST?\n");
-            gpib_rdstr(gd, tmpstr, sizeof(tmpstr));
-            if (sscanf(tmpstr, "TEST %d", &rc) == 1)
-                printf("self-test: %s\n", findstr(sttab ,rc));
-            else
-                printf("self-test: %s\n", tmpstr);
-            break;
-        case 'I': /* --iset */
-            gpib_wrtf(gd, "ISET %s\n", optarg);
-            break;
-        case 'V': /* --vset */
-            gpib_wrtf(gd, "VSET %s\n", optarg);
-            break;
-        case 'o': /* --out */
-            gpib_wrtf(gd, "OUT %s\n", optarg);
-            break;
-        case 'F': /* --foldback */
-            /* N.B. do all models accept OFF|CV|CC?  If not, cvt to 0|1|2 */
-            gpib_wrtf(gd, "FOLD %s\n", optarg);
-            break;
-        case 's': /* --samples */
-            samples = strtoul(optarg, NULL, 10);
-            if (samples > 1)
-                showtime = 1;
-            break;
-        case 'p': /* --period */
-            if (freqstr(optarg, &period) < 0) {
-                fprintf(stderr, "%s: error parsing period argument\n", prog);
-                fprintf(stderr, "%s: use units of: %s\n", prog, PERIOD_UNITS);
-                exit_val = 1;
+            OPTIONS_COMMON_SWITCH
                 break;
-            }
-            period = 1.0/period;
-            break;
+            case 'c': /* --clear */
+                gpib_clr(gd, 1000000); /* same as 'CLR' command */
+                gpib_wrtf(gd, "OUT 0;RST\n");
+                sleep(1);
+                break;
+            case 'i': /* --get-idn */
+                gpib_wrtstr(gd, "ID?\n");
+                gpib_rdstr(gd, tmpstr, sizeof(tmpstr));
+                printf("%s\n", tmpstr);
+                break;
+            case 'S': /* --selftest */
+                gpib_wrtstr(gd, "TEST?\n");
+                gpib_rdstr(gd, tmpstr, sizeof(tmpstr));
+                if (sscanf(tmpstr, "TEST %d", &rc) == 1)
+                    printf("self-test: %s\n", findstr(sttab ,rc));
+                else
+                    printf("self-test: %s\n", tmpstr);
+                break;
+            case 'I': /* --iset */
+                gpib_wrtf(gd, "ISET %s\n", optarg);
+                break;
+            case 'V': /* --vset */
+                gpib_wrtf(gd, "VSET %s\n", optarg);
+                break;
+            case 'o': /* --out */
+                gpib_wrtf(gd, "OUT %s\n", optarg);
+                break;
+            case 'F': /* --foldback */
+                /* N.B. do all models accept OFF|CV|CC?  If not, cvt to 0|1|2 */
+                gpib_wrtf(gd, "FOLD %s\n", optarg);
+                break;
+            case 's': /* --samples */
+                samples = strtoul(optarg, NULL, 10);
+                if (samples > 1)
+                    showtime = 1;
+                break;
+            case 'p': /* --period */
+                if (freqstr(optarg, &period) < 0) {
+                    fprintf(stderr, "%s: error parsing period arg\n", prog);
+                    fprintf(stderr, "%s: use units of: %s\n", 
+                            prog, PERIOD_UNITS);
+                    exit_val = 1;
+                    break;
+                }
+                period = 1.0/period;
+                break;
         }
     }
 
@@ -223,29 +235,6 @@ main(int argc, char *argv[])
 done:
     gpib_fini(gd);
     exit(exit_val);
-}
-
-static void 
-_usage(void)
-{
-    char *addr = gpib_default_addr(INSTRUMENT);
-
-    fprintf(stderr, 
-"Usage: %s [--options]\n"
-"  -a,--address            set instrument address [%s]\n"
-"  -c,--clear              initialize instrument to default values\n"
-"  -l,--local              return instrument to local operation on exit\n"
-"  -v,--verbose            show protocol on stderr\n"
-"  -i,--get-idn            print instrument model\n"
-"  -S,--selftest           run selftest\n"
-"  -I,--iset               set current\n"
-"  -V,--vset               set voltage\n"
-"  -o,--out                enable/disable output (0|1)\n"
-"  -F,--foldback           set foldback (off|cv|cc)\n"
-"  -s,--samples            number of samples [0]\n"
-"  -p,--period             sample period\n"
-           , prog, addr ? addr : "no default");
-    exit(1);
 }
 
 static int
