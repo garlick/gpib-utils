@@ -134,12 +134,13 @@ static strtab_t _sb4_errors[] = SB4_ERRORS;
 #define MAXPRINTBUF (128*1024)
 #define MAXMODELBUF (16)
 
-static const char *options = OPTIONS_COMMON "cpPsCSTArdV";
+static const char *options = OPTIONS_COMMON "lcpPsCSTArdV";
 
 #if HAVE_GETOPT_LONG
 #define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
 static struct option longopts[] = {
     OPTIONS_COMMON_LONG,
+    {"local",           no_argument, 0, 'l'},
     {"clear",           no_argument, 0, 'c'},
     {"print-screen",    no_argument, 0, 'p'},
     {"print-all",       no_argument, 0, 'P'},
@@ -159,6 +160,7 @@ static struct option longopts[] = {
 
 static opt_desc_t optdesc[] = {
     OPTIONS_COMMON_DESC,
+    { "l", "local",         "return instrument to front panel controle" },
     { "c", "clear",         "set default values, verify model no., set date" },
     { "p", "print-screen",  "print screen to stdout" },
     { "P", "print-all",     "print all to stdout" },
@@ -196,6 +198,9 @@ main(int argc, char *argv[])
     while ((c = GETOPT(argc, argv, options, longopts)) != EOF) {
         switch (c) {
             OPTIONS_COMMON_SWITCH
+                break;
+            case 'l':   /* --local */
+                gpib_loc(gd);
                 break;
             case 'c':   /* --clear */
                 gpib_clr(gd, 1000000);

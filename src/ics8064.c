@@ -46,12 +46,11 @@
 #define ICS8064_STB_ESR             0x20
 #define ICS8064_STB_MAV             0x10
 
-#define OPTIONS "a:vcli0:1:qQIRL"
+#define OPTIONS OPTIONS_COMMON "cli0:1:qQIRL"
 #if HAVE_GETOPT_LONG
 #define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
 static struct option longopts[] = {
-        {"address",             required_argument,  0, 'a'},
-        {"verbose",             no_argument,        0, 'v'},
+        OPTIONS_COMMON_LONG,
         {"clear",               no_argument,        0, 'c'},
         {"local",               no_argument,        0, 'l'},
         {"get-idn-string",      no_argument,        0, 'i'},
@@ -67,9 +66,23 @@ static struct option longopts[] = {
 #define GETOPT(ac,av,opt,lopt) getopt(ac,av,opt)
 #endif
 
+static opt_desc_t optdesc[] = {
+    OPTIONS_COMMON_DESC,
+    {"c","clear",          " initialize instrument to default values"},
+    {"l","local",          "return instrument to local operation on exit"},
+    {"i","get-idn-string", "get idn string"},
+    {"0","open",           "open the specified relays"},
+    {"1","close",          "close the specified relays"},
+    {"q","query",          "query the state of all relays"},
+    {"Q","query-digital",  "query the state of digital inputs"},
+    {"I","shell",          "start interactive shell"},
+    {"L","selftest",       "execute instrument selftest"},
+    {"R","radio",          "set radio button mode (max one relay closed)"},
+    {0,0},
+};
+
 static int _interpret_status(gd_t gd, unsigned char status, char *msg);
 static void _clear(gd_t gd);
-static void _usage(void);
 static void _query_relays(gd_t gd);
 static void _open_relays(gd_t gd, char *targets);
 static void _close_relays(gd_t gd, char *targets);
@@ -93,14 +106,23 @@ main(int argc, char *argv[])
     gd = gpib_init_args(argc, argv, OPTIONS, longopts, INSTRUMENT,
                         _interpret_status, 100000, &print_usage);
     if (print_usage)
-        _usage();
+        usage(optdesc);
     if (!gd)
         exit(1);
 
     while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
+        switch(c) {
+            case 'R' :  /* --radio */
+                radio++;
+                break;
+        }
+    }
+
+    optind = 0;
+    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
         switch (c) {
-            case 'a' :  /* handled in gpib_init_args() */
-            case 'v' :
+            case 'R':   /* -r handled above */
+            OPTIONS_COMMON_SWITCH
                 break;
             case 'l' :  /* --local */
                 gpib_loc(gd);
@@ -132,9 +154,6 @@ main(int argc, char *argv[])
             case 'I' :  /* --shell */
                 _shell(gd);
                 break;
-            case 'R' :  /* --radio */
-                radio++;
-                break;
             case 'L' :  /* --selftest */
                 _selftest(gd);
                 break;
@@ -145,28 +164,6 @@ main(int argc, char *argv[])
     exit(exit_val);
 }
 
-static void
-_usage(void)
-{
-    char *addr = gpib_default_addr(INSTRUMENT);
-
-    fprintf(stderr, 
-  "Usage: %s [--options]\n"
-  "  -a,--name name            instrument address [%s]\n"
-  "  -c,--clear                set default values\n"
-  "  -l,--local                return instrument to local operation on exit\n"
-  "  -v,--verbose              show protocol on stderr\n"
-  "  -i,--get-idn-string       get idn string\n"
-  "  -0,--open [targets]       open the specified relays\n"
-  "  -1,--close [targets]      close the specified relays\n" 
-  "  -q,--query                query the state of all relays\n"
-  "  -Q,--query-digital        query the state of digital inputs\n"
-  "  -I,--shell                start interactive shell\n"
-  "  -L,--selftest             execute instrument selftest\n"
-  "  -R,--radio                set radio button mode (max one relay closed)\n"
-                       , prog, addr ? addr : "no default");
-        exit(1);
-}
 
 /* Interpet serial poll results (status byte)
  *   Return: 0=non-fatal/no error, >0=fatal, -1=retry.

@@ -102,14 +102,12 @@ static int _readiv(gd_t gd, double *ip, double *vp);
 
 char *prog = "";
 
-#define OPTIONS "a:clviSI:V:o:s:p:n:r:R:O:C:"
+#define OPTIONS OPTIONS_COMMON "lciSI:V:o:s:p:N:r:R:O:C:"
 #if HAVE_GETOPT_LONG
 #define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
 static struct option longopts[] = {
-    {"address",         required_argument, 0, 'a'},
-    {"verbose",         no_argument,       0, 'v'},
-    {"clear",           no_argument,       0, 'c'},
     {"local",           no_argument,       0, 'l'},
+    {"clear",           no_argument,       0, 'c'},
     {"get-idn",         no_argument,       0, 'i'},
     {"selftest",        no_argument,       0, 'S'},
     {"iset",            required_argument, 0, 'I'},
@@ -117,7 +115,7 @@ static struct option longopts[] = {
     {"out-enable",      required_argument, 0, 'o'},
     {"samples",         required_argument, 0, 's'},
     {"period",          required_argument, 0, 'p'},
-    {"out-chan",        required_argument, 0, 'n'},
+    {"out-chan",        required_argument, 0, 'N'},
     {"vrange",          required_argument, 0, 'r'},
     {"irange",          required_argument, 0, 'R'},
     {"ovset",           required_argument, 0, 'O'},
@@ -159,7 +157,7 @@ main(int argc, char *argv[])
             case 'C':
                 need_output = 1;
                 break;
-            case 'n':
+            case 'N':
                 output = optarg;
                 break;
         }
@@ -178,8 +176,7 @@ main(int argc, char *argv[])
     optind = 0;
     while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
         switch (c) {
-            case 'a': /* -a and -v handled in gpib_init_args */
-            case 'v':
+            OPTIONS_COMMON_SWITCH
                 break;
             case 'c': /* --clear */
                 gpib_clr(gd, 1000000);

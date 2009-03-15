@@ -1,3 +1,25 @@
+2009-03-14 Jim Garlick <garlick.jim@gmail.com>
+
+	* src/ibquery.c : New generic instrument query utility.
+
+	* src/gpib.[ch] : Search the following paths for config file:
+	$GPIB_UTILS_CONF, ~/.gpib-utils.conf, /etc/gpib-utils.conf.
+
+	* configure.ac : Add -Werror to CFLAGS.
+
+	* src/*.c : Further cleanup of common args handling.
+
+	* src/gpib.[ch] : Remove -l (local) as common arg as the early
+	parsing doesn't allow it to be the last of a string of commands.
+	Add -n (name) as common arg to override default instrument name
+	used to look up address in config file.
+
+	* src/dg535.c, man/dg535.1.in : Change -n (out-chan) to -N.
+
+	* src/hp6626.c, man/hp6626.1.in : Change -n (out-chan) to -N.
+
+	* htdocs/supported.html : Updated with the latest supported gear.
+
 2009-02-07 Jim Garlick <garlick.jim@gmail.com>
 
 	* src/gpib.[ch] : Add 488.2 common command functions.

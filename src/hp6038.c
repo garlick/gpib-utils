@@ -99,7 +99,7 @@ static int _readiv(gd_t gd, double *ip, double *vp);
 
 char *prog = "";
 
-static const char *options = OPTIONS_COMMON "ciSI:V:o:s:p:F:";
+static const char *options = OPTIONS_COMMON "lciSI:V:o:s:p:F:";
 
 #if HAVE_GETOPT_LONG
 #define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
@@ -107,8 +107,8 @@ static struct option longopts[] = {
     OPTIONS_COMMON_LONG,
     {"address",         required_argument, 0, 'a'},
     {"verbose",         no_argument,       0, 'v'},
-    {"clear",           no_argument,       0, 'c'},
     {"local",           no_argument,       0, 'l'},
+    {"clear",           no_argument,       0, 'c'},
     {"get-idn",         no_argument,       0, 'i'},
     {"selftest",        no_argument,       0, 'S'},
     {"iset",            required_argument, 0, 'I'},
@@ -125,6 +125,7 @@ static struct option longopts[] = {
 
 static opt_desc_t optdesc[] = {
     OPTIONS_COMMON_DESC,
+    { "l", "local", "return instrument to front panel control" },
     { "c", "clear", "initialize instrument to default values" },
     { "i", "get-idn", "print instrument model" },
     { "S", "selftest", "run selftest" },
@@ -158,6 +159,9 @@ main(int argc, char *argv[])
     while ((c = GETOPT(argc, argv, options, longopts)) != EOF) {
         switch (c) {
             OPTIONS_COMMON_SWITCH
+                break;
+            case 'l': /* --local */
+                gpib_loc(gd);
                 break;
             case 'c': /* --clear */
                 gpib_clr(gd, 1000000); /* same as 'CLR' command */

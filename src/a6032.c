@@ -49,9 +49,9 @@
 
 /* Status byte values
  */
-#define A6032_STAT_OPER    128    /* an enabled condition in OPER has occurred */
-#define A6032_STAT_RQS  32    /* device is requesting service */
-#define A6032_STAT_ESB  16    /* an enabled condition in ESR has occurred */
+#define A6032_STAT_OPER   128    /* an enabled condition in OPER has occurred */
+#define A6032_STAT_RQS    32    /* device is requesting service */
+#define A6032_STAT_ESB    16    /* an enabled condition in ESR has occurred */
 #define A6032_STAT_MAV    8    /* message(s) available in the output queue */
 #define A6032_STAT_MSG    4    /* advisory has been displayed on the scope */
 #define A6032_STAT_USR    2    /* an enabled user event has occurred */
@@ -73,13 +73,14 @@ static int _setdate(gd_t gd);
 static int _interpret_status(gd_t gd, unsigned char status, char *msg);
 
 char *prog = "";
-static char *options = OPTIONS_COMMON "cisoRrSpf:P:d";
+static char *options = OPTIONS_COMMON "lcisoRrSpf:P:d";
 
 
 #if HAVE_GETOPT_LONG
 #define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
 static struct option longopts[] = {
     OPTIONS_COMMON_LONG,
+    {"local",           no_argument,       0, 'l'},
     {"clear",           no_argument,       0, 'c'},
     {"get-idn",         no_argument,       0, 'i'},
     {"save-config",     no_argument,       0, 's'},
@@ -99,13 +100,14 @@ static struct option longopts[] = {
 
 static opt_desc_t optdesc[] = {
     OPTIONS_COMMON_DESC,
-    {"c", "clear",       "initialize instrument to default values" },
-    {"R", "reset",       "reset instrument to std. settings" },
-    {"S", "selftest",    "execute instrument self test" },
-    {"i", "get-idn",     "display instrument idn string" },
-    {"o", "get-opt",     "display instrument installed options" },
-    {"s", "save-config", "save instrument config on stdout" },
-    {"r", "restore",     "restore instrument config from stdin" },
+    {"l", "local",          "return instrument to front panel control" },
+    {"c", "clear",          "initialize instrument to default values" },
+    {"R", "reset",          "reset instrument to std. settings" },
+    {"S", "selftest",       "execute instrument self test" },
+    {"i", "get-idn",        "display instrument idn string" },
+    {"o", "get-opt",        "display instrument installed options" },
+    {"s", "save-config",    "save instrument config on stdout" },
+    {"r", "restore",        "restore instrument config from stdin" },
     { "p", "print-screen",  "send screen dump to stdout" },
     { "f", "print-format",  "select print format (bmp|bmp8bit|png) [png]" },
     { "P", "print-palette", "select print palette (gray|col) [col]" },
@@ -162,6 +164,9 @@ main(int argc, char *argv[])
             case 'f': /* -f -P handled above */
             case 'P':
                 break;
+            case 'l': /* --local */
+		gpib_loc(gd);
+		break;
             case 'c': /* --clear */
                 gpib_488_2_cls(gd);
                 break;

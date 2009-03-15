@@ -40,8 +40,9 @@ DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(srcdir)/hp3488.1.in $(srcdir)/hp6038.1.in \
 	$(srcdir)/hp6626.1.in $(srcdir)/hp6632.1.in \
 	$(srcdir)/hp8656.1.in $(srcdir)/hptodino.1.in \
-	$(srcdir)/hptopbm.1.in $(srcdir)/ics8064.1.in \
-	$(srcdir)/icsconfig.1.in $(srcdir)/sr620.1.in
+	$(srcdir)/hptopbm.1.in $(srcdir)/ibquery.1.in \
+	$(srcdir)/ics8064.1.in $(srcdir)/icsconfig.1.in \
+	$(srcdir)/sr620.1.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/ac_linux_gpib.m4 \
 	$(top_srcdir)/config/x_ac_expand_install_dirs.m4 \
@@ -52,7 +53,8 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config/config.h
 CONFIG_CLEAN_FILES = a34401.1 a6032.1 dg535.1 hp1630.1 hp3457.1 \
 	hp3488.1 hp6632.1 hp6626.1 hp6038.1 hp8656.1 hptodino.1 \
-	hptopbm.1 ics8064.1 icsconfig.1 sr620.1 gpib-utils.conf.5
+	hptopbm.1 ics8064.1 icsconfig.1 sr620.1 ibquery.1 \
+	gpib-utils.conf.5
 SOURCES =
 DIST_SOURCES =
 man1dir = $(mandir)/man1
@@ -202,7 +204,8 @@ man1_MANS = \
 	hptopbm.1 \
 	ics8064.1 \
         icsconfig.1 \
-	sr620.1
+	sr620.1 \
+	ibquery.1
 
 man5_MANS = \
 	gpib-utils.conf.5
@@ -222,7 +225,9 @@ EXTRA_DIST = \
 	hptopbm.1 \
 	ics8064.1 \
         icsconfig.1 \
-	sr620.1
+	sr620.1 \
+	ibquery.1 \
+	gpib-utils.conf.5
 
 all: all-am
 
@@ -285,6 +290,8 @@ ics8064.1: $(top_builddir)/config.status $(srcdir)/ics8064.1.in
 icsconfig.1: $(top_builddir)/config.status $(srcdir)/icsconfig.1.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 sr620.1: $(top_builddir)/config.status $(srcdir)/sr620.1.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+ibquery.1: $(top_builddir)/config.status $(srcdir)/ibquery.1.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 gpib-utils.conf.5: $(top_builddir)/config.status $(srcdir)/gpib-utils.conf.5.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@

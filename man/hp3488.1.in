@@ -11,8 +11,12 @@ hp3488 \- control HP 3488A switch/control unit
 .SH OPTIONS
 \fBhp3488\fR accepts the following command line options:
 .TP
+\fB\-n\fR, \fB\-\-name\fR name
+Set the name used to look up the instrument address in
+the config file.  The default is \fIhp3488\fR.
+.TP
 \fB\-a\fR, \fB\-\-address\fR address
-Override the default instrument address in @X_SYSCONFDIR@/gpib-utils.conf.
+Set the instrument address.
 See gpib-utils.conf(5) for a description of address formats.
 .TP
 \fB\-c\fR, \fB\-\-clear\fR
@@ -152,6 +156,8 @@ done
 .fi
 .SH FILES
 @X_SYSCONFDIR@/gpib-utils.conf
+.br
+~/.gpib-utils.conf
 .SH "SEE ALSO"
 gpib-utils.conf(5)
 .PP

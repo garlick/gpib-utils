@@ -110,7 +110,7 @@ main(int argc, char *argv[])
     optind = 0;
     while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
         switch (c) {
-            case 'a': /* --address already handled above */
+            case 'a':  /* --address already handled above */
                 break;
             case 'j' : /* --get-interface-name */
 		if (ics_get_interface_name(ics, &tmpstr) == 0) {
@@ -223,7 +223,7 @@ _usage(void)
 {
     fprintf(stderr, 
   "Usage: %s [--options]\n"
-  "  -a,--name                    instrument address\n"
+  "  -a,--address                 instrument address\n"
   "  -jJ,--get/set-interface-name VXI-11 logical name (e.g. ``inst'')\n"
   "  -tT,--get/set-comm-timeout   TCP timeout (in seconds)\n"
   "  -sS,--get/set-static-ip-mode static IP mode (0=disabled, 1=enabled)\n"

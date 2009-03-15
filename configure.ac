@@ -20,8 +20,8 @@ AM_MAINTAINER_MODE
 ##
 AC_PROG_CC
 if test "$GCC" = yes; then
-  GCCWARN="-Wall"
-  GCCWARNRPC="-Wall -Wno-unused"
+  GCCWARN="-Wall -Werror"
+  GCCWARNRPC="-Wall -Wno-unused -Werror"
   AC_SUBST([GCCWARN])
   AC_SUBST([GCCWARNRPC])
 fi
@@ -87,6 +87,7 @@ AC_CONFIG_FILES( \
   man/ics8064.1 \
   man/icsconfig.1 \
   man/sr620.1 \
+  man/ibquery.1 \
   man/gpib-utils.conf.5 \
 )
 AC_OUTPUT

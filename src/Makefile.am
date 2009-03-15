@@ -34,7 +34,8 @@ bin_PROGRAMS = \
 	ics8064 \
         icsconfig \
 	a6032 \
-	a34401
+	a34401 \
+	ibquery
 
 hp1630_SOURCES = hp1630.c $(common_sources)
 hp1650_SOURCES = hp1650.c $(common_sources)
@@ -52,5 +53,6 @@ a34401_SOURCES = a34401.c $(common_sources)
 hp6632_SOURCES = hp6632.c  $(common_sources)
 hp6626_SOURCES = hp6626.c  $(common_sources)
 hp6038_SOURCES = hp6038.c  $(common_sources)
+ibquery_SOURCES = ibquery.c  $(common_sources)
 
 

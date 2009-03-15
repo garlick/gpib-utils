@@ -125,7 +125,6 @@
 #define SR620_TIC_ARM           0x08
 #define SR620_TIC_EXT_OVLD      0x10
 
-static void _usage(void);
 static void _clear(gd_t gd);
 static void _save(gd_t gd);
 static void _restore(gd_t gd);
@@ -138,14 +137,13 @@ char *prog = "";
 static strtab_t _selftest_errors[] = SR620_TEST_ERRORS;
 static strtab_t _autocal_errors[] = SR620_AUTOCAL_ERRORS;
 
-#define OPTIONS "a:clvsrStpPjCgG"
+#define OPTIONS OPTIONS_COMMON "clsrStpPjCgG"
 #if HAVE_GETOPT_LONG
 #define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
 static struct option longopts[] = {
-    {"address",         required_argument, 0, 'a'},
+    OPTIONS_COMMON_LONG,
     {"clear",           no_argument,       0, 'c'},
     {"local",           no_argument,       0, 'l'},
-    {"verbose",         no_argument,       0, 'v'},
     {"save",            no_argument,       0, 's'},
     {"restore",         no_argument,       0, 'r'},
     {"selftest",        no_argument,       0, 'S'},
@@ -162,6 +160,23 @@ static struct option longopts[] = {
 #define GETOPT(ac,av,opt,lopt) getopt(ac,av,opt)
 #endif
 
+static opt_desc_t optdesc[] = {
+    OPTIONS_COMMON_DESC,
+    {"c","clear",         "initialize instrument to default values"},
+    {"l","local",         "return instrument to local operation on exit"},
+    {"s","save",          "save instrument setup to stdout"},
+    {"r","restore",       "restore instrument setup from stdin"},
+    {"S","selftest",      "run instrument self test"},
+    {"t","autocal",       "run autocal procedure"},
+    {"C","graph-clear",   "clear graph"},
+    {"G","graph-enable",  "enable graph mode"},
+    {"g","graph-disable", "disable graph mode (improves meas. throughput)"},
+    {"p","graph-histogram", "graph histogram"},
+    {"P","graph-mean",    "graph mean stripchart"},
+    {"j","graph-jitter",  "graph jitter stripchart"},
+    {0,0},
+};
+
 int
 main(int argc, char *argv[])
 {
@@ -172,7 +187,7 @@ main(int argc, char *argv[])
     gd = gpib_init_args(argc, argv, OPTIONS, longopts, INSTRUMENT,
                         _interpret_status, 0, &print_usage);
     if (print_usage)
-        _usage();
+        usage(optdesc);
     if (!gd)
         exit(1);
 
@@ -180,8 +195,7 @@ main(int argc, char *argv[])
 
     while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
         switch (c) {
-            case 'a': /* handled in gpib_init_args() */
-            case 'v':
+            OPTIONS_COMMON_SWITCH
                 break;
             case 'c': /* --clear */
                 _clear(gd);
@@ -227,30 +241,6 @@ main(int argc, char *argv[])
     exit(0);
 }
 
-static void 
-_usage(void)
-{
-    char *addr = gpib_default_addr(INSTRUMENT);
-
-    fprintf(stderr, 
-"Usage: %s [--options]\n"
-"  -a,--address addr     instrument address [%s]\n"
-"  -c,--clear            initialize instrument to default values\n"
-"  -l,--local            return instrument to local operation on exit\n"
-"  -v,--verbose          show protocol on stderr\n"
-"  -s,--save             save instrument setup to stdout\n"
-"  -r,--restore          restore instrument setup from stdin\n"
-"  -S,--selftest         run instrument self test\n"
-"  -t,--autocal          run autocal procedure\n"
-"  -C,--graph-clear      clear graph\n"
-"  -G,--graph-enable     enable graph mode\n"
-"  -g,--graph-disable    disable graph mode (improves measurement throughput)\n"
-"  -p,--graph-histogram  graph histogram\n"
-"  -P,--graph-mean       graph mean stripchart\n"
-"  -j,--graph-jitter     graph jitter stripchart\n"
-           , prog, addr ? addr : "no default");
-    exit(1);
-}
 
 static int
 _check_esr(gd_t gd, char *msg)
