@@ -43,24 +43,24 @@
 #define INSTRUMENT "hp6632"
 
 /* serial poll reg */
-#define HP6032_SPOLL_FAU    1
-#define HP6032_SPOLL_PON    2
-#define HP6032_SPOLL_RDY    16
-#define HP6032_SPOLL_ERR    32
-#define HP6032_SPOLL_RQS    64
+#define HP6632_SPOLL_FAU    1
+#define HP6632_SPOLL_PON    2
+#define HP6632_SPOLL_RDY    16
+#define HP6632_SPOLL_ERR    32
+#define HP6632_SPOLL_RQS    64
 
 /* status reg. bits (STS? - also ASTS? UNMASK? FAULT?) */
-#define HP6032_STAT_CV      1       /* constant voltage mode */
-#define HP6032_STAT_CC      2       /* positive constant current mode */
-#define HP6032_STAT_UNR     4       /* output unregulated */
-#define HP6032_STAT_OV      8       /* overvoltage protection tripped */
-#define HP6032_STAT_OT      16      /* over-temperature protection tripped */
-#define HP6032_STAT_OC      64      /* overcurrent protection tripped */
-#define HP6032_STAT_ERR     128     /* programming error */
-#define HP6032_STAT_INH     256     /* remote inhibit */
-#define HP6032_STAT_NCC     512     /* negative constant current mode */
-#define HP6032_STAT_FAST    1024    /* output in fast operating mode */
-#define HP6032_STAT_NORM    2048    /* output in normal operating mode */
+#define HP6632_STAT_CV      1       /* constant voltage mode */
+#define HP6632_STAT_CC      2       /* positive constant current mode */
+#define HP6632_STAT_UNR     4       /* output unregulated */
+#define HP6632_STAT_OV      8       /* overvoltage protection tripped */
+#define HP6632_STAT_OT      16      /* over-temperature protection tripped */
+#define HP6632_STAT_OC      64      /* overcurrent protection tripped */
+#define HP6632_STAT_ERR     128     /* programming error */
+#define HP6632_STAT_INH     256     /* remote inhibit */
+#define HP6632_STAT_NCC     512     /* negative constant current mode */
+#define HP6632_STAT_FAST    1024    /* output in fast operating mode */
+#define HP6632_STAT_NORM    2048    /* output in normal operating mode */
 
 /* programming errors */
 static strtab_t petab[] = {
@@ -118,17 +118,16 @@ static strtab_t sttab[] = {
     { 0, NULL }
 };
 
-static void _usage(void);
 static int _interpret_status(gd_t gd, unsigned char status, char *msg);
 static int _readiv(gd_t gd, double *ip, double *vp);
 
 char *prog = "";
 
-#define OPTIONS "a:clviSI:V:o:O:C:Rs:p:"
+#define OPTIONS OPTIONS_COMMON "cliSI:V:o:O:C:Rs:p:"
 #if HAVE_GETOPT_LONG
 #define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
 static struct option longopts[] = {
-    {"address",         required_argument, 0, 'a'},
+    OPTIONS_COMMON_LONG,
     {"verbose",         no_argument,       0, 'v'},
     {"clear",           no_argument,       0, 'c'},
     {"local",           no_argument,       0, 'l'},
@@ -148,6 +147,23 @@ static struct option longopts[] = {
 #define GETOPT(ac,av,opt,lopt) getopt(ac,av,opt)
 #endif
 
+static opt_desc_t optdesc[] = {
+    OPTIONS_COMMON_DESC,
+    { "c", "clear",   "initialize instrument to default values" },
+    { "l","local",    "return instrument to local operation on exit" },
+    { "i","get-idn",  "print instrument model" },
+    { "R","get-rom",  "print instrument ROM version" },
+    { "S","selftest", "run selftest" },
+    { "I","iset",     "set current" },
+    { "V","vset",     "set voltage" },
+    { "o","out",      "enable/disable output (0|1)" },
+    { "O","ovset",    "set overvoltage threshold" },
+    { "C","ocp",      "enable/disable overcurrent protection (0|1)" },
+    { "s","samples",  "number of samples [0]" },
+    { "p","period",   "sample period" },
+    {0, 0},
+};
+
 int
 main(int argc, char *argv[])
 {
@@ -162,14 +178,13 @@ main(int argc, char *argv[])
     gd = gpib_init_args(argc, argv, OPTIONS, longopts, INSTRUMENT,
                         _interpret_status, 0, &print_usage);
     if (print_usage)
-        _usage();
+        usage(optdesc);
     if (!gd)
         exit(1);
 
     while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
         switch (c) {
-        case 'a': /* -a and -v handled in gpib_init_args */
-        case 'v':
+        OPTIONS_COMMON_SWITCH
             break;
         case 'c': /* --clear */
             gpib_clr(gd, 1000000); /* same as 'CLR' command */
@@ -258,30 +273,6 @@ done:
     exit(exit_val);
 }
 
-static void 
-_usage(void)
-{
-    char *addr = gpib_default_addr(INSTRUMENT);
-
-    fprintf(stderr, 
-"Usage: %s [--options]\n"
-"  -a,--address            set instrument address [%s]\n"
-"  -c,--clear              initialize instrument to default values\n"
-"  -l,--local              return instrument to local operation on exit\n"
-"  -v,--verbose            show protocol on stderr\n"
-"  -i,--get-idn            print instrument model\n"
-"  -R,--get-rom            print instrument ROM version\n"
-"  -S,--selftest           run selftest\n"
-"  -I,--iset               set current\n"
-"  -V,--vset               set voltage\n"
-"  -o,--out                enable/disable output (0|1)\n"
-"  -O,--ovset              set overvoltage threshold\n"
-"  -C,--ocp                enable/disable overcurrent protection (0|1)\n"
-"  -s,--samples            number of samples [0]\n"
-"  -p,--period             sample period\n"
-           , prog, addr ? addr : "no default");
-    exit(1);
-}
 
 static int
 _interpret_status(gd_t gd, unsigned char status, char *msg)
@@ -289,17 +280,17 @@ _interpret_status(gd_t gd, unsigned char status, char *msg)
     char tmpstr[64];    
     int e, err = 0;
 
-    if (status & HP6032_SPOLL_FAU) {
+    if (status & HP6632_SPOLL_FAU) {
         fprintf(stderr, "%s: device fault\n", prog);
         /* FIXME: check FAULT? and/or ASTS? but only if unmasked */
         err = 1;
     }
-    if (status & HP6032_SPOLL_PON) {
+    if (status & HP6632_SPOLL_PON) {
         /*fprintf(stderr, "%s: power-on detected\n", prog);*/
     }
-    if (status & HP6032_SPOLL_RDY) {
+    if (status & HP6632_SPOLL_RDY) {
     }
-    if (status & HP6032_SPOLL_ERR) {
+    if (status & HP6632_SPOLL_ERR) {
         gpib_wrtstr(gd, "ERR?\n");
         gpib_rdstr(gd, tmpstr, sizeof(tmpstr));
         if (sscanf(tmpstr, "%d", &e) == 1)
@@ -308,7 +299,7 @@ _interpret_status(gd_t gd, unsigned char status, char *msg)
             fprintf(stderr, "%s: prog error: %s\n", prog, tmpstr);
         err = 1;
     }
-    if (status & HP6032_SPOLL_RQS) {
+    if (status & HP6632_SPOLL_RQS) {
         fprintf(stderr, "%s: device is requesting service\n", prog);
         err = 1; /* it shouldn't be unless we tell it to */
     }

@@ -50,7 +50,7 @@
 #include <sys/time.h>
 #include <fcntl.h>
 #include <math.h>
-
+#include <wordexp.h>
 
 #include "util.h"
 #include "gpib.h"
@@ -1099,12 +1099,17 @@ _parse_line(char *buf, char *key)
 char *
 gpib_default_addr(char *name)
 {
+    char *paths[] = GPIB_UTILS_CONF, **p = &paths[0];
+    wordexp_t w;
+    FILE *cf = NULL;
     static char buf[64];
-    FILE *cf;
     char *res = NULL;
 
-    if (!(cf = fopen("/etc/gpib-utils.conf", "r")))
-        cf = fopen("../etc/gpib-utils.conf", "r");
+    while (cf == NULL && *p != NULL) {
+        if (wordexp(*p++, &w, 0) == 0 && w.we_wordc > 0)
+             cf = fopen(w.we_wordv[0], "r");
+        wordfree(&w);
+    }
     if (cf) {
         while (res == NULL && fgets(buf, sizeof(buf), cf) != NULL)
             res = _parse_line(buf, name);
@@ -1124,7 +1129,7 @@ gpib_init_args(int argc, char *argv[], const char *opts,
     int c, verbose = 0, todo = 0;
     char *addr = NULL;
     gd_t gd = NULL;
-    int local = 0, error = 0;
+    int error = 0;
 
     prog = basename(argv[0]);
     while ((c = GETOPT(argc, argv, opts, longopts)) != EOF) {
@@ -1135,8 +1140,8 @@ gpib_init_args(int argc, char *argv[], const char *opts,
             case 'v': /* --verbose */
                 verbose = 1;
                 break;
-            case 'l': /* --local */
-                local = 1;
+            case 'n': /* --name */
+                name = optarg;
                 break;
             case '?':
                 error++;
@@ -1152,12 +1157,18 @@ gpib_init_args(int argc, char *argv[], const char *opts,
     }
     *opt_error = 0;
 
-    if (!addr)
-        addr = gpib_default_addr(name);
     if (!addr) {
-        fprintf(stderr, "%s: no default address for %s, use --address\n", 
-                prog, name);
-        goto done;
+        if (name) {
+            addr = gpib_default_addr(name);
+            if (!addr) {
+                fprintf(stderr, "%s: no dflt address for %s, use --address\n", 
+                        prog, name);
+                goto done;
+            }
+        } else {
+            fprintf(stderr, "%s: --name or --address are required\n", prog);
+            goto done;
+        }
     }
     gd = gpib_init(addr, sf, 0);
     if (!gd) {
@@ -1166,8 +1177,6 @@ gpib_init_args(int argc, char *argv[], const char *opts,
         goto done;
     }
     gpib_set_verbose(gd, verbose);
-    if (local)
-        gpib_loc(gd);
 done:
     optind = 0;
     return gd;
@@ -1195,6 +1204,9 @@ usage(opt_desc_t *tab)
     exit(1);
 }
 
+/* 
+ * Verify/decode some 488.2 data formats.
+ */
 static int
 _extract_dlab_len(unsigned char *data, int lenlen, int len)
 {
@@ -1207,8 +1219,6 @@ _extract_dlab_len(unsigned char *data, int lenlen, int len)
     return strtoul(tmpstr, NULL, 10);
 }
 
-/* Verify/decode some 488.2 data formats.
- */
 int
 gpib_decode_488_2_data(unsigned char *data, int *lenp, int flags)
 {

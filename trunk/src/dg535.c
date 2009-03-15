@@ -130,15 +130,16 @@ static strtab_t polarity[] = {
 };
 
 static const char *options = OPTIONS_COMMON \
-                             "ce:n:dD:qQ:gG:fF:pP:yY:tT:mM:sS:bB:zZ:D:x";
+                             "lce:n:dD:qQ:gG:fF:pP:yY:tT:mM:sS:bB:zZ:D:x";
 #if HAVE_GETOPT_LONG
 #define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
 static struct option longopts[] = {
     OPTIONS_COMMON_LONG,
+    {"local",           no_argument,       0, 'l'},
     {"clear",           no_argument,       0, 'c'},
     {"display-string",  required_argument, 0, 'e'},
     {"single-shot",     no_argument,       0, 'x'},
-    {"out-chan",        required_argument, 0, 'n'},
+    {"out-chan",        required_argument, 0, 'N'},
     {"get-delay",       no_argument,       0, 'd'},
     {"set-delay",       required_argument, 0, 'D'},
     {"get-out-mode",    no_argument,       0, 'q'},
@@ -169,10 +170,11 @@ static struct option longopts[] = {
 
 static opt_desc_t optdesc[] = {
     OPTIONS_COMMON_DESC,
+    { "l",  "local",          "return instrument to front panel control" },
     { "c",  "clear",          "initialize instrument to default values" },
     { "e",  "display-string", "display string (1-20 chars), empty to clear" },
     { "x",  "single-shot",    "trigger instrument in single shot mode" },
-    { "n",  "out-chan",       "select output channel (t0|a|b|ab|c|d|cd)" },
+    { "N",  "out-chan",       "select output channel (t0|a|b|ab|c|d|cd)" },
     { "dD", "get/set-delay",  "output delay (another-chan,delay)" },
     { "qQ", "get/set-out-mode", "output mode (ttl|nim|ecl|var)" },
     { "gG", "get/set-out-ampl", "output amplitude (-4:-0.1, +0.1:+4) volts" },
@@ -207,7 +209,7 @@ main(int argc, char *argv[])
     /* preparse args to get output channel */
     while ((c = GETOPT(argc, argv, options, longopts)) != EOF) {
         switch (c) {
-            case 'n': /* --out-chan */
+            case 'N': /* --out-chan */
                 out_chan = rfindstr(out_names, optarg);
                 if (out_chan == -1) {
                     fprintf(stderr, "%s: bad --out-chan argument\n", prog);
@@ -247,6 +249,9 @@ main(int argc, char *argv[])
         switch (c) {
             OPTIONS_COMMON_SWITCH
             case 'o':
+                break;
+            case 'l': /* --local */
+                gpib_loc(gd);
                 break;
             case 'c': /* --clear */
                 gpib_clr(gd, 0);

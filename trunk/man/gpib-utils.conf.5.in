@@ -6,7 +6,11 @@ gpib-utils.conf \- configuration file for gpib-utils
 .SH DESCRIPTION
 The gpib-utils.conf file defines default instrument addresses for 
 the gpib-utils utilities so addresses do not have to be provided on the
-command line.
+command line.  
+.LP
+If the environment variable GPIB_UTILS_CONF is set to a file path,
+this is used as the config file.  Otherwise, first ~/.gpib-utils.conf,
+then @X_SYSCONFDIR@/gpib-utils.conf are tried.
 .SH FILE FORMAT
 Empty lines and anything prefaced with a # character is ignored.
 Instruments are defined one per line.
@@ -54,6 +58,8 @@ sr620		15
 
 .SH "FILES"
 @X_SYSCONFDIR@/gpib-utils.conf
+.br
+~/.gpib-utils.conf
 
 .SH "SEE ALSO"
 \fBhttp://sourceforge.net/projects/gpib-utils\fR

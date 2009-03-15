@@ -37,7 +37,8 @@ bin_PROGRAMS = hp6632$(EXEEXT) hp6626$(EXEEXT) hp6038$(EXEEXT) \
 	hp1630$(EXEEXT) hp1650$(EXEEXT) hptopbm$(EXEEXT) \
 	hptodino$(EXEEXT) hp3457$(EXEEXT) hp3488$(EXEEXT) \
 	hp8656$(EXEEXT) dg535$(EXEEXT) sr620$(EXEEXT) ics8064$(EXEEXT) \
-	icsconfig$(EXEEXT) a6032$(EXEEXT) a34401$(EXEEXT)
+	icsconfig$(EXEEXT) a6032$(EXEEXT) a34401$(EXEEXT) \
+	ibquery$(EXEEXT)
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -131,6 +132,12 @@ hptopbm_LDADD = $(LDADD)
 hptopbm_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.a \
 	$(top_builddir)/libics/libics.a \
 	$(top_builddir)/liblsd/liblsd.a
+am_ibquery_OBJECTS = ibquery.$(OBJEXT) $(am__objects_1)
+ibquery_OBJECTS = $(am_ibquery_OBJECTS)
+ibquery_LDADD = $(LDADD)
+ibquery_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.a \
+	$(top_builddir)/libics/libics.a \
+	$(top_builddir)/liblsd/liblsd.a
 am_ics8064_OBJECTS = ics8064.$(OBJEXT) $(am__objects_1)
 ics8064_OBJECTS = $(am_ics8064_OBJECTS)
 ics8064_LDADD = $(LDADD)
@@ -160,14 +167,14 @@ SOURCES = $(a34401_SOURCES) $(a6032_SOURCES) $(dg535_SOURCES) \
 	$(hp1630_SOURCES) $(hp1650_SOURCES) $(hp3457_SOURCES) \
 	$(hp3488_SOURCES) $(hp6038_SOURCES) $(hp6626_SOURCES) \
 	$(hp6632_SOURCES) $(hp8656_SOURCES) $(hptodino_SOURCES) \
-	$(hptopbm_SOURCES) $(ics8064_SOURCES) $(icsconfig_SOURCES) \
-	$(sr620_SOURCES)
+	$(hptopbm_SOURCES) $(ibquery_SOURCES) $(ics8064_SOURCES) \
+	$(icsconfig_SOURCES) $(sr620_SOURCES)
 DIST_SOURCES = $(a34401_SOURCES) $(a6032_SOURCES) $(dg535_SOURCES) \
 	$(hp1630_SOURCES) $(hp1650_SOURCES) $(hp3457_SOURCES) \
 	$(hp3488_SOURCES) $(hp6038_SOURCES) $(hp6626_SOURCES) \
 	$(hp6632_SOURCES) $(hp8656_SOURCES) $(hptodino_SOURCES) \
-	$(hptopbm_SOURCES) $(ics8064_SOURCES) $(icsconfig_SOURCES) \
-	$(sr620_SOURCES)
+	$(hptopbm_SOURCES) $(ibquery_SOURCES) $(ics8064_SOURCES) \
+	$(icsconfig_SOURCES) $(sr620_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -331,6 +338,7 @@ a34401_SOURCES = a34401.c $(common_sources)
 hp6632_SOURCES = hp6632.c  $(common_sources)
 hp6626_SOURCES = hp6626.c  $(common_sources)
 hp6038_SOURCES = hp6038.c  $(common_sources)
+ibquery_SOURCES = ibquery.c  $(common_sources)
 all: all-am
 
 .SUFFIXES:
@@ -426,6 +434,9 @@ hptodino$(EXEEXT): $(hptodino_OBJECTS) $(hptodino_DEPENDENCIES)
 hptopbm$(EXEEXT): $(hptopbm_OBJECTS) $(hptopbm_DEPENDENCIES) 
 	@rm -f hptopbm$(EXEEXT)
 	$(LINK) $(hptopbm_OBJECTS) $(hptopbm_LDADD) $(LIBS)
+ibquery$(EXEEXT): $(ibquery_OBJECTS) $(ibquery_DEPENDENCIES) 
+	@rm -f ibquery$(EXEEXT)
+	$(LINK) $(ibquery_OBJECTS) $(ibquery_LDADD) $(LIBS)
 ics8064$(EXEEXT): $(ics8064_OBJECTS) $(ics8064_DEPENDENCIES) 
 	@rm -f ics8064$(EXEEXT)
 	$(LINK) $(ics8064_OBJECTS) $(ics8064_LDADD) $(LIBS)
@@ -457,6 +468,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcrc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hptodino.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hptopbm.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ibquery.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ics8064.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/icsconfig.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sr620.Po@am__quote@

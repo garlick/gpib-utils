@@ -2,8 +2,9 @@
 gpib-utils-1.5 Release Notes                                   
 =========================================================================
 
-* Added support for new devices:
+* New utilities
   - hp1650:   Hewlett-Packard 1650A/1651A logic analyzer
+  - ibquery:  Generic query utility.
 
 =========================================================================
 gpib-utils-1.4 Release Notes                                  2009-02-02 

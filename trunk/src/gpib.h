@@ -87,20 +87,27 @@ typedef struct {
 
 void usage(opt_desc_t *tab);
 
-#define OPTIONS_COMMON "a:lv"
+#define GPIB_UTILS_CONF { \
+    "$GPIB_UTILS_CONF", \
+    "~/.gpib-utils.conf", \
+    "/etc/gpib-utils.conf", \
+   NULL, \
+}
+
+#define OPTIONS_COMMON "a:n:v"
 #define OPTIONS_COMMON_LONG \
     {"address",         required_argument, 0, 'a'}, \
-    {"local",           no_argument,       0, 'l'}, \
+    {"name",            no_argument,       0, 'n'}, \
     {"verbose",         no_argument,       0, 'v'}
 
 #define OPTIONS_COMMON_DESC \
     {"a", "address",   "set instrument address" }, \
-    {"l", "local",     "return instrument to front panel control" }, \
+    {"n", "name",      "set instrument name" }, \
     {"v", "verbose",   "show protocol on stderr" }
 
 #define OPTIONS_COMMON_SWITCH \
     case 'a': \
-    case 'l': \
+    case 'n': \
     case 'v':
 
 gd_t gpib_init_args(int argc, char *argv[], const char *opts, 

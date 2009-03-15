@@ -93,12 +93,13 @@ static void _checkrange(gd_t gd);
 
 char *prog = "";
 
-static const char *options = OPTIONS_COMMON "f:r:t:m:H:s:T:d:cAS";
+static const char *options = OPTIONS_COMMON "lf:r:t:m:H:s:T:d:cAS";
 
 #if HAVE_GETOPT_LONG
 #define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
 static struct option longopts[] = {
     OPTIONS_COMMON_LONG,
+    {"local",           no_argument,       0, 'l'},
     {"clear",           no_argument,       0, 'c'},
     {"function",        required_argument, 0, 'f'},
     {"range",           required_argument, 0, 'r'},
@@ -117,6 +118,7 @@ static struct option longopts[] = {
 
 static opt_desc_t optdesc[] = {
     OPTIONS_COMMON_DESC,
+    { "l", "local", "return instrument to front panel control" },
     { "c", "clear", "clear instrument, set remote defaults" },
     { "A", "autocal", "autocalibrate" },
     { "S", "selftest", "run selftest" },
@@ -152,6 +154,9 @@ main(int argc, char *argv[])
     while ((c = GETOPT(argc, argv, options, longopts)) != EOF) {
         switch (c) {
             OPTIONS_COMMON_SWITCH;
+                break;
+            case 'l': /* --local */
+                gpib_loc(gd);
                 break;
             case 'c': /* --clear */
                 gpib_clr(gd, 1000000);

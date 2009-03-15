@@ -13,8 +13,12 @@ four channel digital delay/pulse generator via its GPIB interface.
 .SH "OPTIONS, GENERAL"
 \fBdg535\fR accepts the following command line options:
 .TP
+\fB\-n\fR, \fB\-\-name\fR name
+Set the name used to look up the instrument address in
+the config file.  The default is \fIdg535\fR.
+.TP
 \fB\-a\fR, \fB\-\-address\fR address
-Override the default instrument address in @X_SYSCONFDIR@/gpib-utils.conf.
+Set the instrument address.
 See gpib-utils.conf(5) for a description of address formats.
 .TP
 \fB\-c\fR, \fB\-\-clear\fR
@@ -42,7 +46,7 @@ An empty string clears the display.
 Enable the front panel.
 .SH "OPTIONS, OUTPUT"
 .TP
-\fB\-n\fR, \fB\-\-out\-chan\fR t0|a|b|ab|c|d|cd
+\fB\-N\fR, \fB\-\-out\-chan\fR t0|a|b|ab|c|d|cd
 Select an output channel for one of the output configuration commands.
 .TP
 \fB\-d\fR, \fB\-\-get\-delay\fR
@@ -147,6 +151,8 @@ Set impedence of external trigger input to \fIlo\fR (50 ohm)
 or \fIhi\fR (1 Mohm).
 .SH FILES
 @X_SYSCONFDIR@/gpib-utils.conf
+.br
+~/.gpib-utils.conf
 .SH SEE ALSO
 gpib-utils.conf(5)
 .PP

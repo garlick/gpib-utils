@@ -12,8 +12,12 @@ power supply via its GPIB interface.
 .SH OPTIONS
 \fBhp6626\fR accepts the following command line options:
 .TP
+\fB\-n\fR, \fB\-\-name\fR name
+Set the name used to look up the instrument address in
+the config file.  The default is \fIhp6626\fR.
+.TP
 \fB\-a\fR, \fB\-\-address\fR address
-Override the default instrument address in @X_SYSCONFDIR@/gpib-utils.conf.
+Set the instrument address.
 See gpib-utils.conf(5) for a description of address formats.
 .TP
 \fB\-c\fR, \fB\-\-clear\fR
@@ -29,7 +33,7 @@ Print instrument model.
 \fB\-S\fR, \fB\-\-selftest\fR 
 Run instrument selftest.
 .TP
-\fB\-n\fR, \fB\-\-out-chan\fR \fI[1-4]\fR
+\fB\-N\fR, \fB\-\-out-chan\fR \fI[1-4]\fR
 Select an output channel.
 .TP
 \fB\-I\fR, \fB\-\-iset\fR float
@@ -73,6 +77,8 @@ separated by tabs.  The time is omitted if only one sample is requested.
 Set sample period [Default 0s].
 .SH FILES
 @X_SYSCONFDIR@/gpib-utils.conf
+.br
+~/.gpib-utils.conf
 .SH "SEE ALSO"
 gpib-utils.conf(5)
 .PP

@@ -126,13 +126,14 @@ char *prog = "";
 static int lerr_flag = 1;   /* logic errors: 0=ignored, 1=fatal */
                             /*   See: disambiguate_ctype() */
 
-static const char *options = OPTIONS_COMMON "icSL0:1:q:QIC:x";
+static const char *options = OPTIONS_COMMON "licSL0:1:q:QIC:x";
 
 #if HAVE_GETOPT_LONG
 #define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
 static struct option longopts[] = {
     OPTIONS_COMMON_LONG,
     {"get-idn",         no_argument,       0, 'i'},
+    {"local",           no_argument,       0, 'l'},
     {"clear",           no_argument,       0, 'c'},
     {"selftest",        no_argument,       0, 'S'},
     {"list",            no_argument,       0, 'L'},
@@ -151,6 +152,7 @@ static struct option longopts[] = {
 
 static opt_desc_t optdesc[] = {
     OPTIONS_COMMON_DESC,
+    { "l", "local", "return instrument to front panel control" },
     { "c", "clear", "initialize instrument to default values" },
     { "i", "get-idn", "get instrument idn string" },
     { "C", "config m,m,m,m,m", "specify model card in slots 1,2,3,4,5 where\n\
@@ -188,8 +190,6 @@ main(int argc, char *argv[])
     /* preparse args (again) to get slot config settled before doing work */
     while ((c = GETOPT(argc, argv, options, longopts)) != EOF) {
         switch (c) {
-            OPTIONS_COMMON_SWITCH
-                break;
             case 'C': /* --config */
                 if (valid_targets) {
                     fprintf(stderr, "%s: -C may only be used once\n", prog);
@@ -202,7 +202,8 @@ main(int argc, char *argv[])
                     goto done;
                 }
                 break;
-            case 'c': /* handled below */
+            case 'l': /* handled below */
+            case 'c':
             case 'S':
             case 'i':
                 break;
@@ -229,6 +230,9 @@ main(int argc, char *argv[])
             OPTIONS_COMMON_SWITCH
                 break;
             case 'C': /* --config (handled above) */
+                break;
+            case 'l': /* --local */
+                gpib_loc(gd);
                 break;
             case 'c': /* --clear */
                 _clear(gd);

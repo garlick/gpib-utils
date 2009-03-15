@@ -12,8 +12,12 @@ hp1630 \- control HP 1630/31 logic analyzer
 .SH OPTIONS
 \fBhp1630\fR accepts the following command line options:
 .TP
+\fB\-n\fR, \fB\-\-name\fR name
+Set the name used to look up the instrument address in
+the config file.  The default is \fIhp1630\fR.
+.TP
 \fB\-a\fR, \fB\-\-address\fR address
-Override the default instrument address in @X_SYSCONFDIR@/gpib-utils.conf.
+Set the instrument address.
 See gpib-utils.conf(5) for a description of address formats.
 .TP
 \fB\-c\fR, \fB\-\-clear\fR
@@ -60,6 +64,8 @@ Restore state/measurement data saved by any of the save options
 from standard input.
 .SH FILES
 @X_SYSCONFDIR@/gpib-utils.conf
+.br
+~/.gpib-utils.conf
 .SH "SEE ALSO"
 gpib-utils.conf(5)
 .PP

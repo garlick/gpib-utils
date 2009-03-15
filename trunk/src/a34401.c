@@ -72,12 +72,13 @@
 static int _interpret_status(gd_t gd, unsigned char status, char *msg);
 
 char *prog = "";
-const char *options = OPTIONS_COMMON "cisoRrSf:g:G:t:N:p:";
+const char *options = OPTIONS_COMMON "lcisoRrSf:g:G:t:N:p:";
 
 #if HAVE_GETOPT_LONG
 #define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
 static struct option longopts[] = {
     OPTIONS_COMMON_LONG,
+    {"local",           no_argument,       0, 'l'},
     {"clear",           no_argument,       0, 'c'},
     {"get-idn",         no_argument,       0, 'i'},
     {"save-config",     no_argument,       0, 's'},
@@ -99,6 +100,7 @@ static struct option longopts[] = {
 
 static opt_desc_t optdesc[] = {
     OPTIONS_COMMON_DESC,
+    {"l", "local",       "return instrument to front panel control" },
     {"c", "clear",       "initialize instrument to default values" },
     {"R", "reset",       "reset instrument to std. settings" },
     {"S", "selftest",    "execute instrument self test" },
@@ -160,6 +162,9 @@ main(int argc, char *argv[])
             OPTIONS_COMMON_SWITCH
             case 'g': /* -g, -G handled above */
             case 'G':
+                break;
+            case 'l': /* --local */
+                gpib_loc(gd);
                 break;
             case 'c': /* --clear */
                 gpib_488_2_cls(gd);

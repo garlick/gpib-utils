@@ -12,8 +12,12 @@ GPIB interface.
 .SH OPTIONS
 \fBhp6038\fR accepts the following command line options:
 .TP
+\fB\-n\fR, \fB\-\-name\fR name
+Set the name used to look up the instrument address in
+the config file.  The default is \fIhp6038\fR.
+.TP
 \fB\-a\fR, \fB\-\-address\fR address
-Override the default instrument address in @X_SYSCONFDIR@/gpib-utils.conf.
+Set the instrument address.
 See gpib-utils.conf(5) for a description of address formats.
 .TP
 \fB\-c\fR, \fB\-\-clear\fR
@@ -51,6 +55,8 @@ Select number of current and voltage samples to take [Default 0].
 Set sample period [Default 0s].
 .SH FILES
 @X_SYSCONFDIR@/gpib-utils.conf
+.br
+~/.gpib-utils.conf
 .SH "SEE ALSO"
 gpib-utils.conf(5)
 .PP

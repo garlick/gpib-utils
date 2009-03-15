@@ -15,8 +15,12 @@ Use
 to set the configuration.
 .SH OPTIONS
 .TP
+\fB\-n\fR, \fB\-\-name\fR name
+Set the name used to look up the instrument address in
+the config file.  The default is \fIics8064\fR.
+.T
 \fB\-a\fR, \fB\-\-address\fR address
-Override the default IP address in @X_SYSCONFDIR@/gpib-utils.conf.
+Set the instrument address.
 See gpib-utils.conf(5) for a description of address formats.
 .TP
 \fB\-c\fR, \fB\-\-clear\fR
@@ -50,5 +54,7 @@ Display the 8064 idn string, which contains the firmware revision,
 model number, etc..
 .SH FILES
 @X_SYSCONFDIR@/gpib-utils.conf
+.br
+~/.gpib-utils.conf
 .SH SEE ALSO
 icsconfig(1)
