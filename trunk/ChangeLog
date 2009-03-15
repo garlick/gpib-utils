@@ -1,5 +1,7 @@
 2009-03-14 Jim Garlick <garlick.jim@gmail.com>
 
+	* : tag gpib-utils-1.5-pre1
+
 	* src/ibquery.c : New generic instrument query utility.
 
 	* src/gpib.[ch] : Search the following paths for config file:
