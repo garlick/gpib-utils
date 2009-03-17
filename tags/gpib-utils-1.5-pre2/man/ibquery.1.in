@@ -1,0 +1,61 @@
+.TH ibquery 1  "@META_DATE@" "@META_ALIAS@" "@META_NAME@"
+.SH NAME
+ibquery \- query instrument
+.SH SYNOPSIS
+.nf
+.B ibquery [\fIOPTIONS\fR]
+
+.fi
+.SH DESCRIPTION
+\fBibquery\fR is a generic instrument query utility that communicates
+with test instruments over GPIB or VXI-11 interfaces.
+\fBibquery\fR performs actions in the order they appear on the command line.
+Any number of actions may be specified.
+.SH OPTIONS
+\fBibquery\fR accepts the following command line options:
+.TP
+\fB\-n\fR, \fB\-\-name\fR name
+Set the name used to look up the instrument address in
+the config file.  There is no default.
+.TP
+\fB\-a\fR, \fB\-\-address\fR address
+Set the instrument address.
+See gpib-utils.conf(5) for a description of address formats.
+.TP
+\fB\-v\fR, \fB\-\-verbose\fR
+Show protocol on stderr.
+.TP
+\fB\-l\fR, \fB\-\-local\fR
+Enable the front panel.
+.TP
+\fB\-c\fR, \fB\-\-clear\fR
+Send device clear command.
+.TP
+\fB\-w\fR, \fB\-\-write\fR  \fIstring\fR
+Send \fIstring\fR to instrument.
+.TP
+\fB\-r\fR, \fB\-\-read\fR
+Read string from instrument and display it on stdout.
+.TP
+\fB\-q\fR, \fB\-\-query\fR \fIstring\fR
+Send \fIstring\fR to instrument, then read response
+and display it on stdout.  Equivalent to
+\fB\-\-write string \-\-read\fR.
+.TP
+\fB\-s\fR, \fB\-\-status\fR \fImask\fR
+Read instrument status byte and print it on stdout in decimal format.
+If any of the bits that are set in \fImask\fR are set in the status byte,
+terminate the program immediately and return an exit code of 1.
+.TP
+\fB\-d\fR, \fB\-\-delay\fR \fIseconds\fR
+Delay for \fIseconds\fR, a floating point number with microsecond
+resolution, before processing the next command.
+.SH ERRORS
+If communication errors occur, \fBibquery\fR prints an error message
+on stderr and returns an exit code of 1.
+.SH FILES
+@X_SYSCONFDIR@/gpib-utils.conf
+.br
+~/.gpib-utils.conf
+.SH SEE ALSO
+gpib-utils.conf(5)

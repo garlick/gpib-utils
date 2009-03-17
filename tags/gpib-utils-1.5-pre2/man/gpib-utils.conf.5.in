@@ -1,0 +1,65 @@
+.TH gpib-utils.conf 5 "@META_DATE@" "@META_ALIAS@" "@META_NAME@"
+
+.SH NAME
+gpib-utils.conf \- configuration file for gpib-utils
+
+.SH DESCRIPTION
+The gpib-utils.conf file defines default instrument addresses for 
+the gpib-utils utilities so addresses do not have to be provided on the
+command line.  
+.LP
+If the environment variable GPIB_UTILS_CONF is set to a file path,
+this is used as the config file.  Otherwise, first ~/.gpib-utils.conf,
+then @X_SYSCONFDIR@/gpib-utils.conf are tried.
+.SH FILE FORMAT
+Empty lines and anything prefaced with a # character is ignored.
+Instruments are defined one per line.
+Each instrument definition is an instrument 
+name and instrument address separated by white space.
+.LP
+Instrument names are the same as the gpib-utils utility name.
+.LP
+Instrument addresses can be in one of the following formats:
+.TP
+\fBGPIB address\fR \fI[board:]primary[,secondary]\fR
+GPIB devices addressed by board index, primary address, and secondary address.
+The board index is assumed to be 0 if unspecified.
+Secondary addressing is not used if the secondary address is unspecified.
+Primary and secondary addresses are normally in the range of 0 through 30.
+.TP
+\fBVXI-11 address\fR \fIhostname:instr[,primary[,secondary]]\fR
+The address for a native VXI-11/LXI device is the device's
+IP address or host name usually concatenated with ``:inst0''.
+The address for a GPIB device behind a VXI-11/GPIB gateway is the 
+IP address of the gateway with a string representing the GPIB bus 
+and addresses, for example ``:gpib0,15'' or ``:gpib0,2,30''.
+.TP
+\fBserial address\fR \fIdevice[:flags]\fR
+Serial support is not yet implemented.
+.TP
+\fBsocket address\fR \fIhostname:port\fR
+Socket support is not yet implemented.
+.SH EXAMPLE
+.nf
+# These devices are behind a vxi/gpib gw
+dg535		192.168.1.77:gpib0,15
+hp1630		192.168.1.77:gpib0,7
+hp3457		192.168.1.77:gpib0,22
+hp8656		192.168.1.77:gpib0,7
+hp3488		192.168.1.77:gpib0,8
+
+# Native vxi (lxi) devices
+a34401		192.168.1.108:inst0  # (actually a 34110A, 34401 has no LAN)
+a6032		192.168.1.109:inst0
+
+# These devices are directly attached to a linux-gpib board
+sr620		15
+.fi
+
+.SH "FILES"
+@X_SYSCONFDIR@/gpib-utils.conf
+.br
+~/.gpib-utils.conf
+
+.SH "SEE ALSO"
+\fBhttp://sourceforge.net/projects/gpib-utils\fR
