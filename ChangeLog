@@ -1,3 +1,10 @@
+2009-03-16 Jim Garlick <garlick.jim@gmail.com>
+
+	* : tag gpib-utils-1.5-pre2
+
+	* src/gpib.c : Fix address parsing in gpib_init() so that
+	numerically prefixed IP/hostnames are not confused with gpib addrs.
+
 2009-03-14 Jim Garlick <garlick.jim@gmail.com>
 
 	* : tag gpib-utils-1.5-pre1
