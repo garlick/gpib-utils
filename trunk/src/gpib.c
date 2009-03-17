@@ -1064,7 +1064,7 @@ gpib_init(char *addr, spollfun_t sf, unsigned long retry)
         gd = _init_gpib(board, pad, 0, sf, retry);       /* board:pad */
     else if (sscanf(addr, "%d,%d", &pad, &sad) == 2)
         gd = _init_gpib(0,pad, 0x60+sad, sf, retry);     /* pad,sad */
-    else if (sscanf(addr, "%d", &pad) == 1)
+    else if ((pad = strtoul(addr, &endptr, 10)) >= 0 && *endptr == '\0')
         gd = _init_gpib(0,     pad, 0,        sf, retry);/* pad */
     else if (stat(addr, &sb) == 0 && S_ISCHR(sb.st_mode))
         gd = _init_serial(addr, "9600,8n1", sf, retry);  /* device */
