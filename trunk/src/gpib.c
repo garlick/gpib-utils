@@ -37,7 +37,9 @@
 #include <errno.h>
 #include <string.h>
 #include <ctype.h>
+#ifndef __USE_ISOC99
 #define __USE_ISOC99 /* activate vsscanf prototype in stdio.h */
+#endif
 #include <stdio.h>
 #if HAVE_GETOPT_LONG
 #include <getopt.h>

@@ -1,5 +1,5 @@
 =========================================================================
-gpib-utils-1.5 Release Notes                                   
+gpib-utils-1.5 Release Notes                                   2009-03-16
 =========================================================================
 
 * New utilities
@@ -7,7 +7,7 @@ gpib-utils-1.5 Release Notes
   - ibquery:  Generic query utility.
 
 =========================================================================
-gpib-utils-1.4 Release Notes                                  2009-02-02 
+gpib-utils-1.4 Release Notes                                   2009-02-02 
 =========================================================================
 
 * Added support for new devices:
