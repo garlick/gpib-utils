@@ -1,3 +1,7 @@
+2011-04-07 Jim Garlick <garlick.jim@gmail.com>
+
+	* src/gpib.c : Portability fix. [Alessio Bogani]
+
 2009-03-16 Jim Garlick <garlick.jim@gmail.com>
 
 	* : tag gpib-utils-1.5-pre2
