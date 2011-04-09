@@ -3,6 +3,6 @@
 ##
   Meta:         1
   Name:         gpib-utils
-  Version:      1.5-pre2
-  Release:      1
-  Date:  	2009-03-16
+  Version:      1.5
+  Release:      pre3
+  Date:  	2010-04-08

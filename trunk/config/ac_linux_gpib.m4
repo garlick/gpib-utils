@@ -27,8 +27,10 @@ AC_DEFUN([AC_LINUX_GPIB], [
       $2
     elif test "$withval" = "yes"; then
       ac_linux_gpib_path=/usr
-    else
+    elif test -n "$withval"; then
       ac_linux_gpib_path="$withval"
+    else 
+      ac_linux_gpib_path=
     fi
   ])
   if test "$ac_linux_gpib_path" != ""; then
