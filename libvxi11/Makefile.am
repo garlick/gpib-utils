@@ -1,8 +1,8 @@
 AM_CFLAGS = @GCCWARNRPC@
 
-noinst_LIBRARIES = libvxi11.a
+lib_LTLIBRARIES = libvxi11.la
 
-libvxi11_a_SOURCES = \
+libvxi11_la_SOURCES = \
 	vxi11_device.c \
 	vxi11_core.c \
 	rpccache.c \
@@ -45,3 +45,7 @@ vxi11intr_xdr.c: vxi11intr.x vxi11intr.h
 vxi11intr_svc.c:  vxi11intr.x vxi11intr.h
 	rm -f $@; rpcgen -o $@ -m vxi11intr.x
 
+if WITH_PKG_CONFIG
+pkgconfig_DATA = libvxi11.pc
+endif
+include_HEADERS = vxi11_device.h

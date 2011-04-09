@@ -1,3 +1,7 @@
+2011-04-08 Jim Garlick <garlick.jim@gmail.com>
+
+	* libvxi11/* : Install shared library and .pc file.
+
 2011-04-07 Jim Garlick <garlick.jim@gmail.com>
 
 	* src/gpib.c : Portability fix. [Alessio Bogani]

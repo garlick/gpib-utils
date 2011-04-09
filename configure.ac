@@ -1,7 +1,8 @@
 ##
 # Prologue
 ##
-AC_INIT([gpib-utils])
+AC_INIT(m4_esyscmd([awk '/Name:/ {printf "%s",$2; exit}' META]),
+        m4_esyscmd([awk '/Version:/ {printf "%s",$2; exit}' META]))
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_SRCDIR([NEWS])
 AC_CANONICAL_SYSTEM
@@ -26,6 +27,7 @@ if test "$GCC" = yes; then
   AC_SUBST([GCCWARNRPC])
 fi
 AC_PROG_RANLIB
+AC_PROG_LIBTOOL
 
 ##
 # Checks for header files.
@@ -62,12 +64,17 @@ AC_DEFINE(WITH_LSD_NOMEM_ERROR_FUNC, 1, [Define lsd_fatal_error])
 AC_DEFINE(WANT_RECKLESS_HOSTRANGE_EXPANSION, 1, 
 					[Allow reckless hostname expansion])
 
+# Whether to install pkg-config files for libvxi11
+AC_PKGCONFIG
+
 ##
 # Epilogue
 ##
 AC_CONFIG_FILES( \
   Makefile \
+  gpib-utils.spec \
   libvxi11/Makefile \
+  libvxi11/libvxi11.pc \
   libics/Makefile \
   liblsd/Makefile \
   src/Makefile \
