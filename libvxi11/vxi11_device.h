@@ -1,3 +1,6 @@
+#ifndef _VXI11_DEVICE_H
+#define _VXI11_DEVICE_H
+
 /* This file is part of gpib-utils.
    For details, see http://sourceforge.net/projects/gpib-utils.
   
@@ -16,6 +19,10 @@
    You should have received a copy of the GNU General Public License
    along with gpib-utils; if not, write to the Free Software Foundation, 
    Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct vxi11_device_struct *vxi11dev_t;
 
@@ -67,6 +74,12 @@ void vxi11_set_endw(vxi11dev_t v, bool doEndw);
 void vxi11_set_device_debug(bool doDebug);
 
 void vxi11_perror(vxi11dev_t v, int err, char *str);
+
+#ifdef __cplusplus
+};
+#endif
+
+#endif /* _VXI11_DEVICE_H */
 
 /*
  * vi:tabstop=4 shiftwidth=4 expandtab

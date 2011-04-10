@@ -1194,15 +1194,17 @@ usage(opt_desc_t *tab)
 {
     int i;
     int width = 23;
+    int fw;
 
     printf("Usage: %s [--options]\n", prog);
     for (i = 0; (tab[i].sopt && tab[i].lopt && tab[i].desc); i++) {
 #if HAVE_GETOPT_LONG
         if (strlen(tab[i].lopt) + strlen(tab[i].sopt) + 4 > width)
             printf("  -%s,--%s\n  %-*s", tab[i].sopt, tab[i].lopt, width, "");
-        else
-            printf("  -%s,--%-*s", tab[i].sopt, 
-            width - 4 - strlen(tab[i].sopt), tab[i].lopt);
+        else {
+            fw = width - 4 - strlen(tab[i].sopt);
+            printf("  -%s,--%-*s", tab[i].sopt, fw, tab[i].lopt);
+        }
 #else
         printf("  -%-2s", tab[i].sopt);
 #endif

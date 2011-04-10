@@ -8,6 +8,7 @@ Group: Application/Engineering
 Url: http://sourceforge.net/projects/gpib-utils/
 Source0: %{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
+Requires: %{name}-libs = %{version}-%{release}
 
 %if 0
 %define _with_linuxgpib 1
@@ -41,8 +42,7 @@ A shared library for VXI-11 applications.
 
 %build
 %configure \
-  %{?_with_linuxgpib: --with-linux-gpib} \
-  --program-prefix=%{_program_prefix:%{_program_prefix}}
+  %{?_with_linuxgpib: --with-linux-gpib}
 make
 
 %check
@@ -51,8 +51,6 @@ make check
 %install
 mkdir -p $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
-mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}
-cp etc/gpib-utils.conf $RPM_BUILD_ROOT/%{_sysconfdir}/gpib-utils.conf
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -69,7 +67,7 @@ if [ -x /sbin/ldconfig ]; then /sbin/ldconfig %{_libdir}; fi
 %{_bindir}/*
 %{_mandir}/man1/*
 %{_mandir}/man5/*
-%config %{_sysconfdir}/gpib-utils.conf
+%config(noreplace) %{_sysconfdir}/gpib-utils.conf
 
 %files devel
 %defattr(-,root,root,0755)

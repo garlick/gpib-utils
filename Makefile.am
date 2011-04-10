@@ -1,4 +1,4 @@
-SUBDIRS = libvxi11 libics liblsd src man test
+SUBDIRS = libvxi11 libics liblsd src man etc test
 
 rpmdirs:
 	mkdir -p $(top_builddir)/rpm/SPECS

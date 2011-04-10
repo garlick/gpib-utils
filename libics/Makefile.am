@@ -4,6 +4,7 @@ noinst_LIBRARIES = libics.a
 
 libics_a_SOURCES = \
 	ics.c \
+	ics.h \
 	ics8000_clnt.c \
 	ics8000_xdr.c \
 	ics8000.h
@@ -19,3 +20,5 @@ ics8000_clnt.c: ics8000.x ics8000.h
 	rm -f $@; rpcgen -o $@ -l ics8000.x
 ics8000_svc.c:  ics8000.x ics8000.h
 	rm -f $@; rpcgen -o $@ -m ics8000.x
+
+EXTRA_DIST = ics8000.x

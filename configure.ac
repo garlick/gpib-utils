@@ -22,7 +22,7 @@ AM_MAINTAINER_MODE
 AC_PROG_CC
 if test "$GCC" = yes; then
   GCCWARN="-Wall -Werror"
-  GCCWARNRPC="-Wall -Wno-unused -Werror"
+  GCCWARNRPC="-Wall -Wno-unused"
   AC_SUBST([GCCWARN])
   AC_SUBST([GCCWARNRPC])
 fi
@@ -80,6 +80,7 @@ AC_CONFIG_FILES( \
   liblsd/Makefile \
   test/Makefile \
   src/Makefile \
+  etc/Makefile \
   man/Makefile \
   man/a34401.1 \
   man/a6032.1 \
