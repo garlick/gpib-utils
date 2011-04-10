@@ -1,5 +1,7 @@
 2011-04-10 Jim Garlick <garlick.jim@gmail.com>
 
+	* gpib-utils.spec.in : Create -devel and -libs subpackages.
+
 	* test/thello.c : Simple libvxi11 program for equery *IDN?
 	to make sure shared library exports proper symbols.
 
