@@ -1,9 +1,33 @@
+/* This file is part of gpib-utils.
+   For details, see http://sourceforge.net/projects/gpib-utils.
+  
+   Copyright (C) 2001-2011 Jim Garlick <garlick.jim@gmail.com>
+  
+   gpib-utils is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+  
+   gpib-utils is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+  
+   You should have received a copy of the GNU General Public License
+   along with gpib-utils; if not, write to the Free Software Foundation, 
+   Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
+
 #if HAVE_CONFIG_H
 #include <config.h>
 #endif
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
+#if HAVE_STDBOOL_H
+#include <stdbool.h> 
+#else
+typedef enum { false=0, true=1 } bool;
+#endif
 #include <unistd.h>
 #include <stdarg.h>
 #include <netdb.h>
@@ -29,15 +53,15 @@
 
 #define VXI11_DFLT_TERMCHAR     0x0a
 #define VXI11_DFLT_TERMCHARSET  0
-#define VXI11_DFLT_DOLOCKING    0
-#define VXI11_DFLT_DOENDW       1
+#define VXI11_DFLT_DOLOCKING    false
+#define VXI11_DFLT_DOENDW       true
 #define VXI11_DFLT_LOCK_TIMEOUT 30000 /* 30s */
 #define VXI11_DFLT_IO_TIMEOUT   30000 /* 30s */
 
 #define VXI11_MAGIC             0x343422aa
 #define VXI11_NOLID             (-1)
 
-static int vxi11_device_debug = 0;
+static bool vxi11_device_debug = false;
 
 struct vxi11_device_struct {
     int             vxi11_magic;
@@ -48,8 +72,8 @@ struct vxi11_device_struct {
     unsigned short  vxi11_abortPort;
     int             vxi11_termChar;
     int             vxi11_termCharSet;
-    int             vxi11_doEndw;
-    int             vxi11_doLocking;
+    bool            vxi11_doEndw;
+    bool            vxi11_doLocking;
     unsigned long   vxi11_lock_timeout;
     unsigned long   vxi11_io_timeout;
     unsigned long   vxi11_maxRecvSize;
@@ -136,7 +160,7 @@ _find_after_colon(char *s)
     return (p ? p + 1 : s);
 }
 
-int vxi11_open(vxi11dev_t v, char *name, int doAbort)
+int vxi11_open(vxi11dev_t v, char *name, bool doAbort)
 {
     char tmpbuf[MAXHOSTNAMELEN];
     char *device, *hostname;
@@ -468,13 +492,13 @@ vxi11_set_termcharset(vxi11dev_t v, int termCharSet)
 }
 
 void
-vxi11_set_endw(vxi11dev_t v, int doEndw)
+vxi11_set_endw(vxi11dev_t v, bool doEndw)
 {
     assert(v->vxi11_magic == VXI11_MAGIC);
     v->vxi11_doEndw = doEndw;
 }
 
-void vxi11_set_device_debug(int doDebug)
+void vxi11_set_device_debug(bool doDebug)
 {
     vxi11_set_core_debug(doDebug);
     vxi11_device_debug = 1;

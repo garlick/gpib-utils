@@ -35,6 +35,7 @@ AC_PROG_LIBTOOL
 AC_HEADER_STDC
 AC_CHECK_HEADERS( \
   getopt.h \
+  stdbool.h \
 )
 
 ##
@@ -77,6 +78,7 @@ AC_CONFIG_FILES( \
   libvxi11/libvxi11.pc \
   libics/Makefile \
   liblsd/Makefile \
+  test/Makefile \
   src/Makefile \
   man/Makefile \
   man/a34401.1 \

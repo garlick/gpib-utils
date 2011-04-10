@@ -252,7 +252,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = libvxi11 libics liblsd src man
+SUBDIRS = libvxi11 libics liblsd src man test
 EXTRA_DIST = META gpib-utils.spec
 all: all-recursive
 

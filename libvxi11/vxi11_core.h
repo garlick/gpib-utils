@@ -1,3 +1,22 @@
+/* This file is part of gpib-utils.
+   For details, see http://sourceforge.net/projects/gpib-utils.
+  
+   Copyright (C) 2001-2010 Jim Garlick <garlick.jim@gmail.com>
+  
+   gpib-utils is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+  
+   gpib-utils is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+  
+   You should have received a copy of the GNU General Public License
+   along with gpib-utils; if not, write to the Free Software Foundation, 
+   Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
+
 /* All functions return: 0 on success, <0 on RPC error, >0 on VXI-11 error */
 #define VXI11_ABRT_CREATE   (-4)
 #define VXI11_CORE_CREATE   (-3)
@@ -28,8 +47,8 @@ void vxi11_close_abrt_channel(CLIENT *abrt);
 
 /* Establish an instrument link.  The 'clientId' parameter is generally
  * not used (set to zero).  If you wish to block until this command can
- * run with exclusive access to the instrument, set 'lockDevice' to 1
- * (o/w set it to 0).  This call will then block up to 'lock_timeout' 
+ * run with exclusive access to the instrument, set 'lockDevice' to true
+ * (o/w set it to false).  This call will then block up to 'lock_timeout' 
  * milliseconds until the instrument is available.  The 'device' parameter 
  * selects the target of the instrument link.  It may be "instr0" for 
  * standalone VXI-11 instruments; for a VXI-11 GPIB-ethernet gateway, 
@@ -40,7 +59,7 @@ void vxi11_close_abrt_channel(CLIENT *abrt);
  * if non-NULL.  Finally, the maximum buffer that the instrument can handle 
  * in one vxi11_device_write() call is returned in 'maxRecvSizep' if non-NULL.
  */
-int vxi11_create_link(CLIENT *core, int clientId, int lockDevice, 
+int vxi11_create_link(CLIENT *core, int clientId, bool lockDevice, 
                   unsigned long lock_timeout, char *device, long *lidp, 
                   unsigned short *abortPortp, unsigned long *maxRecvSizep);
 
@@ -135,7 +154,7 @@ int vxi11_device_lock(CLIENT *core, long lid, long flags,
  */
 int vxi11_device_unlock(CLIENT *core, long lid);
 
-int vxi11_device_enable_srq(CLIENT *core, long lid, int enable, 
+int vxi11_device_enable_srq(CLIENT *core, long lid, bool enable, 
                         char *handle_val, int handle_len);
 
 int vxi11_device_docmd(CLIENT *core, long lid, long flags, 
@@ -154,7 +173,7 @@ int vxi11_destroy_intr_chan(CLIENT *core);
 
 int vxi11_device_abort(CLIENT *abrt, long lid);
 
-void vxi11_set_core_debug(int doDebug);
+void vxi11_set_core_debug(bool doDebug);
 
 /*
  * vi:tabstop=4 shiftwidth=4 expandtab
