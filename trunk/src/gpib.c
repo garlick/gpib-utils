@@ -56,6 +56,11 @@
 
 #include "util.h"
 #include "gpib.h"
+#if HAVE_STDBOOL_H
+#include <stdbool.h>
+#else
+typedef enum { false=0, true=1 } bool;
+#endif
 #include "vxi11_device.h"
 #include "hprintf.h"
 
@@ -844,8 +849,8 @@ _init_vxi(char *name, spollfun_t sf, unsigned long retry)
     gd->sf_retry = retry;
     gd->vxi11_handle = vxi11_create();
 
-    //vxi11_set_device_debug(1);
-    err = vxi11_open(gd->vxi11_handle, name, 0);
+    //vxi11_set_device_debug(true);
+    err = vxi11_open(gd->vxi11_handle, name, false);
     if (err) {
         vxi11_perror(gd->vxi11_handle, err, prog);
         vxi11_destroy(gd->vxi11_handle);

@@ -1,6 +1,18 @@
+2011-04-10 Jim Garlick <garlick.jim@gmail.com>
+
+	* test/thello.c : Simple libvxi11 program for equery *IDN?
+	to make sure shared library exports proper symbols.
+
+	* libvxi11/Makefile.am : Split vxi11intr.x products out to
+	libvxi11intr.a.
+
+	* configure.ac, src/gpib.c, libvxi11/vxi11_core.[ch],
+	libvxi11/vxi11_device.[ch]  : Include stdbool.h and fallback defs.
+	Change some ints to bools per suggestion [Alessio Bogani].
+
 2011-04-08 Jim Garlick <garlick.jim@gmail.com>
 
-	* libvxi11/* : Install shared library and .pc file.
+	* libvxi11/* : Install shared library, includes, and .pc file.
 
 2011-04-07 Jim Garlick <garlick.jim@gmail.com>
 

@@ -2,19 +2,23 @@ AM_CFLAGS = @GCCWARNRPC@
 
 lib_LTLIBRARIES = libvxi11.la
 
+noinst_LIBRARIES = libvxi11intr.a
+
 libvxi11_la_SOURCES = \
 	vxi11_device.c \
 	vxi11_core.c \
 	rpccache.c \
 	vxi11_xdr.c \
 	vxi11_clnt.c \
-	vxi11intr_xdr.c \
-	vxi11intr_svc.c \
 	vxi11.h \
 	rpccache.h  \
 	vxi11_core.h  \
 	vxi11_device.h  \
-	vxi11.h  \
+	vxi11.h
+
+libvxi11intr_a_SOURCES = \
+	vxi11intr_xdr.c \
+	vxi11intr_svc.c \
 	vxi11intr.h
 
 CLEANFILES = \
@@ -48,4 +52,4 @@ vxi11intr_svc.c:  vxi11intr.x vxi11intr.h
 if WITH_PKG_CONFIG
 pkgconfig_DATA = libvxi11.pc
 endif
-include_HEADERS = vxi11_device.h
+include_HEADERS = vxi11_device.h vxi11_core.h

@@ -60,103 +60,103 @@ am__objects_1 = util.$(OBJEXT) gpib.$(OBJEXT) hpcrc.$(OBJEXT)
 am_a34401_OBJECTS = a34401.$(OBJEXT) $(am__objects_1)
 a34401_OBJECTS = $(am_a34401_OBJECTS)
 a34401_LDADD = $(LDADD)
-a34401_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.a \
+a34401_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.la \
 	$(top_builddir)/libics/libics.a \
 	$(top_builddir)/liblsd/liblsd.a
 am_a6032_OBJECTS = a6032.$(OBJEXT) $(am__objects_1)
 a6032_OBJECTS = $(am_a6032_OBJECTS)
 a6032_LDADD = $(LDADD)
-a6032_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.a \
+a6032_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.la \
 	$(top_builddir)/libics/libics.a \
 	$(top_builddir)/liblsd/liblsd.a
 am_dg535_OBJECTS = dg535.$(OBJEXT) $(am__objects_1)
 dg535_OBJECTS = $(am_dg535_OBJECTS)
 dg535_LDADD = $(LDADD)
-dg535_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.a \
+dg535_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.la \
 	$(top_builddir)/libics/libics.a \
 	$(top_builddir)/liblsd/liblsd.a
 am_hp1630_OBJECTS = hp1630.$(OBJEXT) $(am__objects_1)
 hp1630_OBJECTS = $(am_hp1630_OBJECTS)
 hp1630_LDADD = $(LDADD)
-hp1630_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.a \
+hp1630_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.la \
 	$(top_builddir)/libics/libics.a \
 	$(top_builddir)/liblsd/liblsd.a
 am_hp1650_OBJECTS = hp1650.$(OBJEXT) $(am__objects_1)
 hp1650_OBJECTS = $(am_hp1650_OBJECTS)
 hp1650_LDADD = $(LDADD)
-hp1650_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.a \
+hp1650_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.la \
 	$(top_builddir)/libics/libics.a \
 	$(top_builddir)/liblsd/liblsd.a
 am_hp3457_OBJECTS = hp3457.$(OBJEXT) $(am__objects_1)
 hp3457_OBJECTS = $(am_hp3457_OBJECTS)
 hp3457_LDADD = $(LDADD)
-hp3457_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.a \
+hp3457_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.la \
 	$(top_builddir)/libics/libics.a \
 	$(top_builddir)/liblsd/liblsd.a
 am_hp3488_OBJECTS = hp3488.$(OBJEXT) $(am__objects_1)
 hp3488_OBJECTS = $(am_hp3488_OBJECTS)
 hp3488_LDADD = $(LDADD)
-hp3488_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.a \
+hp3488_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.la \
 	$(top_builddir)/libics/libics.a \
 	$(top_builddir)/liblsd/liblsd.a
 am_hp6038_OBJECTS = hp6038.$(OBJEXT) $(am__objects_1)
 hp6038_OBJECTS = $(am_hp6038_OBJECTS)
 hp6038_LDADD = $(LDADD)
-hp6038_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.a \
+hp6038_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.la \
 	$(top_builddir)/libics/libics.a \
 	$(top_builddir)/liblsd/liblsd.a
 am_hp6626_OBJECTS = hp6626.$(OBJEXT) $(am__objects_1)
 hp6626_OBJECTS = $(am_hp6626_OBJECTS)
 hp6626_LDADD = $(LDADD)
-hp6626_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.a \
+hp6626_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.la \
 	$(top_builddir)/libics/libics.a \
 	$(top_builddir)/liblsd/liblsd.a
 am_hp6632_OBJECTS = hp6632.$(OBJEXT) $(am__objects_1)
 hp6632_OBJECTS = $(am_hp6632_OBJECTS)
 hp6632_LDADD = $(LDADD)
-hp6632_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.a \
+hp6632_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.la \
 	$(top_builddir)/libics/libics.a \
 	$(top_builddir)/liblsd/liblsd.a
 am_hp8656_OBJECTS = hp8656.$(OBJEXT) $(am__objects_1)
 hp8656_OBJECTS = $(am_hp8656_OBJECTS)
 hp8656_LDADD = $(LDADD)
-hp8656_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.a \
+hp8656_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.la \
 	$(top_builddir)/libics/libics.a \
 	$(top_builddir)/liblsd/liblsd.a
 am_hptodino_OBJECTS = hptodino.$(OBJEXT) $(am__objects_1)
 hptodino_OBJECTS = $(am_hptodino_OBJECTS)
 hptodino_LDADD = $(LDADD)
-hptodino_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.a \
+hptodino_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.la \
 	$(top_builddir)/libics/libics.a \
 	$(top_builddir)/liblsd/liblsd.a
 am_hptopbm_OBJECTS = hptopbm.$(OBJEXT) $(am__objects_1)
 hptopbm_OBJECTS = $(am_hptopbm_OBJECTS)
 hptopbm_LDADD = $(LDADD)
-hptopbm_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.a \
+hptopbm_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.la \
 	$(top_builddir)/libics/libics.a \
 	$(top_builddir)/liblsd/liblsd.a
 am_ibquery_OBJECTS = ibquery.$(OBJEXT) $(am__objects_1)
 ibquery_OBJECTS = $(am_ibquery_OBJECTS)
 ibquery_LDADD = $(LDADD)
-ibquery_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.a \
+ibquery_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.la \
 	$(top_builddir)/libics/libics.a \
 	$(top_builddir)/liblsd/liblsd.a
 am_ics8064_OBJECTS = ics8064.$(OBJEXT) $(am__objects_1)
 ics8064_OBJECTS = $(am_ics8064_OBJECTS)
 ics8064_LDADD = $(LDADD)
-ics8064_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.a \
+ics8064_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.la \
 	$(top_builddir)/libics/libics.a \
 	$(top_builddir)/liblsd/liblsd.a
 am_icsconfig_OBJECTS = icsconfig.$(OBJEXT) $(am__objects_1)
 icsconfig_OBJECTS = $(am_icsconfig_OBJECTS)
 icsconfig_LDADD = $(LDADD)
-icsconfig_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.a \
+icsconfig_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.la \
 	$(top_builddir)/libics/libics.a \
 	$(top_builddir)/liblsd/liblsd.a
 am_sr620_OBJECTS = sr620.$(OBJEXT) $(am__objects_1)
 sr620_OBJECTS = $(am_sr620_OBJECTS)
 sr620_LDADD = $(LDADD)
-sr620_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.a \
+sr620_DEPENDENCIES = $(top_builddir)/libvxi11/libvxi11.la \
 	$(top_builddir)/libics/libics.a \
 	$(top_builddir)/liblsd/liblsd.a
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/config
@@ -334,10 +334,12 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CFLAGS = @GCCWARN@
 AM_CPPFLAGS = \
-	-I$(top_srcdir)/libvxi11 -I$(top_srcdir)/libics -I$(top_srcdir)/liblsd \
+	-I$(top_srcdir)/libvxi11 \
+	-I$(top_srcdir)/libics \
+	-I$(top_srcdir)/liblsd \
 	@GPIB_CPPFLAGS@
 
-LDADD = $(top_builddir)/libvxi11/libvxi11.a \
+LDADD = $(top_builddir)/libvxi11/libvxi11.la \
 	$(top_builddir)/libics/libics.a \
 	$(top_builddir)/liblsd/liblsd.a \
 	@GPIB_LDFLAGS@ @GPIB_LIBS@

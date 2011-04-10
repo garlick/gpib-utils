@@ -1,10 +1,29 @@
+/* This file is part of gpib-utils.
+   For details, see http://sourceforge.net/projects/gpib-utils.
+  
+   Copyright (C) 2001-2011 Jim Garlick <garlick.jim@gmail.com>
+  
+   gpib-utils is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+  
+   gpib-utils is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+  
+   You should have received a copy of the GNU General Public License
+   along with gpib-utils; if not, write to the Free Software Foundation, 
+   Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
+
 typedef struct vxi11_device_struct *vxi11dev_t;
 
 vxi11dev_t vxi11_create(void);
 
 void vxi11_destroy(vxi11dev_t v);
 
-int vxi11_open(vxi11dev_t v, char *name, int doAbort);
+int vxi11_open(vxi11dev_t v, char *name, bool doAbort);
 
 void vxi11_close(vxi11dev_t v);
 
@@ -43,9 +62,9 @@ void vxi11_set_termchar(vxi11dev_t v, int termChar);
 void vxi11_set_termcharset(vxi11dev_t v, int termCharSet);
 
 /* Sets whether last char of write will assert EOI */
-void vxi11_set_endw(vxi11dev_t v, int doEndw);
+void vxi11_set_endw(vxi11dev_t v, bool doEndw);
 
-void vxi11_set_device_debug(int doDebug);
+void vxi11_set_device_debug(bool doDebug);
 
 void vxi11_perror(vxi11dev_t v, int err, char *str);
 

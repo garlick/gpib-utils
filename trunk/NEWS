@@ -1,9 +1,12 @@
 =========================================================================
-gpib-utils-1.5 Release Notes                                   2009-03-16
+gpib-utils-1.5 Release Notes                                   2011-04-xx
 =========================================================================
 
+* Export libvxi11.so library for general use.
+
+* libvxi11 API cleanup, portability fix to gpib.c [Alessio Bogani].
+
 * New utilities
-  - hp1650:   Hewlett-Packard 1650A/1651A logic analyzer
   - ibquery:  Generic query utility.
 
 =========================================================================

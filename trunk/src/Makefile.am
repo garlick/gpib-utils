@@ -1,10 +1,12 @@
 AM_CFLAGS = @GCCWARN@
 
 AM_CPPFLAGS = \
-	-I$(top_srcdir)/libvxi11 -I$(top_srcdir)/libics -I$(top_srcdir)/liblsd \
+	-I$(top_srcdir)/libvxi11 \
+	-I$(top_srcdir)/libics \
+	-I$(top_srcdir)/liblsd \
 	@GPIB_CPPFLAGS@
 
-LDADD = $(top_builddir)/libvxi11/libvxi11.a \
+LDADD = $(top_builddir)/libvxi11/libvxi11.la \
 	$(top_builddir)/libics/libics.a \
 	$(top_builddir)/liblsd/liblsd.a \
 	@GPIB_LDFLAGS@ @GPIB_LIBS@

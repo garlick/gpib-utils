@@ -1,3 +1,22 @@
+/* This file is part of gpib-utils.
+   For details, see http://sourceforge.net/projects/gpib-utils.
+  
+   Copyright (C) 2001-2011 Jim Garlick <garlick.jim@gmail.com>
+  
+   gpib-utils is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+  
+   gpib-utils is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+  
+   You should have received a copy of the GNU General Public License
+   along with gpib-utils; if not, write to the Free Software Foundation, 
+   Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
+
 /*
  * vxi11core.c - wrappers for core VXI-11 functions
  */
@@ -8,6 +27,11 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
+#if HAVE_STDBOOL_H
+#include <stdbool.h>
+#else
+typedef enum { false=0, true=1 } bool;
+#endif
 #include <unistd.h>
 #include <stdarg.h>
 #include <netdb.h>
@@ -24,7 +48,7 @@
 #include "vxi11_core.h"
 #include "rpccache.h"
 
-static int vxi11_core_debug = 0;
+static bool vxi11_core_debug = false;
 
 int
 vxi11_open_core_channel(char *host, CLIENT **corep)
@@ -84,7 +108,7 @@ vxi11_close_abrt_channel(CLIENT *abrt)
 }
 
 int
-vxi11_create_link(CLIENT *core, int clientId, int lockDevice, 
+vxi11_create_link(CLIENT *core, int clientId, bool lockDevice, 
                   unsigned long lock_timeout, char *device, long *lidp, 
                   unsigned short *abortPortp, unsigned long *maxRecvSizep)
 {
@@ -340,7 +364,7 @@ vxi11_device_unlock(CLIENT *core, long lid)
 }
 
 int
-vxi11_device_enable_srq(CLIENT *core, long lid, int enable, char *handle_val,
+vxi11_device_enable_srq(CLIENT *core, long lid, bool enable, char *handle_val,
                         int handle_len)
 {
     Device_EnableSrqParms p;
@@ -467,7 +491,7 @@ vxi11_device_abort(CLIENT *abrt, long lid)
 }
 
 void
-vxi11_set_core_debug(int doDebug)
+vxi11_set_core_debug(bool doDebug)
 {
     vxi11_core_debug = doDebug;
     set_rpccache_debug(doDebug);
