@@ -1,3 +1,6 @@
+#ifndef _VXI11_CORE_H
+#define _VXI11_CORE_H
+
 /* This file is part of gpib-utils.
    For details, see http://sourceforge.net/projects/gpib-utils.
   
@@ -22,6 +25,10 @@
 #define VXI11_CORE_CREATE   (-3)
 #define VXI11_ABRT_RPCERR   (-2)
 #define VXI11_CORE_RPCERR   (-1)
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Open core channel.  Host may be an IP address or hostname in text form.
  * You will probably want to call vxi11_create_link() next.
@@ -174,6 +181,12 @@ int vxi11_destroy_intr_chan(CLIENT *core);
 int vxi11_device_abort(CLIENT *abrt, long lid);
 
 void vxi11_set_core_debug(bool doDebug);
+
+#ifdef __cplusplus
+};
+#endif
+
+#endif /* _VXI11_CORE_H */
 
 /*
  * vi:tabstop=4 shiftwidth=4 expandtab
