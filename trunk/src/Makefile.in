@@ -36,11 +36,11 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 bin_PROGRAMS = hp6632$(EXEEXT) hp6626$(EXEEXT) hp6038$(EXEEXT) \
-	hp1630$(EXEEXT) hp1650$(EXEEXT) hptopbm$(EXEEXT) \
-	hptodino$(EXEEXT) hp3457$(EXEEXT) hp3488$(EXEEXT) \
-	hp8656$(EXEEXT) dg535$(EXEEXT) sr620$(EXEEXT) ics8064$(EXEEXT) \
-	icsconfig$(EXEEXT) a6032$(EXEEXT) a34401$(EXEEXT) \
-	ibquery$(EXEEXT)
+	hp1630$(EXEEXT) hptopbm$(EXEEXT) hptodino$(EXEEXT) \
+	hp3457$(EXEEXT) hp3488$(EXEEXT) hp8656$(EXEEXT) dg535$(EXEEXT) \
+	sr620$(EXEEXT) ics8064$(EXEEXT) icsconfig$(EXEEXT) \
+	a6032$(EXEEXT) a34401$(EXEEXT) ibquery$(EXEEXT)
+noinst_PROGRAMS = hp1650$(EXEEXT)
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -55,7 +55,7 @@ CONFIG_HEADER = $(top_builddir)/config/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
-PROGRAMS = $(bin_PROGRAMS)
+PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS)
 am__objects_1 = util.$(OBJEXT) gpib.$(OBJEXT) hpcrc.$(OBJEXT)
 am_a34401_OBJECTS = a34401.$(OBJEXT) $(am__objects_1)
 a34401_OBJECTS = $(am_a34401_OBJECTS)
@@ -446,6 +446,15 @@ clean-binPROGRAMS:
 	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
 	echo " rm -f" $$list; \
 	rm -f $$list
+
+clean-noinstPROGRAMS:
+	@list='$(noinst_PROGRAMS)'; test -n "$$list" || exit 0; \
+	echo " rm -f" $$list; \
+	rm -f $$list || exit $$?; \
+	test -n "$(EXEEXT)" || exit 0; \
+	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
+	echo " rm -f" $$list; \
+	rm -f $$list
 a34401$(EXEEXT): $(a34401_OBJECTS) $(a34401_DEPENDENCIES) 
 	@rm -f a34401$(EXEEXT)
 	$(LINK) $(a34401_OBJECTS) $(a34401_LDADD) $(LIBS)
@@ -668,7 +677,8 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-binPROGRAMS clean-generic clean-libtool mostlyclean-am
+clean-am: clean-binPROGRAMS clean-generic clean-libtool \
+	clean-noinstPROGRAMS mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
@@ -739,18 +749,18 @@ uninstall-am: uninstall-binPROGRAMS
 .MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS all all-am check check-am clean clean-binPROGRAMS \
-	clean-generic clean-libtool ctags distclean distclean-compile \
-	distclean-generic distclean-libtool distclean-tags distdir dvi \
-	dvi-am html html-am info info-am install install-am \
-	install-binPROGRAMS install-data install-data-am install-dvi \
-	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-info install-info-am install-man \
-	install-pdf install-pdf-am install-ps install-ps-am \
-	install-strip installcheck installcheck-am installdirs \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
-	pdf pdf-am ps ps-am tags uninstall uninstall-am \
-	uninstall-binPROGRAMS
+	clean-generic clean-libtool clean-noinstPROGRAMS ctags \
+	distclean distclean-compile distclean-generic \
+	distclean-libtool distclean-tags distdir dvi dvi-am html \
+	html-am info info-am install install-am install-binPROGRAMS \
+	install-data install-data-am install-dvi install-dvi-am \
+	install-exec install-exec-am install-html install-html-am \
+	install-info install-info-am install-man install-pdf \
+	install-pdf-am install-ps install-ps-am install-strip \
+	installcheck installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-compile \
+	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
+	tags uninstall uninstall-am uninstall-binPROGRAMS
 
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
