@@ -52,7 +52,7 @@ typedef enum { false=0, true=1 } bool;
 
 
 #define VXI11_DFLT_TERMCHAR     0x0a
-#define VXI11_DFLT_TERMCHARSET  0
+#define VXI11_DFLT_TERMCHARSET  false
 #define VXI11_DFLT_DOLOCKING    false
 #define VXI11_DFLT_DOENDW       true
 #define VXI11_DFLT_LOCK_TIMEOUT 30000 /* 30s */
@@ -71,13 +71,14 @@ struct vxi11_device_struct {
     long            vxi11_lid;
     unsigned short  vxi11_abortPort;
     int             vxi11_termChar;
-    int             vxi11_termCharSet;
+    bool            vxi11_termCharSet;
     bool            vxi11_doEndw;
     bool            vxi11_doLocking;
     unsigned long   vxi11_lock_timeout;
     unsigned long   vxi11_io_timeout;
     unsigned long   vxi11_maxRecvSize;
     int             vxi11_clientId;
+    char            vxi11_errstr[128];
 };
 
 struct errtab_struct {
@@ -485,7 +486,7 @@ vxi11_set_termchar(vxi11dev_t v, int termChar)
 }
 
 void
-vxi11_set_termcharset(vxi11dev_t v, int termCharSet)
+vxi11_set_termcharset(vxi11dev_t v, bool termCharSet)
 {
     assert(v->vxi11_magic == VXI11_MAGIC);
     v->vxi11_termCharSet = termCharSet;
@@ -522,7 +523,9 @@ _lookup_err(int err)
 void 
 vxi11_perror(vxi11dev_t v, int err, char *str)
 {
-    fprintf(stderr, "%s (%s): %s", str, v->vxi11_devname, vxi11_strerror(v, err));
+    char *errstr = vxi11_strerror (v, err);
+
+    fprintf(stderr, "%s (%s): %s\n", str, v->vxi11_devname, errstr);
 }
 
 char * 
@@ -547,8 +550,12 @@ vxi11_strerror(vxi11dev_t v, int err)
             desc = _lookup_err(err);
             break;
     }
+    snprintf (v->vxi11_errstr, sizeof (v->vxi11_errstr), "%s", desc);
+    /* N.B. clnt_sp* errors are \n terminated */
+    if (v->vxi11_errstr[strlen (v->vxi11_errstr) - 1] == '\n')
+        v->vxi11_errstr[strlen (v->vxi11_errstr) - 1] = '\0';
 
-    return desc;
+    return v->vxi11_errstr;
 }
 
 /*
