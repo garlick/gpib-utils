@@ -52,6 +52,6 @@ vxi11intr_svc.c:  vxi11intr.x vxi11intr.h
 if WITH_PKG_CONFIG
 pkgconfig_DATA = libvxi11.pc
 endif
-include_HEADERS = vxi11_device.h vxi11_core.h
+include_HEADERS = vxi11_device.h vxi11_core.h vxi11.h
 
 EXTRA_DIST = vxi11.x vxi11intr.x

@@ -1,5 +1,9 @@
 2011-04-11 Jim Garlick <garlick.jim@gmail.com>
 
+	* libvxi11/Makefile.am : Install vxi11.h.
+
+	* libvxi11/vxi11_device.h : Add inline documentation.
+
 	* libvxi11/vxi11_device.[ch] : Add vxi11_strerror [Alessio Bogani].
 
 2011-04-10 Jim Garlick <garlick.jim@gmail.com>
