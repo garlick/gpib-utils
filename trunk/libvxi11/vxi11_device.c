@@ -522,29 +522,33 @@ _lookup_err(int err)
 void 
 vxi11_perror(vxi11dev_t v, int err, char *str)
 {
-    char *desc = _lookup_err(err);
+    fprintf(stderr, "%s (%s): %s", str, v->vxi11_devname, vxi11_strerror(v, err));
+}
+
+char * 
+vxi11_strerror(vxi11dev_t v, int err)
+{
+    char *desc;
 
     switch (err) {
         case VXI11_CORE_CREATE:
-            fprintf(stderr, "%s (%s): %s", str, v->vxi11_devname,
-                    clnt_spcreateerror("core"));
+            desc = clnt_spcreateerror("core");
             break;
         case VXI11_ABRT_CREATE:
-            fprintf(stderr, "%s (%s): %s", str, v->vxi11_devname,
-                    clnt_spcreateerror("abrt"));
+            desc = clnt_spcreateerror("abrt");
             break;
         case VXI11_CORE_RPCERR:
-            fprintf(stderr, "%s (%s): %s", str, v->vxi11_devname, 
-                    clnt_sperror(v->vxi11_core, "core"));
+            desc = clnt_sperror(v->vxi11_core, "core");
             break;
         case VXI11_ABRT_RPCERR:
-            fprintf(stderr, "%s (%s): %s", str, v->vxi11_devname, 
-                    clnt_sperror(v->vxi11_abrt, "abrt"));
+            desc = clnt_sperror(v->vxi11_abrt, "abrt");
             break;
         default:
-            fprintf(stderr, "%s (%s): %s\n", str, v->vxi11_devname, desc);
+            desc = _lookup_err(err);
             break;
     }
+
+    return desc;
 }
 
 /*
