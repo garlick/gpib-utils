@@ -1,3 +1,7 @@
+2011-04-11 Jim Garlick <garlick.jim@gmail.com>
+
+	* libvxi11/vxi11_device.[ch] : Add vxi11_strerror [Alessio Bogani].
+
 2011-04-10 Jim Garlick <garlick.jim@gmail.com>
 
 	* gpib-utils.spec.in : Create -devel and -libs subpackages.

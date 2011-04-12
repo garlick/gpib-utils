@@ -74,6 +74,7 @@ void vxi11_set_endw(vxi11dev_t v, bool doEndw);
 void vxi11_set_device_debug(bool doDebug);
 
 void vxi11_perror(vxi11dev_t v, int err, char *str);
+char *vxi11_strerror(vxi11dev_t v, int err);
 
 #ifdef __cplusplus
 };
