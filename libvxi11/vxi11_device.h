@@ -184,7 +184,7 @@ void vxi11_set_device_debug(bool doDebug);
  */ 
 char *vxi11_strerror(vxi11dev_t v, int err);
 
-/* Decode 'err' to an error string and print it using the follwoing format:
+/* Decode 'err' to an error string and print it using the following format:
  *   fprintf(stderr, "%s (%s): %s\n", str, v->vxi11_devname, errstr);
  * This function always succeeds.
  */
