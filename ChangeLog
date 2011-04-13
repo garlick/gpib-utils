@@ -1,3 +1,7 @@
+2011-04-12 Jim Garlick <garlick.jim@gmail.com>
+
+	* libvxi11/vxi11_device.[ch] : Some cosmetic cleanup [Alessio Bogani].
+
 2011-04-11 Jim Garlick <garlick.jim@gmail.com>
 
 	* libvxi11/Makefile.am : Install vxi11.h.
