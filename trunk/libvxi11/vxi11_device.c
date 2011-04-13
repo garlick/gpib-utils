@@ -471,7 +471,7 @@ vxi11_set_iotimeout(vxi11dev_t v, unsigned long timeout)
 }
 
 void
-vxi11_set_lockpolicy(vxi11dev_t v, int doLocking, unsigned long timeout)
+vxi11_set_lockpolicy(vxi11dev_t v, bool doLocking, unsigned long timeout)
 {
     assert(v->vxi11_magic == VXI11_MAGIC);
     v->vxi11_doLocking = doLocking;

@@ -57,7 +57,7 @@ void vxi11_close_abrt_channel(CLIENT *abrt);
  * run with exclusive access to the instrument, set 'lockDevice' to true
  * (o/w set it to false).  This call will then block up to 'lock_timeout' 
  * milliseconds until the instrument is available.  The 'device' parameter 
- * selects the target of the instrument link.  It may be "instr0" for 
+ * selects the target of the instrument link.  It may be "inst0" for 
  * standalone VXI-11 instruments; for a VXI-11 GPIB-ethernet gateway, 
  * use the form "gpib0" for the interface, or "gpib0,n" where n is 
  * the GPIB address for an instrument.  The link is returned in 'lidp' -

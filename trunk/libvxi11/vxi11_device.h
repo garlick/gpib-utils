@@ -38,10 +38,11 @@ void vxi11_destroy(vxi11dev_t v);
 
 /* Using a vxi11 device handle from vxi11_create (), open a the core
  * channel to the vxi11 instrument specified by 'name', constructed from
- * "hostname:device", e.g. "myscope:instr0" or "gateway:gpib0,15".
+ * "hostname:device", e.g. "myscope:inst0" or "gateway:gpib0,15".
  * If 'doAbort' is true, also open the abort channel, which allows
  * vxi11_abort () to be called on the handle.
- * Returns 0 on success or an error code, decoded with vxi11_strerror ().
+ * Returns 0 on success or an error code which can be decoded with
+ * vxi11_strerror ().
  */
 int vxi11_open(vxi11dev_t v, char *name, bool doAbort);
 
@@ -57,7 +58,8 @@ void vxi11_close(vxi11dev_t v);
  * VXI Locking is employed if so configured - see vxi11_set_lockpolicy ().
  * After 30s or the value configured with vxi11_set_iotimeout (),
  * the operation will time out and return an error.
- * Returns 0 on success or an error code, decoded with vxi11_strerror ().
+ * Returns 0 on success or an error code which can be decoded with
+ * vxi11_strerror ().
  */
 int vxi11_write(vxi11dev_t v, char *buf, int len);
 
@@ -73,7 +75,8 @@ int vxi11_writestr(vxi11dev_t v, char *str);
  * VXI Locking is employed if so configured - see vxi11_set_lockpolicy ().
  * After 30s or the value configured with vxi11_set_iotimeout (),
  * the operation will time out and return an error.
- * Returns 0 on success or an error code, decoded with vxi11_strerror ().
+ * Returns 0 on success or an error code which can be decoded with
+ * vxi11_strerror ().
  */
 int vxi11_read(vxi11dev_t v, char *buf, int len, int *numreadp);
 
@@ -84,47 +87,55 @@ int vxi11_readstr(vxi11dev_t v, char *str, int len);
 
 /* Read the status byte into 'stbp' from an open vxi11 device handle.
  * VXI Locking is employed if so configured - see vxi11_set_lockpolicy ().
- * Returns 0 on success or an error code, decoded with vxi11_strerror ().
+ * Returns 0 on success or an error code which can be decoded with
+ * vxi11_strerror ().
  */
 int vxi11_readstb(vxi11dev_t v, unsigned char *stbp);
 
 /* Trigger instrument via an open vxi11 device handle.
  * VXI locking is employed if so configured - see vxi11_set_lockpolicy ().
- * Returns 0 on success or an error code, decoded with vxi11_strerror ().
+ * Returns 0 on success or an error code which can be decoded with
+ * vxi11_strerror ().
  */
 int vxi11_trigger(vxi11dev_t v);
 
 /* Clear instrument via an open vxi11 device handle.
  * VXI locking is employed if so configured - see vxi11_set_lockpolicy ().
- * Returns 0 on success or an error code, decoded with vxi11_strerror ().
+ * Returns 0 on success or an error code which can be decoded with
+ * vxi11_strerror ().
  */
 int vxi11_clear(vxi11dev_t v);
 
 /* Disable local control of instrument via an open vxi11 device handle.
  * VXI locking is employed if so configured - see vxi11_set_lockpolicy ().
- * Returns 0 on success or an error code, decoded with vxi11_strerror ().
+ * Returns 0 on success or an error code which can be decoded with
+ * vxi11_strerror ().
  */
 int vxi11_remote(vxi11dev_t v);
 
 /* Enable local control of instrument via an open vxi11 device handle.
  * VXI locking is employed if so configured - see vxi11_set_lockpolicy ().
- * Returns 0 on success or an error code, decoded with vxi11_strerror ().
+ * Returns 0 on success or an error code which can be decoded with
+ * vxi11_strerror ().
  */
 int vxi11_local(vxi11dev_t v);
 
 /* Take a (blocking) VXI11 lock on an open vxi11 device handle. 
- * Returns 0 on success or an error code, decoded with vxi11_strerror ().
+ * Returns 0 on success or an error code which can be decoded with
+ * vxi11_strerror ().
  */
 int vxi11_lock(vxi11dev_t v);
 
 /* Give up a VXI11 lock on an open vxi11 device handle.
- * Returns 0 on success or an error code, decoded with vxi11_strerror ().
+ * Returns 0 on success or an error code which can be decoded with
+ * vxi11_strerror ().
  */
 int vxi11_unlock(vxi11dev_t v);
 
 /* Abort any outstanding requests on an open vxi11 device handle.
  * Requires that device was opened with 'doAbort' true.
- * Returns 0 on success or an error code, decoded with vxi11_strerror ().
+ * Returns 0 on success or an error code which can be decoded with
+ * vxi11_strerror ().
  */
 int vxi11_abort(vxi11dev_t v);
 
@@ -136,12 +147,12 @@ void vxi11_set_iotimeout(vxi11dev_t v, unsigned long timeout);
 
 /* Change the lock policy on a vxi11 device handle.
  * By default, blocking VXI locks are not taken implicitly by the above
- * functions.  By setting 'useLocking' true, the functions will block if
+ * functions.  By setting 'doLocking' true, the functions will block if
  * there is an outstanding request.  The default lock timeout of 30s
  * can also be overridden by setting 'timeout' to a value in milliseconds.
  * This function always succeeds.
  */
-void vxi11_set_lockpolicy(vxi11dev_t v, int useLocking, unsigned long timeout);
+void vxi11_set_lockpolicy(vxi11dev_t v, bool doLocking, unsigned long timeout);
 
 /* Changes the character which terminates reads from 0x0a to 'termChar'
  * for a vxi11 device handle.  The termChar is only used if
