@@ -161,7 +161,8 @@ _find_after_colon(char *s)
     return (p ? p + 1 : s);
 }
 
-int vxi11_open(vxi11dev_t v, char *name, bool doAbort)
+int
+vxi11_open(vxi11dev_t v, char *name, bool doAbort)
 {
     char tmpbuf[MAXHOSTNAMELEN];
     char *device, *hostname;
@@ -192,7 +193,8 @@ err:
     return res;
 }
 
-void vxi11_close(vxi11dev_t v)
+void
+vxi11_close(vxi11dev_t v)
 {
     assert(v->vxi11_magic == VXI11_MAGIC);
     if (v->vxi11_abrt)
