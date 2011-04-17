@@ -55,8 +55,6 @@ typedef enum { false=0, true=1 } bool;
 #define VXI11_DFLT_TERMCHARSET  false
 #define VXI11_DFLT_DOLOCKING    false
 #define VXI11_DFLT_DOENDW       true
-#define VXI11_DFLT_LOCK_TIMEOUT 30000 /* 30s */
-#define VXI11_DFLT_IO_TIMEOUT   30000 /* 30s */
 
 #define VXI11_MAGIC             0x343422aa
 #define VXI11_NOLID             (-1)
@@ -136,8 +134,8 @@ vxi11_create(void)
         v->vxi11_termCharSet  = VXI11_DFLT_TERMCHARSET;
         v->vxi11_doEndw       = VXI11_DFLT_DOENDW;
         v->vxi11_doLocking    = VXI11_DFLT_DOLOCKING;
-        v->vxi11_lock_timeout = VXI11_DFLT_LOCK_TIMEOUT;
-        v->vxi11_io_timeout   = VXI11_DFLT_IO_TIMEOUT;
+        v->vxi11_lock_timeout = 25000; // Default for rpcgen (see libvxi11/vxi11_clnt.c line 62 and 73)
+        v->vxi11_io_timeout   = 25000;
         v->vxi11_maxRecvSize  = 0;
         v->vxi11_clientId     = 0;
     }
@@ -470,6 +468,13 @@ vxi11_set_iotimeout(vxi11dev_t v, unsigned long timeout)
 {
     assert(v->vxi11_magic == VXI11_MAGIC);
     v->vxi11_io_timeout = timeout;
+    if (v->vxi11_core != NULL) {
+        struct timeval io_timeout;
+        timerclear(&io_timeout);
+        io_timeout.tv_sec = timeout / 1000;
+        io_timeout.tv_usec = (timeout % 1000) * 1000;
+        clnt_control(v->vxi11_core, CLSET_TIMEOUT, (caddr_t)&io_timeout);
+    }
 }
 
 void
