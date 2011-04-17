@@ -56,7 +56,7 @@ void vxi11_close(vxi11dev_t v);
  * If vxi11_set_endw () has been called, set the ENDW flag on the last
  * chunk written.
  * VXI Locking is employed if so configured - see vxi11_set_lockpolicy ().
- * After 30s or the value configured with vxi11_set_iotimeout (),
+ * After 25s or the value configured with vxi11_set_iotimeout (),
  * the operation will time out and return an error.
  * Returns 0 on success or an error code which can be decoded with
  * vxi11_strerror ().
@@ -73,7 +73,7 @@ int vxi11_writestr(vxi11dev_t v, char *str);
  * If a termChar is configured the read is terminated when that character
  * is received - see vxi11_set_termcharset () and vxi11_set_termchar ().
  * VXI Locking is employed if so configured - see vxi11_set_lockpolicy ().
- * After 30s or the value configured with vxi11_set_iotimeout (),
+ * After 25s or the value configured with vxi11_set_iotimeout (),
  * the operation will time out and return an error.
  * Returns 0 on success or an error code which can be decoded with
  * vxi11_strerror ().
@@ -140,7 +140,7 @@ int vxi11_unlock(vxi11dev_t v);
 int vxi11_abort(vxi11dev_t v);
 
 /* Change the I/O timeout on a vxi11 device handle from the default of
- * 30s to 'timeout' milliseconds.
+ * 25s to 'timeout' milliseconds.
  * This function always succeeds.
  */
 void vxi11_set_iotimeout(vxi11dev_t v, unsigned long timeout);
