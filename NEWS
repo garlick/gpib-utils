@@ -1,6 +1,14 @@
 =========================================================================
-gpib-utils-1.5 Release Notes                                   2011-04-xx
+gpib-utils-1.5 Release Notes                                   2014-08-21
 =========================================================================
+
+Moving code from sourceforge to github:
+
+* Stop tracking autotools build products, etc.
+
+* Remove ChangeLog (use commit log and NEWS), add README.md
+
+These changes were staged in 2011:
 
 * Export libvxi11.so library for general use.
 
