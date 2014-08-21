@@ -19,6 +19,7 @@ config.h
 config.h.in
 libtool
 .deps/
+.libs
 
 # Object files
 *.o
@@ -53,3 +54,32 @@ Makefile
 *.diff
 *.swp
 *.tar.gz
+
+# project specific
+libics/ics8000.h
+libics/ics8000_clnt.c
+libics/ics8000_xdr.c
+libvxi11/.libs/
+libvxi11/vxi11.h
+libvxi11/vxi11_clnt.c
+libvxi11/vxi11_xdr.c
+libvxi11/vxi11intr.h
+libvxi11/vxi11intr_svc.c
+libvxi11/vxi11intr_xdr.c
+src/a34401
+src/a6032
+src/dg535
+src/hp1630
+src/hp1650
+src/hp3457
+src/hp3488
+src/hp6038
+src/hp6626
+src/hp6632
+src/hp8656
+src/hptodino
+src/hptopbm
+src/ibquery
+src/ics8064
+src/icsconfig
+src/sr620
