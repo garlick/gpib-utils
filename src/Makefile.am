@@ -19,7 +19,6 @@ bin_PROGRAMS = \
 	hptopbm \
 	hptodino \
 	hp3488 \
-	hp8656 \
 	ics8064 \
         icsconfig \
 	a6032 \
@@ -30,7 +29,6 @@ hp1630_SOURCES = hp1630.c $(common_sources)
 hptopbm_SOURCES =  hptopbm.c $(common_sources)
 hptodino_SOURCES =  hptodino.c $(common_sources)
 hp3488_SOURCES = hp3488.c $(common_sources)
-hp8656_SOURCES = hp8656.c $(common_sources)
 ics8064_SOURCES = ics8064.c $(common_sources)
 icsconfig_SOURCES = icsconfig.c  $(common_sources)
 a6032_SOURCES = a6032.c $(common_sources)

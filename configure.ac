@@ -86,7 +86,6 @@ AC_CONFIG_FILES( \
   man/a6032.1 \
   man/hp1630.1 \
   man/hp3488.1 \
-  man/hp8656.1 \
   man/hptodino.1 \
   man/hptopbm.1 \
   man/ics8064.1 \
