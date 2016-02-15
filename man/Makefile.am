@@ -1,7 +1,6 @@
 man1_MANS = \
 	a34401.1 \
 	a6032.1 \
-	dg535.1 \
 	hp1630.1 \
 	hp3457.1 \
 	hp3488.1 \
@@ -10,7 +9,6 @@ man1_MANS = \
 	hptopbm.1 \
 	ics8064.1 \
         icsconfig.1 \
-	sr620.1 \
 	ibquery.1
 
 man5_MANS = \
@@ -19,7 +17,6 @@ man5_MANS = \
 EXTRA_DIST = \
 	a34401.1 \
 	a6032.1 \
-	dg535.1 \
 	hp1630.1 \
 	hp3457.1 \
 	hp3488.1 \
@@ -28,6 +25,5 @@ EXTRA_DIST = \
 	hptopbm.1 \
 	ics8064.1 \
         icsconfig.1 \
-	sr620.1 \
 	ibquery.1 \
 	gpib-utils.conf.5

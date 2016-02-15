@@ -84,7 +84,6 @@ AC_CONFIG_FILES( \
   man/Makefile \
   man/a34401.1 \
   man/a6032.1 \
-  man/dg535.1 \
   man/hp1630.1 \
   man/hp3457.1 \
   man/hp3488.1 \
@@ -93,7 +92,6 @@ AC_CONFIG_FILES( \
   man/hptopbm.1 \
   man/ics8064.1 \
   man/icsconfig.1 \
-  man/sr620.1 \
   man/ibquery.1 \
   man/gpib-utils.conf.5 \
 )
