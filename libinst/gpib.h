@@ -1,21 +1,7 @@
-/* This file is part of gpib-utils.
-   For details, see http://sourceforge.net/projects/gpib-utils.
+#ifndef _INST_GPIB_H
+#define _INST_GPIB_H 1
 
-   Copyright (C) 2005-2009 Jim Garlick <garlick.jim@gmail.com>
-
-   gpib-utils is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
-   (at your option) any later version.
-
-   gpib-utils is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with gpib-utils; if not, write to the Free Software Foundation, 
-   Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
+#include <getopt.h>
 
 typedef struct gpib_device *gd_t;
 
@@ -114,32 +100,7 @@ gd_t gpib_init_args(int argc, char *argv[], const char *opts,
                     struct option *longopts, char *name, 
                     spollfun_t sf, unsigned long retry, int *opt_error);
 
-/* 488.2 functions */
-
-#define GPIB_DECODE_DLAB    1
-#define GPIB_DECODE_ILAB    2
-#define GPIB_VERIFY_DLAB    4
-#define GPIB_VERIFY_ILAB    8
-int gpib_decode_488_2_data(unsigned char *data, int *lenp, int flags);
-
-/* required status reporting common commands */
-void gpib_488_2_cls(gd_t gd);
-int gpib_488_2_ese(gd_t gd);
-int gpib_488_2_esr(gd_t gd);
-int gpib_488_2_sre(gd_t gd);
-int gpib_488_2_stb(gd_t gd);
-
-/* required internal operation common commands */
-void gpib_488_2_idn(gd_t gd);
-void gpib_488_2_rst(gd_t gd, int delay_secs);
-void gpib_488_2_tst(gd_t gd, strtab_t *tab);
-
-/* optional learn command (and restore helper function) */
-void gpib_488_2_lrn(gd_t gd);
-void gpib_488_2_restore(gd_t gd);
-
-/* optional option identification command */
-void gpib_488_2_opt(gd_t gd);
+#endif /* !INST_GPIB_H */
 
 /*
  * vi:tabstop=4 shiftwidth=4 expandtab
