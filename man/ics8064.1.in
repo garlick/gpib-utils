@@ -1,4 +1,4 @@
-.TH ics8064 1 "@META_DATE@" "@META_ALIAS@" "@META_NAME@"
+.TH ics8064 1
 .SH NAME
 ics8064 \- control ICS 8064 Ethernet-Relay Interface  
 .SH SYNOPSIS
