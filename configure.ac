@@ -78,6 +78,7 @@ AC_CONFIG_FILES( \
   libics/Makefile \
   liblsd/Makefile \
   libutil/Makefile \
+  libinst/Makefile \
   test/Makefile \
   src/Makefile \
   etc/Makefile \

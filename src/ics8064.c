@@ -33,7 +33,7 @@
 #include "liblsd/hostlist.h"
 #include "libutil/argv.h"
 
-#include "gpib.h"
+#include "libinst/gpib.h"
 
 #define INSTRUMENT "ics8064"
 

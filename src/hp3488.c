@@ -46,7 +46,7 @@
 #include <math.h>
 
 #include "libutil/util.h"
-#include "gpib.h"
+#include "libinst/gpib.h"
 #include "libutil/argv.h"
 #include "liblsd/hostlist.h"
 
