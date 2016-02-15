@@ -83,7 +83,6 @@ AC_CONFIG_FILES( \
   etc/Makefile \
   man/Makefile \
   man/a34401.1 \
-  man/a6032.1 \
   man/hp1630.1 \
   man/hp3488.1 \
   man/hptodino.1 \
