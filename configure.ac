@@ -1,18 +1,17 @@
 ##
 # Prologue
 ##
-AC_INIT(m4_esyscmd([awk '/Name:/ {printf "%s",$2; exit}' META]),
-        m4_esyscmd([awk '/Version:/ {printf "%s",$2; exit}' META]))
+AC_INIT([gpib-utils],
+        m4_esyscmd([git describe --always | awk '/.*/ {printf "%s",$1; exit}']))
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_SRCDIR([NEWS])
 AC_CANONICAL_SYSTEM
-X_AC_META
 X_AC_EXPAND_INSTALL_DIRS
 
 ##
 # Automake support
 ##
-AM_INIT_AUTOMAKE($META_NAME, $META_VERSION)
+AM_INIT_AUTOMAKE([subdir-objects])
 AM_CONFIG_HEADER([config/config.h])
 AM_MAINTAINER_MODE
 
