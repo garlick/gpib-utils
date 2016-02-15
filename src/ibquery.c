@@ -39,6 +39,7 @@
 
 #include "libutil/util.h"
 #include "libinst/gpib.h"
+#include "libinst/cmdline.h"
 
 #define MAX_RESPONSE_LEN	4096
 

@@ -10,4 +10,6 @@ libinst_la_SOURCES = \
 	gpib.c \
 	gpib.h \
 	ib_488_2.c \
-	ib_488_2.h
+	ib_488_2.h \
+	cmdline.c \
+	cmdline.h

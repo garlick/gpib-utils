@@ -47,6 +47,7 @@
 
 #include "libutil/util.h"
 #include "libinst/gpib.h"
+#include "libinst/cmdline.h"
 #include "libutil/argv.h"
 #include "liblsd/hostlist.h"
 

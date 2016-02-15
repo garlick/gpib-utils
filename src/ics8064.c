@@ -34,6 +34,7 @@
 #include "libutil/argv.h"
 
 #include "libinst/gpib.h"
+#include "libinst/cmdline.h"
 
 #define INSTRUMENT "ics8064"
 
