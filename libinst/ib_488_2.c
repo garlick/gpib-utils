@@ -26,7 +26,6 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#include "gpib.h"
 #include "ib_488_2.h"
 
 extern char *prog;
@@ -47,7 +46,7 @@ _extract_dlab_len(unsigned char *data, int lenlen, int len)
 }
 
 int
-gpib_decode_488_2_data(unsigned char *data, int *lenp, int flags)
+inst_decode_488_2_data(unsigned char *data, int *lenp, int flags)
 {
     int len = *lenp;
 
@@ -56,11 +55,11 @@ gpib_decode_488_2_data(unsigned char *data, int *lenp, int flags)
 
     /* 8.7.10 indefinite length arbitrary block response data */
     if (data[0] == '#' && data[1] == '0' && data[len - 1] == '\n') {
-        if (!(flags & GPIB_DECODE_ILAB) && !(flags & GPIB_VERIFY_ILAB)) {
+        if (!(flags & INST_DECODE_ILAB) && !(flags & INST_VERIFY_ILAB)) {
             fprintf(stderr, "%s: unexpectedly got ILAB response\n", prog);
             return -1;
         }
-        if (flags & GPIB_DECODE_ILAB) {
+        if (flags & INST_DECODE_ILAB) {
             memmove(data, &data[2], len - 3);
             *lenp -= 3;
         }
@@ -70,7 +69,7 @@ gpib_decode_488_2_data(unsigned char *data, int *lenp, int flags)
         int llen = data[1] - '0';
         int dlen = _extract_dlab_len(&data[2], llen, len - 2);
 
-        if (!(flags & GPIB_DECODE_DLAB) && !(flags & GPIB_VERIFY_DLAB)) {
+        if (!(flags & INST_DECODE_DLAB) && !(flags & INST_VERIFY_DLAB)) {
             fprintf(stderr, "%s: unexpectedly got DLAB response\n", prog);
             return -1;
         }
@@ -83,7 +82,7 @@ gpib_decode_488_2_data(unsigned char *data, int *lenp, int flags)
             fprintf(stderr, "%s: DLAB data length is too large\n", prog);
             return -1;
         }
-        if (flags & GPIB_DECODE_DLAB) {
+        if (flags & INST_DECODE_DLAB) {
             memmove(data, data + 2 + llen, dlen);
             *lenp = dlen;
         }
@@ -104,40 +103,40 @@ gpib_decode_488_2_data(unsigned char *data, int *lenp, int flags)
  */
 
 void
-gpib_488_2_cls(gd_t gd)
+inst_488_2_cls(struct instrument *gd)
 {
-    gpib_wrtstr(gd, "*CLS\n");
+    inst_wrtstr(gd, "*CLS\n");
 }
 
 void
-gpib_488_2_rst(gd_t gd, int delay_secs)
+inst_488_2_rst(struct instrument *gd, int delay_secs)
 {
-    gpib_wrtstr(gd, "*RST\n");
+    inst_wrtstr(gd, "*RST\n");
     sleep(delay_secs);
 }
 
 void
-gpib_488_2_idn(gd_t gd)
+inst_488_2_idn(struct instrument *gd)
 {
     char buf[128];
 
-    gpib_qrystr(gd, "*IDN?\n", buf, sizeof(buf));
+    inst_qrystr(gd, "*IDN?\n", buf, sizeof(buf));
     printf("%s: idn-string: %s\n", prog, buf);
 }
 
 void
-gpib_488_2_opt(gd_t gd)
+inst_488_2_opt(struct instrument *gd)
 {
     char buf[128];
 
-    gpib_qrystr(gd, "*OPT?\n", buf, sizeof(buf));
+    inst_qrystr(gd, "*OPT?\n", buf, sizeof(buf));
     printf("%s: installed-options: %s\n", prog, buf);
 }
 
 void
-gpib_488_2_tst(gd_t gd, strtab_t *tab)
+inst_488_2_tst(struct instrument *gd, strtab_t *tab)
 {
-    int result = gpib_qryint(gd, "*TST?\n");
+    int result = inst_qryint(gd, "*TST?\n");
 
     if (result == 0)
         printf("self-test: passed\n");
@@ -148,12 +147,12 @@ gpib_488_2_tst(gd_t gd, strtab_t *tab)
 }
 
 void
-gpib_488_2_lrn(gd_t gd)
+inst_488_2_lrn(struct instrument *gd)
 {
     char buf[32768];
     int len;
 
-    len = gpib_qrystr(gd, "*LRN?\n", buf, sizeof(buf));
+    len = inst_qrystr(gd, "*LRN?\n", buf, sizeof(buf));
     if (write_all(1, buf, len) < 0) {
         fprintf(stderr, "%s: write error on stdout: %s\n",
                 prog, strerror(errno));
@@ -162,7 +161,7 @@ gpib_488_2_lrn(gd_t gd)
 }
 
 void
-gpib_488_2_restore(gd_t gd)
+inst_488_2_restore(struct instrument *gd)
 {
     char buf[32768];
     int len;
@@ -172,32 +171,32 @@ gpib_488_2_restore(gd_t gd)
                 prog, strerror(errno));
         exit(1);
     }
-    gpib_wrt(gd, buf, len);
+    inst_wrt(gd, buf, len);
     fprintf(stderr, "%s: restore setup: %d bytes\n", prog, len);
 }
 
 int
-gpib_488_2_stb(gd_t gd)
+inst_488_2_stb(struct instrument *gd)
 {
-    return gpib_qryint(gd, "*STB?\n");
+    return inst_qryint(gd, "*STB?\n");
 }
 
 int
-gpib_488_2_esr(gd_t gd)
+inst_488_2_esr(struct instrument *gd)
 {
-    return gpib_qryint(gd, "*ESR?\n");
+    return inst_qryint(gd, "*ESR?\n");
 }
 
 int
-gpib_488_2_ese(gd_t gd)
+inst_488_2_ese(struct instrument *gd)
 {
-    return gpib_qryint(gd, "*ESE?\n");
+    return inst_qryint(gd, "*ESE?\n");
 }
 
 int
-gpib_488_2_sre(gd_t gd)
+inst_488_2_sre(struct instrument *gd)
 {
-    return gpib_qryint(gd, "*SRE?\n");
+    return inst_qryint(gd, "*SRE?\n");
 }
 
 /*

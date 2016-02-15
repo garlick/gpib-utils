@@ -38,7 +38,7 @@
 #include <stdint.h>
 
 #include "libutil/util.h"
-#include "libinst/gpib.h"
+#include "libinst/inst.h"
 #include "libinst/cmdline.h"
 
 #define MAX_RESPONSE_LEN	4096
@@ -80,12 +80,12 @@ main(int argc, char *argv[])
 {
     int exit_val = 0;
     int print_usage = 0;
-    gd_t gd;
+    struct instrument *gd;
     int c;
     char buf[MAX_RESPONSE_LEN];
     unsigned char status, mask;
 
-    gd = gpib_init_args(argc, argv, options, longopts, NULL,
+    gd = inst_init_args(argc, argv, options, longopts, NULL,
                         NULL, 0, &print_usage);
     if (print_usage)
         usage(optdesc);
@@ -97,25 +97,25 @@ main(int argc, char *argv[])
             OPTIONS_COMMON_SWITCH
                 break;
             case 'l': /* --local */
-                gpib_loc(gd);
+                inst_loc(gd);
                 break;
             case 'c': /* --clear */
-                gpib_clr(gd, 100000); /* built-in delay of 100ms */
+                inst_clr(gd, 100000); /* built-in delay of 100ms */
                 break;
             case 'w': /* --write */
-                gpib_wrtstr(gd, optarg);
+                inst_wrtstr(gd, optarg);
                 break;
             case 'r': /* --read */
-                gpib_rdstr(gd, buf, sizeof(buf));
+                inst_rdstr(gd, buf, sizeof(buf));
                 printf("%s\n", buf);
                 break;
             case 'q': /* --query */
-                (void)gpib_qrystr(gd, optarg, buf, sizeof(buf));
+                (void)inst_qrystr(gd, optarg, buf, sizeof(buf));
                 printf("%s\n", buf);
                 break;
             case 's': /* --status */
                 mask = (unsigned char)strtoul(optarg, NULL, 0);
-                (void)gpib_rsp(gd, &status);
+                (void)inst_rsp(gd, &status);
                 printf("%hhu\n", status);
                 if ((status & mask) != 0)
                     exit(1);
@@ -126,7 +126,7 @@ main(int argc, char *argv[])
         }
     }
 
-    gpib_fini(gd);
+    inst_fini(gd);
     exit(exit_val);
 }
 

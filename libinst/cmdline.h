@@ -7,7 +7,7 @@
 /* Look up a device's default address in /etc/gpib-utils.conf
  * Result is allocated in static storage that may be overwritten on next call.
  */
-char *gpib_default_addr(char *name);
+char *inst_default_addr(char *name);
 
 typedef struct {
     char *sopt;
@@ -40,7 +40,8 @@ void usage(opt_desc_t *tab);
     case 'n': \
     case 'v':
 
-gd_t gpib_init_args(int argc, char *argv[], const char *opts, 
+struct instrument *inst_init_args(int argc, char *argv[],
+                    const char *opts,
                     struct option *longopts, char *name, 
                     spollfun_t sf, unsigned long retry, int *opt_error);
 

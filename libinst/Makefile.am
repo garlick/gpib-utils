@@ -7,8 +7,8 @@ AM_CPPFLAGS = \
 noinst_LTLIBRARIES = libinst.la
 
 libinst_la_SOURCES = \
-	gpib.c \
-	gpib.h \
+	inst.c \
+	inst.h \
 	ib_488_2.c \
 	ib_488_2.h \
 	cmdline.c \

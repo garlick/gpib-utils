@@ -27,7 +27,7 @@
 #include <wordexp.h>
 #include <libgen.h>
 
-#include "gpib.h"
+#include "inst.h"
 #include "cmdline.h"
 
 extern char *prog;
@@ -47,7 +47,7 @@ _parse_line(char *buf, char *key)
 }
 
 char *
-gpib_default_addr(char *name)
+inst_default_addr(char *name)
 {
     char *paths[] = GPIB_UTILS_CONF, **p = &paths[0];
     wordexp_t w;
@@ -71,14 +71,14 @@ gpib_default_addr(char *name)
 /* Handle common -v and -a option processing in each of the utilities,
  * and initialize the GPIB connection.
  */
-gd_t
-gpib_init_args(int argc, char *argv[], const char *opts, 
+struct instrument *
+inst_init_args(int argc, char *argv[], const char *opts, 
                struct option *longopts, char *name, spollfun_t sf, 
                unsigned long retry, int *opt_error)
 {
     int c, verbose = 0, todo = 0;
     char *addr = NULL;
-    gd_t gd = NULL;
+    struct instrument *gd = NULL;
     int error = 0;
 
     prog = basename(argv[0]);
@@ -109,7 +109,7 @@ gpib_init_args(int argc, char *argv[], const char *opts,
 
     if (!addr) {
         if (name) {
-            addr = gpib_default_addr(name);
+            addr = inst_default_addr(name);
             if (!addr) {
                 fprintf(stderr, "%s: no dflt address for %s, use --address\n", 
                         prog, name);
@@ -120,13 +120,13 @@ gpib_init_args(int argc, char *argv[], const char *opts,
             goto done;
         }
     }
-    gd = gpib_init(addr, sf, 0);
+    gd = inst_init(addr, sf, 0);
     if (!gd) {
         fprintf(stderr, "%s: device initialization failed for address %s\n", 
                 prog, addr);
         goto done;
     }
-    gpib_set_verbose(gd, verbose);
+    inst_set_verbose(gd, verbose);
 done:
     optind = 0;
     return gd;
