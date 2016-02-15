@@ -82,11 +82,7 @@ AC_CONFIG_FILES( \
   src/Makefile \
   etc/Makefile \
   man/Makefile \
-  man/a34401.1 \
-  man/hp1630.1 \
   man/hp3488.1 \
-  man/hptodino.1 \
-  man/hptopbm.1 \
   man/ics8064.1 \
   man/icsconfig.1 \
   man/ibquery.1 \
