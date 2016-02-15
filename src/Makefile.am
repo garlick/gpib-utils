@@ -15,9 +15,6 @@ common_sources = \
 	gpib.h
 
 bin_PROGRAMS = \
-	hp6632 \
-	hp6626 \
-	hp6038 \
 	hp1630 \
 	hptopbm \
 	hptodino \
@@ -44,9 +41,6 @@ ics8064_SOURCES = ics8064.c $(common_sources)
 icsconfig_SOURCES = icsconfig.c  $(common_sources)
 a6032_SOURCES = a6032.c $(common_sources)
 a34401_SOURCES = a34401.c $(common_sources)
-hp6632_SOURCES = hp6632.c  $(common_sources)
-hp6626_SOURCES = hp6626.c  $(common_sources)
-hp6038_SOURCES = hp6038.c  $(common_sources)
 ibquery_SOURCES = ibquery.c  $(common_sources)
 
 
