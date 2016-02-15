@@ -32,11 +32,7 @@ bin_PROGRAMS = \
 	a34401 \
 	ibquery
 
-noinst_PROGRAMS = \
-	hp1650
-
 hp1630_SOURCES = hp1630.c $(common_sources)
-hp1650_SOURCES = hp1650.c $(common_sources)
 hptopbm_SOURCES =  hptopbm.c $(common_sources)
 hptodino_SOURCES =  hptodino.c $(common_sources)
 hp3457_SOURCES = hp3457.c $(common_sources)
