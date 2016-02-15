@@ -73,7 +73,6 @@ AC_PKGCONFIG
 ##
 AC_CONFIG_FILES( \
   Makefile \
-  gpib-utils.spec \
   libvxi11/Makefile \
   libvxi11/libvxi11.pc \
   libics/Makefile \
