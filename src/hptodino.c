@@ -37,8 +37,8 @@
 #include <stdint.h>
 #include <time.h>
 
-#include "util.h"
-#include "hpcrc.h"
+#include "libutil/util.h"
+#include "libutil/hpcrc.h"
 
 struct pods {
     uint16_t pod0; /* 8 bit state/timing */

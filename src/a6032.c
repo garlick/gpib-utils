@@ -37,7 +37,7 @@
 #include <math.h>
 #include <stdint.h>
 
-#include "util.h"
+#include "libutil/util.h"
 #include "gpib.h"
 
 #define PATH_DATE "/bin/date"

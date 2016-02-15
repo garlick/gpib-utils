@@ -29,10 +29,11 @@
 #include <unistd.h>
 #include <string.h>
 
-#include "util.h"
+#include "libutil/util.h"
+#include "liblsd/hostlist.h"
+#include "libutil/argv.h"
+
 #include "gpib.h"
-#include "hostlist.h"
-#include "argv.h"
 
 #define INSTRUMENT "ics8064"
 

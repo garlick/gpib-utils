@@ -34,7 +34,7 @@
 #include <sys/time.h>
 #include <stdint.h>
 
-#include "util.h"
+#include "libutil/util.h"
 #include "gpib.h"
 
 #define INSTRUMENT "hp3457"

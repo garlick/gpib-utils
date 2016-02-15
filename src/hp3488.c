@@ -45,10 +45,10 @@
 #include <sys/time.h>
 #include <math.h>
 
-#include "util.h"
+#include "libutil/util.h"
 #include "gpib.h"
-#include "argv.h"
-#include "hostlist.h"
+#include "libutil/argv.h"
+#include "liblsd/hostlist.h"
 
 #define INSTRUMENT "hp3488"
 

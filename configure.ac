@@ -77,6 +77,7 @@ AC_CONFIG_FILES( \
   libvxi11/libvxi11.pc \
   libics/Makefile \
   liblsd/Makefile \
+  libutil/Makefile \
   test/Makefile \
   src/Makefile \
   etc/Makefile \

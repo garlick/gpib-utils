@@ -1,14 +1,10 @@
 AM_CFLAGS = @GCCWARN@
 
-noinst_LIBRARIES = liblsd.a
+noinst_LTLIBRARIES = liblsd.la
 
-liblsd_a_SOURCES = \
-	argv.c \
-	argv.h \
+liblsd_la_SOURCES = \
 	hostlist.c \
 	hostlist.h \
-	hprintf.c \
-	hprintf.h \
 	list.c \
 	list.h \
 	cbuf.c \

@@ -38,7 +38,7 @@
 #include <math.h>
 #include <stdint.h>
 
-#include "util.h"
+#include "libutil/util.h"
 #include "gpib.h"
 
 #define INSTRUMENT "a34401"

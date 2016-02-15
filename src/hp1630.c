@@ -37,9 +37,9 @@
 #include <stdarg.h>
 #include <stdint.h>
 
-#include "util.h"
+#include "libutil/util.h"
 #include "gpib.h"
-#include "hpcrc.h"
+#include "libutil/hpcrc.h"
 
 /* Status byte 0 - only bits enabled by service request mask
  * Status byte 1 - all bits

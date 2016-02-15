@@ -54,15 +54,17 @@
 #include <math.h>
 #include <wordexp.h>
 
-#include "util.h"
-#include "gpib.h"
 #if HAVE_STDBOOL_H
 #include <stdbool.h>
 #else
 typedef enum { false=0, true=1 } bool;
 #endif
-#include "vxi11_device.h"
-#include "hprintf.h"
+
+#include "libutil/util.h"
+#include "libvxi11/vxi11_device.h"
+#include "libutil/hprintf.h"
+
+#include "gpib.h"
 
 typedef enum { GPIB, VXI11, SERIAL, SOCKET } contype_t;
 

@@ -1,24 +1,18 @@
 AM_CFLAGS = @GCCWARN@
 
 AM_CPPFLAGS = \
-	-I$(top_srcdir)/libvxi11 \
-	-I$(top_srcdir)/libics \
-	-I$(top_srcdir)/liblsd \
+	-I$(top_srcdir)
 	@GPIB_CPPFLAGS@
 
 LDADD = $(top_builddir)/libvxi11/libvxi11.la \
-	$(top_builddir)/libics/libics.a \
-	$(top_builddir)/liblsd/liblsd.a \
+	$(top_builddir)/libics/libics.la \
+	$(top_builddir)/liblsd/liblsd.la \
+	$(top_builddir)/libutil/libutil.la \
 	@GPIB_LDFLAGS@ @GPIB_LIBS@
 
 common_sources = \
-	util.c \
 	gpib.c \
-	hpcrc.c \
-	util.h \
-	gpib.h \
-	hpcrc.h
-
+	gpib.h
 
 bin_PROGRAMS = \
 	hp6632 \

@@ -29,7 +29,7 @@
 #include <stdint.h>
 #include <libgen.h>
 
-#include "util.h"
+#include "libutil/util.h"
 
 static const int inverse_video = 1;
 
