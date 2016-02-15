@@ -2,7 +2,7 @@ AM_CFLAGS = @GCCWARNRPC@
 
 lib_LTLIBRARIES = libvxi11.la
 
-noinst_LIBRARIES = libvxi11intr.a
+noinst_LTLIBRARIES = libvxi11intr.la
 
 libvxi11_la_SOURCES = \
 	vxi11_device.c \
@@ -16,7 +16,7 @@ libvxi11_la_SOURCES = \
 	vxi11_device.h  \
 	vxi11.h
 
-libvxi11intr_a_SOURCES = \
+libvxi11intr_la_SOURCES = \
 	vxi11intr_xdr.c \
 	vxi11intr_svc.c \
 	vxi11intr.h

@@ -1,3 +1,1 @@
-SUBDIRS = libvxi11 libics liblsd src man etc test
-
-EXTRA_DIST = META gpib-utils.spec
+SUBDIRS = libvxi11 libics liblsd libutil libinst src man etc test

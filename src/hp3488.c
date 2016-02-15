@@ -45,10 +45,11 @@
 #include <sys/time.h>
 #include <math.h>
 
-#include "util.h"
-#include "gpib.h"
-#include "argv.h"
-#include "hostlist.h"
+#include "libutil/util.h"
+#include "libinst/inst.h"
+#include "libinst/cmdline.h"
+#include "libutil/argv.h"
+#include "liblsd/hostlist.h"
 
 #define INSTRUMENT "hp3488"
 
@@ -99,18 +100,18 @@
     { 44478, "1.3GHz multiplexer",    "[00-03,10-13]" }, \
 }
 
-static void _get_idn(gd_t gd);
-static void _test(gd_t gd);
-static void _clear(gd_t gd);
-static void _shell(gd_t gd);
+static void _get_idn(struct instrument *gd);
+static void _test(struct instrument *gd);
+static void _clear(struct instrument *gd);
+static void _shell(struct instrument *gd);
 static void _show_config(void);
-static void _open_targets(gd_t gd, char *str);
-static void _close_targets(gd_t gd, char *str);
-static void _query_targets(gd_t gd, char *str);
+static void _open_targets(struct instrument *gd, char *str);
+static void _close_targets(struct instrument *gd, char *str);
+static void _query_targets(struct instrument *gd, char *str);
 static void _list_targets();
-static int _interpret_status(gd_t gd, unsigned char status, char *msg);
+static int _interpret_status(struct instrument *gd, unsigned char status, char *msg);
 static int _parse_model_config(char *str);
-static void _probe_model_config(gd_t gd);
+static void _probe_model_config(struct instrument *gd);
 
 typedef struct {
     int model;
@@ -174,9 +175,9 @@ main(int argc, char *argv[])
     int need_valid_targets = 0;
     int c, print_usage = 0;
     int exit_val = 0;
-    gd_t gd;
+    struct instrument *gd;
 
-    gd = gpib_init_args(argc, argv, options, longopts, INSTRUMENT,
+    gd = inst_init_args(argc, argv, options, longopts, INSTRUMENT,
                         _interpret_status, 0, &print_usage);
     if (print_usage) {
         usage(optdesc);
@@ -185,7 +186,7 @@ main(int argc, char *argv[])
     if (!gd)
         exit(1);
 
-    gpib_set_reos(gd, 1);
+    inst_set_reos(gd, 1);
 
     /* preparse args (again) to get slot config settled before doing work */
     while ((c = GETOPT(argc, argv, options, longopts)) != EOF) {
@@ -232,7 +233,7 @@ main(int argc, char *argv[])
             case 'C': /* --config (handled above) */
                 break;
             case 'l': /* --local */
-                gpib_loc(gd);
+                inst_loc(gd);
                 break;
             case 'c': /* --clear */
                 _clear(gd);
@@ -270,7 +271,7 @@ main(int argc, char *argv[])
 done:
     if (valid_targets)
         hostlist_destroy(valid_targets);
-    gpib_fini(gd);
+    inst_fini(gd);
     exit(exit_val);
 }
 
@@ -278,14 +279,14 @@ done:
  *   Return: 0=nonfatal, 1=fatal.
  */
 static int
-_check_error(gd_t gd, char *msg)
+_check_error(struct instrument *gd, char *msg)
 {
     char tmpbuf[64];
     int res = 0;
     unsigned char err;
 
-    gpib_wrtstr(gd, "ERROR");
-    gpib_rdstr(gd, tmpbuf, sizeof(tmpbuf));   /* clears error */
+    inst_wrtstr(gd, "ERROR");
+    inst_rdstr(gd, tmpbuf, sizeof(tmpbuf));   /* clears error */
 
     err = strtoul(tmpbuf, NULL, 10);
     if ((err & HP3488_ERROR_SYNTAX)) {
@@ -319,7 +320,7 @@ _check_error(gd_t gd, char *msg)
  *   Return: 0=non-fatal/no error, >0=fatal, -1=retry.
  */
 static int
-_interpret_status(gd_t gd, unsigned char status, char *msg)
+_interpret_status(struct instrument *gd, unsigned char status, char *msg)
 {
     int err = 0;
 
@@ -348,21 +349,21 @@ _interpret_status(gd_t gd, unsigned char status, char *msg)
  * Helper for _probe_model_config().
  */
 static int
-_disambiguate_ctype(gd_t gd, int slot)
+_disambiguate_ctype(struct instrument *gd, int slot)
 {
     int err4, err9;
     int model;
 
-    gpib_wrtf(gd, "DOFF");
+    inst_wrtf(gd, "DOFF");
 
     fprintf(stderr, "%s: closing switches in slot %d to disambiguate card type\n", prog, slot);
     fprintf(stderr, "%s: avoid this in the future by using -C option\n", prog);
 
     lerr_flag = 0;  /* next logic error will set lerr_flag */
-    gpib_wrtf(gd, "CLOSE %d04", slot);
+    inst_wrtf(gd, "CLOSE %d04", slot);
     err4 = lerr_flag;
     lerr_flag = 0;  /* next logic error will set lerr_flag */
-    gpib_wrtf(gd, "CLOSE %d09", slot);
+    inst_wrtf(gd, "CLOSE %d09", slot);
     err9 = lerr_flag;
     lerr_flag = 1;  /* back to default logic error handling */
 
@@ -377,8 +378,8 @@ _disambiguate_ctype(gd_t gd, int slot)
         exit(1);
     }
 
-    gpib_wrtf(gd, "CRESET %d", slot);
-    gpib_wrtf(gd, "DON");
+    inst_wrtf(gd, "CRESET %d", slot);
+    inst_wrtf(gd, "DON");
 
     return model;
 }
@@ -387,12 +388,12 @@ _disambiguate_ctype(gd_t gd, int slot)
  * Warning: 44477 and 44476 will look like 44471.
  */
 static int
-_ctype(gd_t gd, int slot)
+_ctype(struct instrument *gd, int slot)
 {
     char buf[128];
 
-    gpib_wrtf(gd, "CTYPE %d", slot);
-    gpib_rdstr(gd, buf, sizeof(buf));
+    inst_wrtf(gd, "CTYPE %d", slot);
+    inst_rdstr(gd, buf, sizeof(buf));
 
     if (strlen(buf) < 15) {
         fprintf(stderr, "%s: parse error reading slot ctype\n", prog);
@@ -446,7 +447,7 @@ _parse_model_config(char *str)
 }
 
 static void
-_probe_model_config(gd_t gd)
+_probe_model_config(struct instrument *gd)
 {
     int slot, model;
     modeltab_t *cp;
@@ -469,12 +470,12 @@ _probe_model_config(gd_t gd)
 }
 
 static void
-query_caddr(gd_t gd, char *caddr)
+query_caddr(struct instrument *gd, char *caddr)
 {
     char buf[128];
 
-    gpib_wrtf(gd, "VIEW %s", caddr);
-    gpib_rdstr(gd, buf, sizeof(buf));
+    inst_wrtf(gd, "VIEW %s", caddr);
+    inst_rdstr(gd, buf, sizeof(buf));
 
     if (!strncmp(buf, "OPEN   1", 8))
         printf("%s: 0\n", caddr);
@@ -518,7 +519,7 @@ my_hostlist_find(hostlist_t hl, char *key)
 }
 
 static void
-_query_targets(gd_t gd, char *str)
+_query_targets(struct instrument *gd, char *str)
 {
     hostlist_iterator_t it;
     hostlist_t hl = NULL;
@@ -539,7 +540,7 @@ _query_targets(gd_t gd, char *str)
 }
 
 static void
-_open_targets(gd_t gd, char *str)
+_open_targets(struct instrument *gd, char *str)
 {
     hostlist_iterator_t it;
     hostlist_t hl;
@@ -551,14 +552,14 @@ _open_targets(gd_t gd, char *str)
         if (my_hostlist_find(valid_targets, caddr) == -1)
             fprintf(stderr, "%s: %s: invalid channel address\n", prog, caddr);
         else
-            gpib_wrtf(gd, "OPEN %s", caddr);
+            inst_wrtf(gd, "OPEN %s", caddr);
     }
     hostlist_iterator_destroy(it);
     hostlist_destroy(hl);
 }
 
 static void
-_close_targets(gd_t gd, char *str)
+_close_targets(struct instrument *gd, char *str)
 {
     hostlist_iterator_t it;
     hostlist_t hl;
@@ -570,7 +571,7 @@ _close_targets(gd_t gd, char *str)
         if (my_hostlist_find(valid_targets, caddr) == -1)
             fprintf(stderr, "%s: %s: invalid channel address\n", prog, caddr);
         else
-            gpib_wrtf(gd, "CLOSE %s", caddr);
+            inst_wrtf(gd, "CLOSE %s", caddr);
     }
     hostlist_iterator_destroy(it);
     hostlist_destroy(hl);
@@ -591,9 +592,9 @@ _list_targets()
 /* Run the instrument self test.
  */
 static void
-_test(gd_t gd)
+_test(struct instrument *gd)
 {
-    gpib_wrtf(gd, "TEST");
+    inst_wrtf(gd, "TEST");
     /* if we don't exit via serial poll callback, we passed */
     printf("%s: selftest passed\n", prog);
 }
@@ -603,15 +604,15 @@ _test(gd_t gd)
  * Verify identity.
  */
 static void
-_clear(gd_t gd)
+_clear(struct instrument *gd)
 {
     char tmpbuf[64];
 
-    gpib_clr(gd, 1000000);
+    inst_clr(gd, 1000000);
 
     /* verify the instrument id is what we expect */
-    gpib_wrtf(gd, "ID?");
-    gpib_rdstr(gd, tmpbuf, sizeof(tmpbuf));
+    inst_wrtf(gd, "ID?");
+    inst_rdstr(gd, tmpbuf, sizeof(tmpbuf));
 
     if (strncmp(tmpbuf, "HP3488A", 7) != 0) {
         fprintf(stderr, "%s: device id %s != %s\n", prog, tmpbuf, "HP3488A");
@@ -636,7 +637,7 @@ _shell_help(void)
 }
 
 static int 
-_docmd(gd_t gd, char **av)
+_docmd(struct instrument *gd, char **av)
 {
     int rc = 0;
 
@@ -678,9 +679,9 @@ _docmd(gd_t gd, char **av)
                 printf("Usage: verbose 1|0\n");
             else {
                 if (!strcmp(av[1], "1"))
-                    gpib_set_verbose(gd, 1);
+                    inst_set_verbose(gd, 1);
                 else if (!strcmp(av[1], "0"))
-                    gpib_set_verbose(gd, 0);
+                    inst_set_verbose(gd, 0);
                 else
                     printf("Usage: verbose 1|0\n");
             }
@@ -692,7 +693,7 @@ _docmd(gd_t gd, char **av)
 }
 
 static void
-_shell(gd_t gd)
+_shell(struct instrument *gd)
 {
     char buf[128];
     char **av;
@@ -708,12 +709,12 @@ _shell(gd_t gd)
 }
 
 static void
-_get_idn(gd_t gd)
+_get_idn(struct instrument *gd)
 {
     char model[64];
 
-    gpib_wrtstr(gd, "ID?\n");
-    gpib_rdstr(gd, model, sizeof(model));
+    inst_wrtstr(gd, "ID?\n");
+    inst_rdstr(gd, model, sizeof(model));
     printf("%s\n", model);
 }
 

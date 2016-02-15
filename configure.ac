@@ -1,18 +1,18 @@
 ##
 # Prologue
 ##
-AC_INIT(m4_esyscmd([awk '/Name:/ {printf "%s",$2; exit}' META]),
-        m4_esyscmd([awk '/Version:/ {printf "%s",$2; exit}' META]))
+AC_INIT([gpib-utils],
+        m4_esyscmd([git describe --always | awk '/.*/ {printf "%s",$1; exit}']))
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_SRCDIR([NEWS])
 AC_CANONICAL_SYSTEM
-X_AC_META
 X_AC_EXPAND_INSTALL_DIRS
 
 ##
 # Automake support
 ##
-AM_INIT_AUTOMAKE($META_NAME, $META_VERSION)
+AM_INIT_AUTOMAKE([subdir-objects])
+AM_SILENT_RULES([yes])
 AM_CONFIG_HEADER([config/config.h])
 AM_MAINTAINER_MODE
 
@@ -73,30 +73,19 @@ AC_PKGCONFIG
 ##
 AC_CONFIG_FILES( \
   Makefile \
-  gpib-utils.spec \
   libvxi11/Makefile \
   libvxi11/libvxi11.pc \
   libics/Makefile \
   liblsd/Makefile \
+  libutil/Makefile \
+  libinst/Makefile \
   test/Makefile \
   src/Makefile \
   etc/Makefile \
   man/Makefile \
-  man/a34401.1 \
-  man/a6032.1 \
-  man/dg535.1 \
-  man/hp1630.1 \
-  man/hp3457.1 \
   man/hp3488.1 \
-  man/hp6632.1 \
-  man/hp6626.1 \
-  man/hp6038.1 \
-  man/hp8656.1 \
-  man/hptodino.1 \
-  man/hptopbm.1 \
   man/ics8064.1 \
   man/icsconfig.1 \
-  man/sr620.1 \
   man/ibquery.1 \
   man/gpib-utils.conf.5 \
 )

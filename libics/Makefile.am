@@ -1,8 +1,8 @@
 AM_CFLAGS =  @GCCWARNRPC@
 
-noinst_LIBRARIES = libics.a
+noinst_LTLIBRARIES = libics.la
 
-libics_a_SOURCES = \
+libics_la_SOURCES = \
 	ics.c \
 	ics.h \
 	ics8000_clnt.c \

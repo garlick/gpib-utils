@@ -29,10 +29,12 @@
 #include <unistd.h>
 #include <string.h>
 
-#include "util.h"
-#include "gpib.h"
-#include "hostlist.h"
-#include "argv.h"
+#include "libutil/util.h"
+#include "liblsd/hostlist.h"
+#include "libutil/argv.h"
+
+#include "libinst/inst.h"
+#include "libinst/cmdline.h"
 
 #define INSTRUMENT "ics8064"
 
@@ -81,16 +83,16 @@ static opt_desc_t optdesc[] = {
     {0,0},
 };
 
-static int _interpret_status(gd_t gd, unsigned char status, char *msg);
-static void _clear(gd_t gd);
-static void _query_relays(gd_t gd);
-static void _open_relays(gd_t gd, char *targets);
-static void _close_relays(gd_t gd, char *targets);
+static int _interpret_status(struct instrument *gd, unsigned char status, char *msg);
+static void _clear(struct instrument *gd);
+static void _query_relays(struct instrument *gd);
+static void _open_relays(struct instrument *gd, char *targets);
+static void _close_relays(struct instrument *gd, char *targets);
 static int _validate_targets(char *targets);
-static void _shell(gd_t gd);
-static void _get_idn(gd_t gd);
-static void _query_digital(gd_t gd);
-static void _selftest(gd_t gd);
+static void _shell(struct instrument *gd);
+static void _get_idn(struct instrument *gd);
+static void _query_digital(struct instrument *gd);
+static void _selftest(struct instrument *gd);
 
 char *prog;
 static int radio = 0;
@@ -98,12 +100,12 @@ static int radio = 0;
 int
 main(int argc, char *argv[])
 {
-    gd_t gd;
+    struct instrument *gd;
     int c;
     int exit_val = 0;
     int print_usage = 0;
 
-    gd = gpib_init_args(argc, argv, OPTIONS, longopts, INSTRUMENT,
+    gd = inst_init_args(argc, argv, OPTIONS, longopts, INSTRUMENT,
                         _interpret_status, 100000, &print_usage);
     if (print_usage)
         usage(optdesc);
@@ -125,7 +127,7 @@ main(int argc, char *argv[])
             OPTIONS_COMMON_SWITCH
                 break;
             case 'l' :  /* --local */
-                gpib_loc(gd);
+                inst_loc(gd);
                 break;
             case 'c' :  /* --clear */
                 _clear(gd);
@@ -160,7 +162,7 @@ main(int argc, char *argv[])
         }
     }
 
-    gpib_fini(gd);
+    inst_fini(gd);
     exit(exit_val);
 }
 
@@ -169,14 +171,14 @@ main(int argc, char *argv[])
  *   Return: 0=non-fatal/no error, >0=fatal, -1=retry.
  */
 static int
-_interpret_status(gd_t gd, unsigned char status, char *msg)
+_interpret_status(struct instrument *gd, unsigned char status, char *msg)
 {
     int esr, res = 0;
     char tmpstr[128];
 
     if ((status & ICS8064_STB_ESR)) {
-        gpib_wrtf(gd, "*ESR\n");
-        gpib_rdstr(gd, tmpstr, sizeof(tmpstr));
+        inst_wrtf(gd, "*ESR\n");
+        inst_rdstr(gd, tmpstr, sizeof(tmpstr));
         esr = strtoul(tmpstr, NULL, 10);
         if ((esr & ICS8064_ESR_QUERY_ERR))
             fprintf(stderr, "%s: %s: query error\n", prog, msg);
@@ -192,30 +194,30 @@ _interpret_status(gd_t gd, unsigned char status, char *msg)
 }
 
 static void
-_clear(gd_t gd)
+_clear(struct instrument *gd)
 {
-    gpib_clr(gd, 1000);
+    inst_clr(gd, 1000);
 
     /* Reset to power-up state.
      * Allow 100ms after *RST per 8064 instruction manual.
      */
-    gpib_wrtf(gd, "*RST\n"); 
+    inst_wrtf(gd, "*RST\n"); 
     usleep(1000*100); 
 
     /* configure ESR bits that will reach STB reg */
-    gpib_wrtf(gd, "*ESE %d\n", 
+    inst_wrtf(gd, "*ESE %d\n", 
             (ICS8064_ESR_QUERY_ERR | ICS8064_ESR_FLASH_CORRUPT
            | ICS8064_ESR_EXEC_ERR  | ICS8064_ESR_CMD_ERR));
 }
 
 static void
-_selftest(gd_t gd)
+_selftest(struct instrument *gd)
 {
     char tmpstr[128];
     int result;
 
-    gpib_wrtstr(gd, "*TST?\n");
-    gpib_rdstr(gd, tmpstr, sizeof(tmpstr));
+    inst_wrtstr(gd, "*TST?\n");
+    inst_rdstr(gd, tmpstr, sizeof(tmpstr));
     result = strtoul(tmpstr, NULL, 10);
     if (result == 0)
         fprintf(stderr, "%s: self-test OK\n", prog);
@@ -224,43 +226,43 @@ _selftest(gd_t gd)
 }
 
 static void
-_get_idn(gd_t gd)
+_get_idn(struct instrument *gd)
 {
     char tmpstr[64];
 
-    gpib_wrtstr(gd, "*IDN?\n");
-    gpib_rdstr(gd, tmpstr, sizeof(tmpstr));
+    inst_wrtstr(gd, "*IDN?\n");
+    inst_rdstr(gd, tmpstr, sizeof(tmpstr));
     fprintf(stderr, "%s: %s\n", prog, tmpstr);
 }
 
 static void
-_query_digital(gd_t gd)
+_query_digital(struct instrument *gd)
 {
     char tmpstr[64];
 
-    gpib_wrtstr(gd, "STAT:QUES:COND?\n");
-    gpib_rdstr(gd, tmpstr, sizeof(tmpstr));
+    inst_wrtstr(gd, "STAT:QUES:COND?\n");
+    inst_rdstr(gd, tmpstr, sizeof(tmpstr));
     fprintf(stderr, "%s: %s\n", prog, tmpstr);
 }
 
 static void
-_query_relays(gd_t gd)
+_query_relays(struct instrument *gd)
 {
     char tmpstr[128];
 
-    gpib_wrtstr(gd, "ROUTE:CLOSE:STATE?\n");
-    gpib_rdstr(gd, tmpstr, sizeof(tmpstr));
+    inst_wrtstr(gd, "ROUTE:CLOSE:STATE?\n");
+    inst_rdstr(gd, tmpstr, sizeof(tmpstr));
     fprintf(stderr, "%s: %s\n", prog,tmpstr);
 }
 
 static void
-_open_one_relay(gd_t gd, char *relay)
+_open_one_relay(struct instrument *gd, char *relay)
 {
-    gpib_wrtf(gd, "ROUTE:OPEN %s\n", relay);
+    inst_wrtf(gd, "ROUTE:OPEN %s\n", relay);
 }
 
 static void
-_open_relays(gd_t gd, char *targets)
+_open_relays(struct instrument *gd, char *targets)
 {
     hostlist_t h = hostlist_create(targets);
     hostlist_iterator_t it = hostlist_iterator_create(h);
@@ -273,15 +275,15 @@ _open_relays(gd_t gd, char *targets)
 }
 
 static void
-_close_one_relay(gd_t gd, char *relay)
+_close_one_relay(struct instrument *gd, char *relay)
 {
     if (radio)
-        gpib_wrtf(gd, "ROUTE:OPEN:ALL\n");
-    gpib_wrtf(gd, "ROUTE:CLOSE %s\n", relay);
+        inst_wrtf(gd, "ROUTE:OPEN:ALL\n");
+    inst_wrtf(gd, "ROUTE:CLOSE %s\n", relay);
 }
 
 static void
-_close_relays(gd_t gd, char *targets)
+_close_relays(struct instrument *gd, char *targets)
 {
     hostlist_t h = hostlist_create(targets);
     hostlist_iterator_t it = hostlist_iterator_create(h);
@@ -316,7 +318,7 @@ _validate_targets(char *targets)
 }
 
 static int
-_docmd(gd_t gd, char **av)
+_docmd(struct instrument *gd, char **av)
 {
     int rc = 0;
 
@@ -356,7 +358,7 @@ _docmd(gd_t gd, char **av)
 }
 
 static void
-_shell(gd_t gd)
+_shell(struct instrument *gd)
 {
     char buf[128];
     char **av;

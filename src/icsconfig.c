@@ -29,8 +29,8 @@
 #include <unistd.h>
 #include <string.h>
 
-#include "ics.h"
-#include "util.h"
+#include "libics/ics.h"
+#include "libutil/util.h"
 
 #define OPTIONS "a:jJ:tT:sS:zZ:nN:gG:kK:CceriqQ:wW:mM:"
 #if HAVE_GETOPT_LONG
