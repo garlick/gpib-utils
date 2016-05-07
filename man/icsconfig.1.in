@@ -1,4 +1,4 @@
-.TH ics8065 1
+.TH icsconfig 1
 .SH NAME
 icsconfig \- configure ICS Electronics VXI-11 based instruments
 .SH SYNOPSIS
