@@ -26,8 +26,12 @@ Set the configuration attribute NAME to VALUE.
 Changes do not persist across a reboot unless they are saved with
 the \fBcommit\fR command.
 .TP
-\fBdefault\fR NAME=VALUE
-Load the default configuration.
+\fBreload\fR
+Reload the configuration from flash memory.
+.TP
+\fBfactory\fR
+Reload the flash memory with factory defaults.
+The active configuration is not modified until a \fBreload\fR or reboot.
 .TP
 \fBcommit\fR
 Save the configuration to flash memory.  The configuration is loaded
@@ -35,8 +39,8 @@ from flash upon device reboot.
 .TP
 \fBreboot\fR
 Reboot the device.  All device links will be cleared, all connections closed,
-and all resources released.  Upon reboot, the default configuration settings
-from nonvolatile RAM will be used.
+and all resources released.  Upon reboot, the configuration settings
+from flash will be used.
 .TP
 \fBerrlog\fR
 Display the device's stored error log, one per line.
