@@ -1,3 +1,6 @@
+#ifndef _ICS_H
+#define _ICS_H
+
 /* This file is part of gpib-utils.
    For details, see http://sourceforge.net/projects/gpib-utils.
 
@@ -16,6 +19,17 @@
    You should have received a copy of the GNU General Public License
    along with gpib-utils; if not, write to the Free Software Foundation, 
    Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
+
+/* All functions return 0 on success, <0 on RPC error, >0 on ICS error */
+
+enum {
+    ICS_ERROR_CREATE = -2,
+    ICS_ERROR_CLNT = -1,
+    ICS_SUCCESS = 0,
+    ICS_ERROR_SYNTAX = 1,
+    ICS_ERROR_PARAMETER = 5,
+    ICS_ERROR_UNSUPPORTED = 8,
+};
 
 typedef struct ics_struct *ics_t;
 
@@ -96,8 +110,12 @@ int     ics_error_logger(ics_t ics, unsigned int **errp, int *countp);
 
 /* Initialize/finalize the ics module.
  */
-ics_t   ics_init (char *host);
+int     ics_init (char *host, ics_t *icsp);
 void    ics_fini(ics_t ics);
+
+/* Decode an error value to a descriptive string.
+ */
+char *  ics_strerror(ics_t ics, int err);
 
 /* Mapping of error numbers (from the error log) to descriptive text.
  */
@@ -126,6 +144,8 @@ void    ics_fini(ics_t ics);
     {2002,  "insufficient RPC message length" }, \
     {0,     NULL}, \
 }
+
+#endif /* _ICS_H */
 
 /*
  * vi:tabstop=4 shiftwidth=4 expandtab
