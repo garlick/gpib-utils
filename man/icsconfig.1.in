@@ -71,6 +71,9 @@ This value is ignored if \fBenable-dhcp\fR is set to \fIyes\fR.
 The device IPv4 netmask.
 This value is ignored if \fBenable-dhcp\fR is set to \fIyes\fR.
 .TP
+\fBhostname\fR
+The device hostname.
+.TP
 \fBtimeout\fR
 TCP timeout valaue, in seconds.  An inactive TCP channel will be left
 open this length of time before being closed.
