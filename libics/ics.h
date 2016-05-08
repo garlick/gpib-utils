@@ -46,6 +46,11 @@ int     ics_set_interface_name(ics_t ics, char *str);
 int     ics_get_comm_timeout(ics_t ics, unsigned int *timeoutp);
 int     ics_set_comm_timeout(ics_t ics, unsigned int timeout);
 
+/* Get/set hostname.
+ */
+int     ics_get_hostname(ics_t ics, char **namep);
+int     ics_set_hostname(ics_t ics, char *name);
+
 /* Get/set static IP mode.
  */
 int     ics_get_static_ip_mode(ics_t ics, int *flagp);
