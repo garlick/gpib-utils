@@ -109,6 +109,7 @@ static const char *attrs[] = {
     "ip-address",
     "ip-gateway",
     "ip-netmask",
+    "hostname",
     "timeout",
     "keepalive",
     "vxi11-interface",
@@ -159,6 +160,12 @@ _print_attribute (ics_t ics, const char *name)
         char *s;
         rc = ics_get_gateway(ics, &s);
         if (rc == 0) {
+            printf("%s\n", s);
+            free(s);
+        }
+    } else if (!strcmp (name, "hostname")) {
+        char *s;
+        if ((rc = ics_get_hostname(ics, &s)) == 0) {
             printf("%s\n", s);
             free(s);
         }
@@ -250,6 +257,8 @@ _set(ics_t ics, int argc, char **argv)
         rc = ics_set_netmask(ics, value);
     } else if (!strcmp (name, "ip-gateway")) {
         rc = ics_set_gateway(ics, value);
+    } else if (!strcmp (name, "hostname")) {
+        rc = ics_set_hostname(ics, value);
     } else if (!strcmp (name, "keepalive")) {
         unsigned int n = strtoul (value, NULL, 10);
         rc = ics_set_keepalive(ics, n);
