@@ -1,9 +1,9 @@
-.TH ics8065 1
+.TH icsconfig 1
 .SH NAME
 icsconfig \- configure ICS Electronics VXI-11 based instruments
 .SH SYNOPSIS
 .nf
-.B icsconfig [\fIOPTIONS\fR]
+.B icsconfig \fIDEVICE\fR \fICOMMAND\fR [\fIOPTIONS\fR]
 .fi
 .SH DESCRIPTION
 \fBicsconfig\fR is used to configure and access the error log of 
@@ -13,99 +13,83 @@ ICS Electronics VXI-11 based instruments such as the
 ICS implemented an open RCPL-based configuration interface
 across all of their VXI-11 based instruments.
 Not all devices implement all functions.
-.SH OPTIONS
-\fBicsconfig\fR accepts the following command line options:
+.SH COMMANDS
 .TP
-\fB\-a\fR, \fB\-\-address\fR address
-Specify the hostname or IP address of the target device.
-This option is required.
+\fBlist\fR
+Display device configuration.
 .TP
-\fB\-e\fR, \fB\-\-get-errlog\fR
-Get and display the decoded error log, which contains up to 100 entries.
-As a side effect, the error log is cleared.
+\fBget\fR NAME
+Get and display the configuration attribute NAME.
 .TP
-\fB\-j\fR, \fB\-\-get-interface-name\fR
-Get the VXI-11 logical name.
+\fBset\fR NAME=VALUE
+Set the configuration attribute NAME to VALUE.
+Changes do not persist across a reboot unless they are saved with
+the \fBcommit\fR command.
 .TP
-\fB\-J\fR, \fB\-\-set-interface-name\fR name
-Set the VXI-11 logical name, e.g. ``gpib0'' or ``inst''.
-The name must be no longer than 31 characters.
+\fBdefault\fR NAME=VALUE
+Load the default configuration.
 .TP
-\fB\-t\fR, \fB\-\-get-comm-timeout\fR
-Get the TCP timeout, in seconds.
+\fBcommit\fR
+Save the configuration to flash memory.  The configuration is loaded
+from flash upon device reboot.
 .TP
-\fB\-T\fR, \fB\-\-set-comm-timeout\fR secs
-Set the TCP timeout.
-An inactive TCP channel will be left open this length of time before being
-closed.  A value of zero means no timeout checking.
-The timeout only applies to the core and configuration channel settings.
-.TP
-\fB\-s\fR, \fB\-\-get-static-ip-mode\fR
-Get the static IP mode setting.
-.TP
-\fB\-S\fR, \fB\-\-set-static-ip-mode\fR 0|1
-Set the static IP mode setting.
-If static IP mode is disabled, DHCP is used.
-.TP
-\fB\-z\fR, \fB\-\-get-ip-number\fR
-Get the static IP address.
-.TP
-\fB\-Z\fR, \fB\-\-set-ip-number\fR ip-address
-Set the static IP address (ignored if using DHCP).
-.TP
-\fB\-n\fR, \fB\-\-get-netmask\fR
-Get the static IP netmask.
-.TP
-\fB\-N\fR, \fB\-\-set-netmask\fR ip-address
-Set the static IP netmask (ignored if using DHCP).
-.TP
-\fB\-g\fR, \fB\-\-get-gateway\fR
-Get the static IP gateway.
-.TP
-\fB\-G\fR, \fB\-\-set-gateway\fR ip-address
-Set the static IP gateway (ignored if using DHCP).
-.TP
-\fB\-k\fR, \fB\-\-get-keepalive\fR
-Get the IP keepalive time.
-.TP
-\fB\-K\fR, \fB\-\-set-keepalive\fR time
-Set the IP keepalive time, in seconds.  The keepalive time is the period
-of inactivity after which a keepalive is set.  If set to zero, keepalives will 
-not be used.
-.TP
-\fB\-i\fR, \fB\-\-get-idn-string\fR
-Display idn string using ICS config RCPL, if implemented (8065 only).
-.TP
-\fB\-q\fR, \fB\-\-get-gpib-address\fR
-Get the device's GPIB address (8065 only).
-.TP
-\fB\-Q\fR, \fB\-\-set-gpib-address\fR [0-30]
-Set the device's GPIB address (8065 only).
-.TP
-\fB\-w\fR, \fB\-\-get-system-controller\fR
-Get the system controller mode (8065 only).
-.TP
-\fB\-W\fR, \fB\-\-get-system-controller\fR 0|1
-Set the system controller mode (8065 only).
-If enabled, the device will initialize at boot time as the GPIB bus controller.
-.TP
-\fB\-m\fR, \fB\-\-get-ren-mode\fR
-Get the REN mode (8065 only).
-.TP
-\fB\-M\fR, \fB\-\-set-ren-mode\fR 0|1
-Set the REN mode (8065 only).
-If true, REN will be asserted at boot time.
-.TP
-\fB\-C\fR, \fB\-\-reload-config\fR
-Force a reload of the default configuration settings from nonvolatile RAM.
-.TP
-\fB\-c\fR, \fB\-\-commit-config\fR
-Save the current configuration settings to nonvolatile RAM.
-.TP
-\fB\-r\fR, \fB\-\-reboot\fR
-Reboot.  All device links will be cleared, all connections closed,
+\fBreboot\fR
+Reboot the device.  All device links will be cleared, all connections closed,
 and all resources released.  Upon reboot, the default configuration settings
 from nonvolatile RAM will be used.
+.TP
+\fBerrlog\fR
+Display the device's stored error log, one per line.
+The error log can contain up to 100 enties.
+This command clears the error log.
+
+.SH ATTRIBUTES
+.TP
+\fBident\fR
+The model number, serial number, firmware revision, and other information.
+This attribute is read-only.
+.TP
+\fBenable-dhcp\fR
+If \fIno\fR, \fBip-address\fR, \fBip-netmask\fR, and \fBip-gateway\fR
+should be set.  If \fIyes\fR, these values will be obtained dynamically
+from a DHCP server.
+.TP
+\fBip-address\fR
+The device IPv4 address.
+This value is ignored if \fBenable-dhcp\fR is set to \fIyes\fR.
+.TP
+\fBip-gateway\fR
+The device IPv4 gateway.
+This value is ignored if \fBenable-dhcp\fR is set to \fIyes\fR.
+.TP
+\fBip-netmask\fR
+The device IPv4 netmask.
+This value is ignored if \fBenable-dhcp\fR is set to \fIyes\fR.
+.TP
+\fBtimeout\fR
+TCP timeout valaue, in seconds.  An inactive TCP channel will be left
+open this length of time before being closed.
+A value of zero means no timeout checking.
+.TP
+\fBkeepalive\fR
+The keepalive value, in seconds.
+This is the time of inactivity prior to a keepalive being sent.
+A value of zero means keepalives will not be used.
+.TP
+\fBvxi11-interface\fR
+The device's VXI-11 interface name.
+.TP
+\fBgpib-address\fR
+The device's GPIB bus address.
+The valid range is 0 to 30.
+.TP
+\fBgpib-controller\fR
+GPIB controller mode, \fIyes\fR or \fIno\fR.
+If enabled, the device will initialize at boot time as the GPIB bus controller.
+.TP
+\fBgpib-ren-mode\fR
+If \fIyes\fR, GPIB REN will be asserted at boot time.
+
 .SH SEE ALSO
 "ICS Electronics MODEL 8065 Ethernet-GPIB Controller Instruction Manual",
 rev 2, March 2007.
