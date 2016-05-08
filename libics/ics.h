@@ -86,9 +86,13 @@ int     ics_set_system_controller(ics_t ics, int flag);
 int     ics_get_ren_mode(ics_t ics, int *flagp);
 int     ics_set_ren_mode(ics_t ics, int flag);
 
-/* Force reload of default config.
+/* Reload config from flash.
  */
 int     ics_reload_config(ics_t ics);
+
+/* Reload flash with factory defaults.
+* */
+int     ics_reload_factory(ics_t ics);
 
 /* Commit (write) current config.
  */

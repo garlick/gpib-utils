@@ -456,6 +456,20 @@ ics_reload_config(ics_t ics)
 }
 
 int
+ics_reload_factory(ics_t ics)
+{
+    Reload_Factory_Resp *r;
+
+    assert(ics->ics_magic == ICS_MAGIC);
+    r = reload_factory_1(NULL, ics->ics_clnt);
+    if (r == NULL)
+        return ICS_ERROR_CLNT;
+    if (r->error)
+        return r->error;
+    return 0;
+}
+
+int
 ics_commit_config(ics_t ics)
 {
     Commit_Config_Resp *r;
