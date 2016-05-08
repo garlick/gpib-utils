@@ -167,6 +167,41 @@ ics_set_comm_timeout(ics_t ics, unsigned int timeout)
 }
 
 int
+ics_get_hostname(ics_t ics, char **namep)
+{
+    Hostname_Parms p;
+    Hostname_Resp *r;
+
+    assert(ics->ics_magic == ICS_MAGIC);
+    p.action = ICS_READ;
+    r = hostname_1(&p, ics->ics_clnt);
+    if (r == NULL)
+        return ICS_ERROR_CLNT;
+    if (r->error)
+        return r->error;
+    *namep = _mkstr(r->name.name_val, r->name.name_len);
+    return 0;
+}
+
+int
+ics_set_hostname(ics_t ics, char *name)
+{
+    Hostname_Parms p;
+    Hostname_Resp *r;
+
+    assert(ics->ics_magic == ICS_MAGIC);
+    p.action = ICS_WRITE;
+    p.name.name_val = name;
+    p.name.name_len = strlen (name);
+    r = hostname_1(&p, ics->ics_clnt);
+    if (r == NULL)
+        return ICS_ERROR_CLNT;
+    if (r->error)
+        return r->error;
+    return 0;
+}
+
+int
 ics_get_static_ip_mode(ics_t ics, int *flagp)
 {
     Static_IP_Parms p;
@@ -448,6 +483,20 @@ ics_reload_config(ics_t ics)
 
     assert(ics->ics_magic == ICS_MAGIC);
     r = reload_config_1(NULL, ics->ics_clnt);
+    if (r == NULL)
+        return ICS_ERROR_CLNT;
+    if (r->error)
+        return r->error;
+    return 0;
+}
+
+int
+ics_reload_factory(ics_t ics)
+{
+    Reload_Factory_Resp *r;
+
+    assert(ics->ics_magic == ICS_MAGIC);
+    r = reload_factory_1(NULL, ics->ics_clnt);
     if (r == NULL)
         return ICS_ERROR_CLNT;
     if (r->error)

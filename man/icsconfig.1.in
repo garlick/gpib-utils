@@ -8,8 +8,9 @@ icsconfig \- configure ICS Electronics VXI-11 based instruments
 .SH DESCRIPTION
 \fBicsconfig\fR is used to configure and access the error log of 
 ICS Electronics VXI-11 based instruments such as the
-8064 Ethernet-Relay Interface and
-8065 Ethernet-GPIB Controller.
+8064 Ethernet-Relay Interface,
+8065 Ethernet-GPIB Controller,
+and 9065 Ethernet-GPIB Controller.
 ICS implemented an open RCPL-based configuration interface
 across all of their VXI-11 based instruments.
 Not all devices implement all functions.
@@ -26,8 +27,12 @@ Set the configuration attribute NAME to VALUE.
 Changes do not persist across a reboot unless they are saved with
 the \fBcommit\fR command.
 .TP
-\fBdefault\fR NAME=VALUE
-Load the default configuration.
+\fBreload\fR
+Reload the configuration from flash memory.
+.TP
+\fBfactory\fR
+Reload the flash memory with factory defaults.
+The active configuration is not modified until a \fBreload\fR or reboot.
 .TP
 \fBcommit\fR
 Save the configuration to flash memory.  The configuration is loaded
@@ -35,8 +40,8 @@ from flash upon device reboot.
 .TP
 \fBreboot\fR
 Reboot the device.  All device links will be cleared, all connections closed,
-and all resources released.  Upon reboot, the default configuration settings
-from nonvolatile RAM will be used.
+and all resources released.  Upon reboot, the configuration settings
+from flash will be used.
 .TP
 \fBerrlog\fR
 Display the device's stored error log, one per line.
@@ -65,6 +70,9 @@ This value is ignored if \fBenable-dhcp\fR is set to \fIyes\fR.
 \fBip-netmask\fR
 The device IPv4 netmask.
 This value is ignored if \fBenable-dhcp\fR is set to \fIyes\fR.
+.TP
+\fBhostname\fR
+The device hostname.
 .TP
 \fBtimeout\fR
 TCP timeout valaue, in seconds.  An inactive TCP channel will be left

@@ -33,7 +33,8 @@
 static void _list(ics_t ics, int argc, char **argv);
 static void _set(ics_t ics, int argc, char **argv);
 static void _get(ics_t ics, int argc, char **argv);
-static void _default(ics_t ics, int argc, char **argv);
+static void _reload(ics_t ics, int argc, char **argv);
+static void _factory(ics_t ics, int argc, char **argv);
 static void _commit(ics_t ics, int argc, char **argv);
 static void _errlog(ics_t ics, int argc, char **argv);
 static void _reboot(ics_t ics, int argc, char **argv);
@@ -67,8 +68,10 @@ main(int argc, char *argv[])
         _get(ics, argc - optind, argv + optind);
     } else if (!strcmp (cmd, "set")) {
         _set(ics, argc - optind, argv + optind);
-    } else if (!strcmp (cmd, "default")) {
-        _default(ics, argc - optind, argv + optind);
+    } else if (!strcmp (cmd, "reload")) {
+        _reload(ics, argc - optind, argv + optind);
+    } else if (!strcmp (cmd, "factory")) {
+        _factory(ics, argc - optind, argv + optind);
     } else if (!strcmp (cmd, "commit")) {
         _commit(ics, argc - optind, argv + optind);
     } else if (!strcmp (cmd, "errlog")) {
@@ -92,7 +95,8 @@ _usage(void)
   "  list             - display config\n"
   "  get NAME         - display value of config attribute NAME\n"
   "  set NAME=VALUE   - set config attribute NAME to VALUE\n"
-  "  default          - load default config\n"
+  "  reload           - reload config from flash\n"
+  "  factory          - reload flash with factory defaults\n"
   "  commit           - save config to flash for next reboot\n"
   "  errlog           - display device error log\n"
   "  reboot           - reboot device\n");
@@ -105,6 +109,7 @@ static const char *attrs[] = {
     "ip-address",
     "ip-gateway",
     "ip-netmask",
+    "hostname",
     "timeout",
     "keepalive",
     "vxi11-interface",
@@ -155,6 +160,12 @@ _print_attribute (ics_t ics, const char *name)
         char *s;
         rc = ics_get_gateway(ics, &s);
         if (rc == 0) {
+            printf("%s\n", s);
+            free(s);
+        }
+    } else if (!strcmp (name, "hostname")) {
+        char *s;
+        if ((rc = ics_get_hostname(ics, &s)) == 0) {
             printf("%s\n", s);
             free(s);
         }
@@ -246,6 +257,8 @@ _set(ics_t ics, int argc, char **argv)
         rc = ics_set_netmask(ics, value);
     } else if (!strcmp (name, "ip-gateway")) {
         rc = ics_set_gateway(ics, value);
+    } else if (!strcmp (name, "hostname")) {
+        rc = ics_set_hostname(ics, value);
     } else if (!strcmp (name, "keepalive")) {
         unsigned int n = strtoul (value, NULL, 10);
         rc = ics_set_keepalive(ics, n);
@@ -273,15 +286,27 @@ _set(ics_t ics, int argc, char **argv)
 }
 
 static void
-_default(ics_t ics, int argc, char **argv)
+_reload(ics_t ics, int argc, char **argv)
 {
     int rc;
     if (argc > 0)
         _usage();
     if ((rc = ics_reload_config(ics)) == 0)
-        printf("default config reloaded\n");
+        printf("config reloaded from flash\n");
     else
-        fprintf(stderr, "default: %s\n", ics_strerror (ics, rc));
+        fprintf(stderr, "reload: %s\n", ics_strerror (ics, rc));
+}
+
+static void
+_factory(ics_t ics, int argc, char **argv)
+{
+    int rc;
+    if (argc > 0)
+        _usage();
+    if ((rc = ics_reload_config(ics)) == 0)
+        printf("flash reloaded with factory defaults\n");
+    else
+        fprintf(stderr, "factory: %s\n", ics_strerror (ics, rc));
 }
 
 static void
