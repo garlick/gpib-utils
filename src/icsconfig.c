@@ -140,7 +140,7 @@ _print_attribute (ics_t ics, const char *name)
     } else if (!strcmp (name, "enable-dhcp")) {
         int mode;
         rc = ics_get_static_ip_mode(ics, &mode);
-        if (rc == 0);
+        if (rc == 0)
             printf("%s\n", mode == 0 ? "yes" : "no");
     } else if (!strcmp (name, "ip-address")) {
         char *s;
