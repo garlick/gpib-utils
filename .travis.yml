@@ -12,6 +12,6 @@ addons:
     packages:
 
 script:
-  ./autogen.sh
-  ./configure
-  make distcheck
+  - ./autogen.sh
+  - ./configure
+  - make distcheck

@@ -485,7 +485,7 @@ static int host_prefix_end(const char *hostname)
 static hostname_t hostname_create(const char *hostname)
 {
     hostname_t hn = NULL;
-    char *p = '\0';
+    char *p = NULL;
     int idx = 0;
 
     assert(hostname != NULL);
