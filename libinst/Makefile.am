@@ -12,4 +12,6 @@ libinst_la_SOURCES = \
 	ib_488_2.c \
 	ib_488_2.h \
 	cmdline.c \
-	cmdline.h
+	cmdline.h \
+	configfile.c \
+	configfile.h
