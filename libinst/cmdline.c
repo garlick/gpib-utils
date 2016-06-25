@@ -1,20 +1,20 @@
 /* This file is part of gpib-utils.
    For details, see http://sourceforge.net/projects/gpib-utils.
-  
+
    Copyright (C) 2001-2009 Jim Garlick <garlick.jim@gmail.com>
-  
+
    gpib-utils is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
    (at your option) any later version.
-  
+
    gpib-utils is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-  
+
    You should have received a copy of the GNU General Public License
-   along with gpib-utils; if not, write to the Free Software Foundation, 
+   along with gpib-utils; if not, write to the Free Software Foundation,
    Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
 
 #if HAVE_CONFIG_H
@@ -72,8 +72,8 @@ inst_default_addr(char *name)
  * and initialize the GPIB connection.
  */
 struct instrument *
-inst_init_args(int argc, char *argv[], const char *opts, 
-               struct option *longopts, char *name, spollfun_t sf, 
+inst_init_args(int argc, char *argv[], const char *opts,
+               struct option *longopts, char *name, spollfun_t sf,
                unsigned long retry, int *opt_error)
 {
     int c, verbose = 0, todo = 0;
@@ -111,7 +111,7 @@ inst_init_args(int argc, char *argv[], const char *opts,
         if (name) {
             addr = inst_default_addr(name);
             if (!addr) {
-                fprintf(stderr, "%s: no dflt address for %s, use --address\n", 
+                fprintf(stderr, "%s: no dflt address for %s, use --address\n",
                         prog, name);
                 goto done;
             }
@@ -122,7 +122,7 @@ inst_init_args(int argc, char *argv[], const char *opts,
     }
     gd = inst_init(addr, sf, 0);
     if (!gd) {
-        fprintf(stderr, "%s: device initialization failed for address %s\n", 
+        fprintf(stderr, "%s: device initialization failed for address %s\n",
                 prog, addr);
         goto done;
     }
@@ -132,7 +132,7 @@ done:
     return gd;
 }
 
-void 
+void
 usage(opt_desc_t *tab)
 {
     int i;

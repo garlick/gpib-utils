@@ -42,7 +42,7 @@ void usage(opt_desc_t *tab);
 
 struct instrument *inst_init_args(int argc, char *argv[],
                     const char *opts,
-                    struct option *longopts, char *name, 
+                    struct option *longopts, char *name,
                     spollfun_t sf, unsigned long retry, int *opt_error);
 
 #endif /* !INST_CMDLINE_H */

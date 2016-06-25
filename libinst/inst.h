@@ -9,9 +9,9 @@ struct instrument;
 typedef int (*spollfun_t)(struct instrument *gd,
 			  unsigned char status_byte, char *msg);
 
-/* Initialize/finalize a device.  If sf is non-NULL, a serial poll is 
+/* Initialize/finalize a device.  If sf is non-NULL, a serial poll is
  * run after every I/O and the resulting status byte is passed to the sf
- * function for processing.  In case serial poll returns not ready, 'retry' 
+ * function for processing.  In case serial poll returns not ready, 'retry'
  * is a backoff factor (in usecs) to sleep before retrying.
  */
 struct instrument *inst_init(char *addr, spollfun_t sf, unsigned long retry);
