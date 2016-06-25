@@ -11,7 +11,7 @@ enum {
     GPIB_FLAG_REOS = 1,
 };
 
-struct gpib_instrument {
+struct cf_instrument {
     char name[MAX_GPIB_NAME];
     char addr[MAX_GPIB_ADDR];
     char make[MAX_GPIB_MAKE];
@@ -20,6 +20,15 @@ struct gpib_instrument {
     char eos;
     int flags;
 };
+
+struct cf_file;
+
+void cf_list (struct cf_file *cf, FILE *f);
+struct cf_file *cf_create_default (void);
+struct cf_file *cf_create (const char *pathname);
+void cf_destroy (struct cf_file *cf);
+
+const struct cf_instrument *cf_lookup (struct cf_file *cf, const char *name);
 
 #endif /* !GPIB_CONFIGFILE_H */
 
