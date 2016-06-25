@@ -14,7 +14,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with gpib-utils; if not, write to the Free Software Foundation, 
+   along with gpib-utils; if not, write to the Free Software Foundation,
    Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
 
 /* This hp1630 CRC algorithm was submitted by Adam Goldman.
@@ -60,7 +60,7 @@ static uint16_t const hpcrc_table[256] = {
 	0x8213, 0x0216, 0x021c, 0x8219, 0x0208, 0x820d, 0x8207, 0x0202,
 };
 
-uint16_t 
+uint16_t
 hpcrc(uint8_t const *buffer, int len)
 {
     uint16_t crc = 0;
