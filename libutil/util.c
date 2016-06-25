@@ -125,7 +125,7 @@ xrealloc(void *ptr, int size)
 }
 
 char *
-xstrdup(char *str)
+xstrdup(const char *str)
 {
     char *new = strdup(str);
 

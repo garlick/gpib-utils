@@ -24,7 +24,7 @@ char *xreadline(char *prompt, char *buf, int buflen);
 
 void *xmalloc(size_t size);
 void *xzmalloc(size_t size);
-char *xstrdup(char *str);
+char *xstrdup(const char *str);
 void *xrealloc(void *ptr, int size);
 
 char *xstrcpyprint(char *str);
