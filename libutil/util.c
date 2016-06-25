@@ -14,7 +14,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with gpib-utils; if not, write to the Free Software Foundation, 
+   along with gpib-utils; if not, write to the Free Software Foundation,
    Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
 
 #if HAVE_CONFIG_H
@@ -92,6 +92,18 @@ void *
 xmalloc(size_t size)
 {
     void *new = malloc(size);
+
+    if (!new) {
+        fprintf(stderr, "%s: out of memory\n", prog);
+        exit(1);
+    }
+    return new;
+}
+
+void *
+xzmalloc(size_t size)
+{
+    void *new = calloc(1, size);
 
     if (!new) {
         fprintf(stderr, "%s: out of memory\n", prog);
