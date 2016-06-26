@@ -38,9 +38,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <libgen.h>
-#if HAVE_GETOPT_LONG
 #include <getopt.h>
-#endif
 #include <assert.h>
 #include <sys/time.h>
 #include <math.h>
@@ -129,8 +127,6 @@ static int lerr_flag = 1;   /* logic errors: 0=ignored, 1=fatal */
 
 static const char *options = "n:a:licSL0:1:q:QIC:x";
 
-#if HAVE_GETOPT_LONG
-#define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
 static struct option longopts[] = {
     {"name",            required_argument, 0, 'n'},
     {"address",         required_argument, 0, 'a'},
@@ -148,9 +144,6 @@ static struct option longopts[] = {
     {"shell",           no_argument,       0, 'I'},
     {0, 0, 0, 0},
 };
-#else
-#define GETOPT(ac,av,opt,lopt) getopt(ac,av,opt)
-#endif
 
 void usage (void)
 {
@@ -185,7 +178,7 @@ main(int argc, char *argv[])
     char *address = NULL;
 
     /* preparse args to get name and slot config settled before doing work */
-    while ((c = GETOPT(argc, argv, options, longopts)) != EOF) {
+    while ((c = getopt_long (argc, argv, options, longopts, NULL)) != EOF) {
         switch (c) {
             case 'C': /* --config */
                 if (valid_targets) {
@@ -252,9 +245,11 @@ main(int argc, char *argv[])
     }
 
     optind = 0;
-    while ((c = GETOPT(argc, argv, options, longopts)) != EOF) {
+    while ((c = getopt_long (argc, argv, options, longopts, NULL)) != EOF) {
         switch (c) {
-            case 'C': /* --config (handled above) */
+            case 'C':
+            case 'a':
+            case 'n': /* handled in first pass */
                 break;
             case 'l': /* --local */
                 inst_loc(gd);
