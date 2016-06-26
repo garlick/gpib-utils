@@ -836,7 +836,7 @@ _init_gpib(int board, int pad, int sad, spollfun_t sf, unsigned long retry)
 }
 
 static struct instrument *
-_init_vxi(char *name, spollfun_t sf, unsigned long retry)
+_init_vxi(const char *name, spollfun_t sf, unsigned long retry)
 {
     struct instrument *gd = _new_inst(VXI11);
     int err;
@@ -846,7 +846,7 @@ _init_vxi(char *name, spollfun_t sf, unsigned long retry)
     gd->vxi11_handle = vxi11_create();
 
     //vxi11_set_device_debug(true);
-    err = vxi11_open(gd->vxi11_handle, name, false);
+    err = vxi11_open(gd->vxi11_handle, (char *)name, false);
     if (err) {
         vxi11_perror(gd->vxi11_handle, err, prog);
         vxi11_destroy(gd->vxi11_handle);
@@ -902,7 +902,7 @@ _raw_serial(struct instrument *gd)
 }
 
 static struct instrument *
-_init_serial(char *device , char *flags, spollfun_t sf, unsigned long retry)
+_init_serial(const char *device , char *flags, spollfun_t sf, unsigned long retry)
 {
     struct instrument *gd = _new_inst(SERIAL);
     int baud = 9600, databits = 8, stopbits = 1;
@@ -1053,7 +1053,7 @@ _init_socket(char *host, char *port, spollfun_t sf, unsigned long retry)
 }
 
 struct instrument *
-inst_init(char *addr, spollfun_t sf, unsigned long retry)
+inst_init(const char *addr, spollfun_t sf, unsigned long retry)
 {
     struct instrument *gd = NULL;
     char *endptr, *sfx, *cpy;

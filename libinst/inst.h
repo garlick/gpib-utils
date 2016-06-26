@@ -14,7 +14,7 @@ typedef int (*spollfun_t)(struct instrument *gd,
  * function for processing.  In case serial poll returns not ready, 'retry'
  * is a backoff factor (in usecs) to sleep before retrying.
  */
-struct instrument *inst_init(char *addr, spollfun_t sf, unsigned long retry);
+struct instrument *inst_init(const char *addr, spollfun_t sf, unsigned long retry);
 void inst_fini(struct instrument *gd);
 
 /* Set the gpib timeout in seconds.
