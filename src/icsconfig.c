@@ -14,7 +14,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with gpib-utils; if not, write to the Free Software Foundation, 
+   along with gpib-utils; if not, write to the Free Software Foundation,
    Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
 
 #if HAVE_CONFIG_H
@@ -92,7 +92,7 @@ main(int argc, char *argv[])
 static void
 _usage(void)
 {
-    fprintf(stderr, 
+    fprintf(stderr,
   "Usage: icsconfig DEVICE [CMD] [OPTIONS]\n"
   "  where CMD is:\n"
   "  list             - display config\n"

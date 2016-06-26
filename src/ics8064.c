@@ -14,7 +14,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with gpib-utils; if not, write to the Free Software Foundation, 
+   along with gpib-utils; if not, write to the Free Software Foundation,
    Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
 
 #if HAVE_CONFIG_H
@@ -201,11 +201,11 @@ _clear(struct instrument *gd)
     /* Reset to power-up state.
      * Allow 100ms after *RST per 8064 instruction manual.
      */
-    inst_wrtf(gd, "*RST\n"); 
-    usleep(1000*100); 
+    inst_wrtf(gd, "*RST\n");
+    usleep(1000*100);
 
     /* configure ESR bits that will reach STB reg */
-    inst_wrtf(gd, "*ESE %d\n", 
+    inst_wrtf(gd, "*ESE %d\n",
             (ICS8064_ESR_QUERY_ERR | ICS8064_ESR_FLASH_CORRUPT
            | ICS8064_ESR_EXEC_ERR  | ICS8064_ESR_CMD_ERR));
 }

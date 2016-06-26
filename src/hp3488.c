@@ -14,11 +14,11 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with gpib-utils; if not, write to the Free Software Foundation, 
+   along with gpib-utils; if not, write to the Free Software Foundation,
    Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
 
 /* References:
- * "HP 3488A Switch/Control Unit: Operating, Programming, and 
+ * "HP 3488A Switch/Control Unit: Operating, Programming, and
  *   Configuration Manual", Sept 1, 1995.
  *
  * Notes:
@@ -494,7 +494,7 @@ _show_config(void)
     for (i = 1; i <= 5; i++) {
         cp = modeltab_find(slot_config[i - 1]);
         assert(cp != NULL);
-        printf("%d: %d %-30.30s %s\n", i, cp->model, cp->desc, 
+        printf("%d: %d %-30.30s %s\n", i, cp->model, cp->desc,
             cp->list ? cp->list : "");
     }
 }
@@ -620,7 +620,7 @@ _clear(struct instrument *gd)
     }
 }
 
-static void 
+static void
 _shell_help(void)
 {
     printf("Possible commands are:\n");
@@ -636,7 +636,7 @@ _shell_help(void)
     printf("Where channel address is <slot><chan> (3 digits).\n");
 }
 
-static int 
+static int
 _docmd(struct instrument *gd, char **av)
 {
     int rc = 0;
@@ -704,7 +704,7 @@ _shell(struct instrument *gd)
             av = argv_create(buf, "");
             rc = _docmd(gd, av);
             argv_destroy(av);
-        } 
+        }
     }
 }
 
