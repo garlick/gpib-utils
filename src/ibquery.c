@@ -38,18 +38,19 @@
 #include <stdint.h>
 
 #include "libutil/util.h"
+#include "libutil/argv.h"
 #include "libinst/inst.h"
-#include "libinst/cmdline.h"
+#include "libinst/configfile.h"
 
 #define MAX_RESPONSE_LEN	4096
 
 char *prog = "";
-const char *options = OPTIONS_COMMON "lcw:rq:s:d:";
+const char *options = "vlcw:rq:s:d:";
 
 #if HAVE_GETOPT_LONG
 #define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
 static struct option longopts[] = {
-    OPTIONS_COMMON_LONG,
+    {"verbose",         no_argument,       0, 'v'},
     {"local",           no_argument,       0, 'l'},
     {"clear",           no_argument,       0, 'c'},
     {"write",           required_argument, 0, 'w'},
@@ -63,71 +64,163 @@ static struct option longopts[] = {
 #define GETOPT(ac,av,opt,lopt) getopt(ac,av,opt)
 #endif
 
-static opt_desc_t optdesc[] = {
-    OPTIONS_COMMON_DESC,
-    {"l", "local",   "return instrument to front panel control" },
-    {"c", "clear",   "send device clear message" },
-    {"w", "write",   "write to instrument" },
-    {"r", "read",    "read from instrument" },
-    {"q", "query",   "write to instrument then read response" },
-    {"s", "status",  "apply mask to status byte, exit if non-zero" },
-    {"d", "delay",   "delay the specified number of seconds" },
-    {0, 0},
+void usage (void)
+{
+    fprintf (stderr, "%s", "Usage: ibquery NAME [OPTIONS]\n"
+        "    -v,--verbose set verbose flag\n");
+    exit (1);
 };
+
+int command (struct instrument *gd, int ac, char **av);
 
 int
 main(int argc, char *argv[])
 {
-    int exit_val = 0;
-    int print_usage = 0;
-    struct instrument *gd;
+    struct instrument *gd = NULL;
     int c;
-    char buf[MAX_RESPONSE_LEN];
-    unsigned char status, mask;
-
-    gd = inst_init_args(argc, argv, options, longopts, NULL,
-                        NULL, 0, &print_usage);
-    if (print_usage)
-        usage(optdesc);
-    if (!gd)
-        exit(1);
+    char *name = NULL;
+    struct cf_file *cf = NULL;
+    const struct cf_instrument *cfi = NULL;
+    int verbose = 0;
 
     while ((c = GETOPT(argc, argv, options, longopts)) != EOF) {
         switch (c) {
-            OPTIONS_COMMON_SWITCH
-                break;
-            case 'l': /* --local */
-                inst_loc(gd);
-                break;
-            case 'c': /* --clear */
-                inst_clr(gd, 100000); /* built-in delay of 100ms */
-                break;
-            case 'w': /* --write */
-                inst_wrtstr(gd, optarg);
-                break;
-            case 'r': /* --read */
-                inst_rdstr(gd, buf, sizeof(buf));
-                printf("%s\n", buf);
-                break;
-            case 'q': /* --query */
-                (void)inst_qrystr(gd, optarg, buf, sizeof(buf));
-                printf("%s\n", buf);
-                break;
-            case 's': /* --status */
-                mask = (unsigned char)strtoul(optarg, NULL, 0);
-                (void)inst_rsp(gd, &status);
-                printf("%hhu\n", status);
-                if ((status & mask) != 0)
-                    exit(1);
-                break;
-            case 'd': /* --delay */
-                usleep((useconds_t)(strtod(optarg, NULL) * 1000000.0));
+            case 'v':
+                verbose++;
                 break;
         }
     }
+    if (optind < argc)
+        name = argv[optind++];
 
-    inst_fini(gd);
-    exit(exit_val);
+    cf = cf_create_default ();
+    if (!cf) {
+        fprintf (stderr, "Unable to parse config file\n");
+        exit (1);
+    }
+    if (!name) {
+        cf_list (cf, stdout);
+    } else {
+        if (!(cfi = cf_lookup (cf, name))) {
+            fprintf (stderr, "No instrument named %s is configured\n", name);
+            exit (1);
+        }
+        if (verbose)
+            fprintf (stderr, "%s: using address %s\n", cfi->name, cfi->addr);
+        if (!(gd = inst_init (cfi->addr, NULL, 0))) {
+            fprintf (stderr, "Could not initialize %s at %s\n", cfi->name,
+                                                                cfi->addr);
+            exit (1);
+        }
+        if (verbose) {
+            fprintf (stderr, "%s: initialized\n", cfi->name);
+            inst_set_verbose (gd, 1);
+        }
+        if (cfi->flags & GPIB_FLAG_REOS) {
+            if (verbose)
+                fprintf (stderr, "%s: setting reos flag\n", cfi->name);
+            inst_set_reos (gd, 1);
+        }
+        if (optind < argc) {
+            while (optind < argc) {
+                optind += command (gd, argc - optind, argv + optind);
+            }
+        } else for (;;) {
+            static char buf[128];
+            char **av;
+            xreadline ("ibquery> ", buf, sizeof (buf));
+            av = argv_create (buf, "");
+            if (!av[0])
+                continue;
+            if (!strcmp (av[0], "quit") || !strcmp (av[0], "exit"))
+                break;
+            int ac = 0;
+            char **ap;
+            for (ap = &av[0]; *ap != NULL; ap++)
+                ac++;
+            command (gd, ac, av);
+            argv_destroy (av);
+        }
+        inst_fini(gd);
+    }
+
+    cf_destroy (cf);
+    exit (0);
+}
+
+int command (struct instrument *gd, int ac, char **av)
+{
+    int count = 0;
+    if (!strcmp (av[0], "local")) {
+        inst_loc(gd);
+        count++;
+    } else if (!strcmp (av[0], "clear")) {
+        inst_clr(gd, 100000); /* built-in delay of 100ms */
+        count++;
+    } else if (!strcmp (av[0], "query")) {
+        char rsp[MAX_RESPONSE_LEN];
+        if (ac < 2) {
+            printf ("query requires an argument\n");
+        } else {
+            (void)inst_qrystr(gd, av[1], rsp, sizeof(rsp));
+            printf("%s\n", rsp);
+        }
+        count += 2;
+    } else if (!strcmp (av[0], "write")) {
+        if (ac < 2) {
+            printf ("write requires an argument\n");
+        } else {
+            inst_wrtstr(gd, av[1]);
+        }
+        count += 2;
+    } else if (!strcmp (av[0], "read") || !strcmp (av[0], "?")) {
+        char rsp[MAX_RESPONSE_LEN];
+        inst_rdstr(gd, rsp, sizeof(rsp));
+        printf("%s\n", rsp);
+        count++;
+    } else if (!strcmp (av[0], "delay")) {
+        if (ac < 2) {
+            printf ("delay requires a seconds argument\n");
+        } else {
+            usleep((useconds_t)(strtod(av[1], NULL) * 1000000.0));
+        }
+        count += 2;
+    } else if (!strcmp (av[0], "status")) {
+        unsigned char status, mask;
+        if (ac < 2) {
+            printf ("status requires a mask argument\n");
+        } else {
+            mask = (unsigned char)strtoul(optarg, NULL, 0);
+            (void)inst_rsp(gd, &status);
+            printf("%hhu\n", status);
+            if ((status & mask) != 0)
+                exit(1);
+        }
+        count += 2;
+    } else if (!strcmp (av[0], "help")) {
+        printf ("Command help:\n"
+                "    <command>     write gpib message <command>\n"
+                "    <query?>      write <command>, read response\n"
+                "    quit/exit     exit shell\n"
+                "    clear         send gpib clear command\n"
+                "    local         send gpib local command\n"
+                "    status MASK   read gpib status, exit if MASK matches\n"
+                "    read/?        read gpib message\n"
+                "    write MESSAGE write gpib message\n"
+                "    query MESSAGE write gpib message, then read\n"
+                "    delay SEC     delay SEC seconds\n"
+                "    help          dispaly this help\n");
+        count++;
+    } else if (av[0][strlen (av[0]) - 1] == '?') {
+        char rsp[MAX_RESPONSE_LEN];
+        (void)inst_qrystr(gd, av[0], rsp, sizeof(rsp));
+        printf("%s\n", rsp);
+        count++;
+    } else {
+        inst_wrtstr(gd, av[0]);
+        count++;
+    }
+    return count;
 }
 
 /*
