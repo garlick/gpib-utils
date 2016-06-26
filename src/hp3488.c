@@ -47,7 +47,7 @@
 
 #include "libutil/util.h"
 #include "libinst/inst.h"
-#include "libinst/cmdline.h"
+#include "libinst/configfile.h"
 #include "libutil/argv.h"
 #include "liblsd/hostlist.h"
 
@@ -127,12 +127,13 @@ char *prog = "";
 static int lerr_flag = 1;   /* logic errors: 0=ignored, 1=fatal */
                             /*   See: disambiguate_ctype() */
 
-static const char *options = OPTIONS_COMMON "licSL0:1:q:QIC:x";
+static const char *options = "n:a:licSL0:1:q:QIC:x";
 
 #if HAVE_GETOPT_LONG
 #define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
 static struct option longopts[] = {
-    OPTIONS_COMMON_LONG,
+    {"name",            required_argument, 0, 'n'},
+    {"address",         required_argument, 0, 'a'},
     {"get-idn",         no_argument,       0, 'i'},
     {"local",           no_argument,       0, 'l'},
     {"clear",           no_argument,       0, 'c'},
@@ -151,44 +152,39 @@ static struct option longopts[] = {
 #define GETOPT(ac,av,opt,lopt) getopt(ac,av,opt)
 #endif
 
-static opt_desc_t optdesc[] = {
-    OPTIONS_COMMON_DESC,
-    { "l", "local", "return instrument to front panel control" },
-    { "c", "clear", "initialize instrument to default values" },
-    { "i", "get-idn", "get instrument idn string" },
-    { "C", "config m,m,m,m,m", "specify model card in slots 1,2,3,4,5 where\n\
-model is 44470|44471|44472|44473|44474|44475|44476|44477|44478 (0=empty)" },
-    { "x", "showconfig", "list installed cards" },
-    { "S", "selftest", "execute self test" },
-    { "L", "list", "list valid channels" },
-    { "0", "open [targets]", "open contacts for specified channels" },
-    { "1", "close [targets]", "close contacts for specified channels" },
-    { "q", "query [targets]", "view state of specified channels" },
-    { "Q", "queryall", "view state of all channels" },
-    { "I", "shell", "start interactive shell" },
-    { 0, 0, 0 },
+void usage (void)
+{
+    fprintf (stderr, "%s",
+        "    -n,--name               specify instrument name (default 3488a)\n"
+        "    -a,--address            specify instrument address\n"
+        "    -l,--local              return instrument to front panel control\n"
+        "    -c,--clear              initialize instrument to default values\n"
+        "    -i,--get-idn            get instrument idn string\n"
+        "    -C,--config m,m,m,m,m   specify model card in slots 1,2,3,4,5 where\n"
+        "                            model is 44470|44471|44472|44473|44474\n"
+        "                                |44475|44476|44477|44478 (0=empty)\n"
+        "    -x,--showconfig         list installed cards\n"
+        "    -s,--selftest           execute self test\n"
+        "    -L,--list               list valid channels\n"
+        "    -0,--open [targets]     open contacts for specified channels\n"
+        "    -1,--close [targets]    close contacts for specified channels\n"
+        "    -q,--query [targets]    view state of specified channels\n"
+        "    -Q,--queryall           view state of all channels\n"
+        "    -I,--shell              start interactive shell\n");
+    exit (1);
 };
 
 int
 main(int argc, char *argv[])
 {
     int need_valid_targets = 0;
-    int c, print_usage = 0;
+    int c;
     int exit_val = 0;
-    struct instrument *gd;
+    struct instrument *gd = NULL;
+    char *name = NULL;
+    char *address = NULL;
 
-    gd = inst_init_args(argc, argv, options, longopts, INSTRUMENT,
-                        _interpret_status, 0, &print_usage);
-    if (print_usage) {
-        usage(optdesc);
-        exit(1);
-    }
-    if (!gd)
-        exit(1);
-
-    inst_set_reos(gd, 1);
-
-    /* preparse args (again) to get slot config settled before doing work */
+    /* preparse args to get name and slot config settled before doing work */
     while ((c = GETOPT(argc, argv, options, longopts)) != EOF) {
         switch (c) {
             case 'C': /* --config */
@@ -203,11 +199,6 @@ main(int argc, char *argv[])
                     goto done;
                 }
                 break;
-            case 'l': /* handled below */
-            case 'c':
-            case 'S':
-            case 'i':
-                break;
             case 'L':
             case '0':
             case '1':
@@ -217,7 +208,42 @@ main(int argc, char *argv[])
             case 'x':
                 need_valid_targets++;
                 break;
+            case 'a':
+                address = optarg;
+                break;
+            case 'n':
+                name = optarg;
+                break;
         }
+    }
+    if (!name)
+        name = INSTRUMENT;
+    if (!address) {
+        struct cf_file *cf = cf_create_default ();
+        const struct cf_instrument *cfi = NULL;
+
+        if (cf)
+            cfi = cf_lookup (cf, name);
+        if (!cfi) {
+            fprintf (stderr, "Please supply --address or cf entry for [%s]\n",
+                     name);
+            exit (1);
+        }
+        gd = inst_init (cfi->addr, _interpret_status, 0);
+        if (!gd) {
+            fprintf (stderr, "Failed to initialize instrument\n");
+            exit (1);
+        }
+        if (cfi->flags & GPIB_FLAG_REOS)
+            inst_set_reos(gd, 1);
+        cf_destroy (cf);
+    } else {
+        gd = inst_init (address, _interpret_status, 0);
+        if (!gd) {
+            fprintf (stderr, "Failed to initialize instrument\n");
+            exit (1);
+        }
+        inst_set_reos(gd, 1);
     }
 
     if (need_valid_targets && valid_targets == NULL) {
@@ -228,8 +254,6 @@ main(int argc, char *argv[])
     optind = 0;
     while ((c = GETOPT(argc, argv, options, longopts)) != EOF) {
         switch (c) {
-            OPTIONS_COMMON_SWITCH
-                break;
             case 'C': /* --config (handled above) */
                 break;
             case 'l': /* --local */
@@ -265,6 +289,8 @@ main(int argc, char *argv[])
             case 'x': /* --showconfig */
                 _show_config();
                 break;
+            default:
+                usage ();
         }
     }
 
