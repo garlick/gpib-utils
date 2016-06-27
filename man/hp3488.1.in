@@ -7,6 +7,7 @@ hp3488 \- control HP 3488A switch/control unit
 .fi
 .SH DESCRIPTION
 \fBhp3488\fR controls the HP 3488A switch/control unit via its GPIB interface.
+The Agilent 3499A/B models can also be controlled when switched to 3488 mode.
 \fBhp3488\fR performs actions in the order they appear on the command line.
 .SH OPTIONS
 \fBhp3488\fR accepts the following command line options:
@@ -25,21 +26,21 @@ Clear the instrument, verify its model number, and open all channels.
 \fB\-l\fR, \fB\-\-local\fR
 Enable front panel.
 .TP
-\fB\-S\fR, \fB\-\-selftest\fR 
+\fB\-S\fR, \fB\-\-selftest\fR
 Perform unit self test.
 .TP
 \fB\-C\fR, \fB\-\-config\fR \fBm,m,m,m,m\fR
 Specify the card models installed in slots 1,2,3,4,5.  ``0'' indicates
-that the slot is empty.  
+that the slot is empty.
 See CARD OPTIONS for a list of valid model numbers.
-If this option is not used, 
+If this option is not used,
 .B hp3488
 will probe the instrument for installed cards.  For models 44471, 44476,
-and 44477, this will result in momentary closure of channels 04 and 09 
+and 44477, this will result in momentary closure of channels 04 and 09
 as this is the only way to tell those cards apart.
 .TP
 \fB\-x\fR, \fB\-\-showconfig\fR
-List the cards installed in each slot including model number, description, 
+List the cards installed in each slot including model number, description,
 and the card's range of two-digit channel numbers.
 .TP
 \fB\-L\fR, \fB\-\-list\fR
@@ -67,16 +68,16 @@ Channel addresses are three digits: a single slot digit (1-5) and two
 channel digits.
 .PP
 Multiple channel addresses may be separated by commas (no spaces), e.g.
-``101,102,103,104'', or as a hyphenated range enclosed in square 
+``101,102,103,104'', or as a hyphenated range enclosed in square
 brackets, e.g. ``[101-104]'', or a combination, e.g. ``[101-109],[201-209]''
 .SH "CARD OPTIONS"
 .TP
 44470 10 Channel Relay Multiplexer
-The 44470A Relay Multiplexer assembly consists of ten 2-wire relays connected 
+The 44470A Relay Multiplexer assembly consists of ten 2-wire relays connected
 to a common analog bus.  Two modes of operation are possible: single channel,
 break-before-make or multiple channel closed together.
-Basically there are two different ways the 44470A may be used: 
-inputs from 10 different sources may be switched to the one common bus or 
+Basically there are two different ways the 44470A may be used:
+inputs from 10 different sources may be switched to the one common bus or
 one input (common bus) may be switch to 10 different places.
 This module uses latching relays.
 .TP
@@ -92,7 +93,7 @@ on the 44471A will be opened.  This module uses latching relays.
 44472 Dual 4 Channel VHF Switch
 This option provides two independent 4 channel to one coaxial multiplexers.
 These multiplexers are specifically designed for broadband signal switching
-up to 300Mhz.  This module is the logical choice for wide dynamic range 
+up to 300Mhz.  This module is the logical choice for wide dynamic range
 measurements with spectrum and distortion analyzers.  The two groups are
 isolated from each other and also from the 3488A chassis ground.  The shield
 of each channel is not switched; the shields of the four channels of each group
@@ -111,9 +112,9 @@ to amy combination of outputs (e.g. columns).
 44474 16-bit Digital I/O
 This option provides 16 bidirectional data lines (channels) plus 4 lines
 used for control and handshaking.  All lines are TTL compatable.  Several
-modes of operation are possible including 
-1) Addressing individual lines on a bit-by-bit basis, addressing as 
-two 8-bit ports or addressing all 16 lines as one word;  
+modes of operation are possible including
+1) Addressing individual lines on a bit-by-bit basis, addressing as
+two 8-bit ports or addressing all 16 lines as one word;
 2) positive or negative true logic;
 3) Several handshake modes;
 4) External increment and channel closed signals for hardware controlled
@@ -135,7 +136,7 @@ features:
 4) Internal 50 Ohm terminations.
 .TP
 44477 Form C Relay
-The 4447A module consists of seven independent, break-before-make, SPDT 
+The 4447A module consists of seven independent, break-before-make, SPDT
 Form C relays (one contact normally open, one contact normally closed).
 The relay contacts (common: C; normally open: NO; and normally closed: NC),
 are accessible at the terminal block for field wiring connections.
@@ -161,5 +162,5 @@ done
 .SH "SEE ALSO"
 gpib-utils.conf(5)
 .PP
-"HP 3488A Switch/Control Unit: Operating, Programming, and Configuration 
+"HP 3488A Switch/Control Unit: Operating, Programming, and Configuration
 Manual", Sept. 1, 1995.
