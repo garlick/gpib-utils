@@ -14,7 +14,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with gpib-utils; if not, write to the Free Software Foundation, 
+   along with gpib-utils; if not, write to the Free Software Foundation,
    Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
 
 int read_all(int fd, void *buf, int count);
@@ -23,11 +23,12 @@ int write_all(int fd, void *buf, int count);
 char *xreadline(char *prompt, char *buf, int buflen);
 
 void *xmalloc(size_t size);
-char *xstrdup(char *str);
+void *xzmalloc(size_t size);
+char *xstrdup(const char *str);
 void *xrealloc(void *ptr, int size);
 
 char *xstrcpyprint(char *str);
-char *xstrcpyunprint(char *str); 
+char *xstrcpyunprint(char *str);
 
 typedef struct {
    int     num;

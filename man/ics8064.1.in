@@ -1,6 +1,6 @@
 .TH ics8064 1
 .SH NAME
-ics8064 \- control ICS 8064 Ethernet-Relay Interface  
+ics8064 \- control ICS 8064 Ethernet-Relay Interface
 .SH SYNOPSIS
 .nf
 .B ics8064 [\fIOPTIONS\fR]
@@ -18,7 +18,7 @@ to set the configuration.
 \fB\-n\fR, \fB\-\-name\fR name
 Set the name used to look up the instrument address in
 the config file.  The default is \fIics8064\fR.
-.T
+.TP
 \fB\-a\fR, \fB\-\-address\fR address
 Set the instrument address.
 See gpib-utils.conf(5) for a description of address formats.
@@ -27,7 +27,7 @@ See gpib-utils.conf(5) for a description of address formats.
 Clear instrument state.
 .TP
 \fB\-o\fR, \fB\-\-open\fR relay(s)
-Open the specified relays.  Relays are numbered 1-16.  
+Open the specified relays.  Relays are numbered 1-16.
 You may use commas and hyphenated ranges to specify multiple relays.
 .TP
 \fB\-c\fR, \fB\-\-close\fR relay(s)

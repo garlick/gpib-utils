@@ -14,15 +14,13 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with gpib-utils; if not, write to the Free Software Foundation, 
+   along with gpib-utils; if not, write to the Free Software Foundation,
    Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
 
 #if HAVE_CONFIG_H
 #include "config.h"
 #endif
-#if HAVE_GETOPT_LONG
 #include <getopt.h>
-#endif
 #include <libgen.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,7 +32,7 @@
 #include "libutil/argv.h"
 
 #include "libinst/inst.h"
-#include "libinst/cmdline.h"
+#include "libinst/configfile.h"
 
 #define INSTRUMENT "ics8064"
 
@@ -48,11 +46,11 @@
 #define ICS8064_STB_ESR             0x20
 #define ICS8064_STB_MAV             0x10
 
-#define OPTIONS OPTIONS_COMMON "cli0:1:qQIRL"
-#if HAVE_GETOPT_LONG
-#define GETOPT(ac,av,opt,lopt) getopt_long(ac,av,opt,lopt,NULL)
+const char *options = "n:a:vcli0:1:qQIRL";
 static struct option longopts[] = {
-        OPTIONS_COMMON_LONG,
+        {"name",                required_argument,  0, 'n'},
+        {"address",             required_argument,  0, 'a'},
+        {"verbose",             no_argument,        0, 'v'},
         {"clear",               no_argument,        0, 'c'},
         {"local",               no_argument,        0, 'l'},
         {"get-idn-string",      no_argument,        0, 'i'},
@@ -63,24 +61,26 @@ static struct option longopts[] = {
         {"shell",               no_argument,        0, 'I'},
         {"radio",               no_argument,        0, 'R'},
         {"selftest",            no_argument,        0, 'L'},
+        { 0, 0, 0 },
 };
-#else
-#define GETOPT(ac,av,opt,lopt) getopt(ac,av,opt)
-#endif
 
-static opt_desc_t optdesc[] = {
-    OPTIONS_COMMON_DESC,
-    {"c","clear",          " initialize instrument to default values"},
-    {"l","local",          "return instrument to local operation on exit"},
-    {"i","get-idn-string", "get idn string"},
-    {"0","open",           "open the specified relays"},
-    {"1","close",          "close the specified relays"},
-    {"q","query",          "query the state of all relays"},
-    {"Q","query-digital",  "query the state of digital inputs"},
-    {"I","shell",          "start interactive shell"},
-    {"L","selftest",       "execute instrument selftest"},
-    {"R","radio",          "set radio button mode (max one relay closed)"},
-    {0,0},
+void usage (void)
+{
+    fprintf (stderr, "%s",
+        "    -n,--name           specify instrument name (default 3488a)\n"
+        "    -a,--address        specify instrument address\n"
+        "    -v,--verbose        set verbose mode\n"
+        "    -c,--clear          initialize instrument to default values\n"
+        "    -l,--local          return instrument to local operation on exit\n"
+        "    -i,--get-idn-string get idn string\n"
+        "    -0,--open           open the specified relays\n"
+        "    -1,--close          close the specified relays\n"
+        "    -q,--query          query the state of all relays\n"
+        "    -Q,--query-digital  query the state of digital inputs\n"
+        "    -I,--shell          start interactive shell\n"
+        "    -L,--selftest       execute instrument selftest\n"
+        "    -R,--radio          set radio button mode (max one relay closed)\n");
+    exit (1);
 };
 
 static int _interpret_status(struct instrument *gd, unsigned char status, char *msg);
@@ -103,28 +103,58 @@ main(int argc, char *argv[])
     struct instrument *gd;
     int c;
     int exit_val = 0;
-    int print_usage = 0;
+    char *name = INSTRUMENT;
+    char *address = NULL;
 
-    gd = inst_init_args(argc, argv, OPTIONS, longopts, INSTRUMENT,
-                        _interpret_status, 100000, &print_usage);
-    if (print_usage)
-        usage(optdesc);
-    if (!gd)
-        exit(1);
+    prog = basename (argv[0]);
 
-    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
+    while ((c = getopt_long (argc, argv, options, longopts, NULL)) != EOF) {
         switch(c) {
             case 'R' :  /* --radio */
                 radio++;
                 break;
+            case 'n':
+                name = optarg;
+                break;
+            case 'a':
+                address = optarg;
+                break;
+            default:
+                break;
+        }
+    }
+
+    if (!address) {
+        struct cf_file *cf = cf_create_default ();
+        const struct cf_instrument *cfi = NULL;
+
+        if (cf)
+            cfi = cf_lookup (cf, name);
+        if (!cfi) {
+            fprintf (stderr, "Please supply --address or cf entry for [%s]\n",
+                     name);
+            exit (1);
+        }
+        gd = inst_init (cfi->addr, _interpret_status, 100000);
+        if (!gd) {
+            fprintf (stderr, "Failed to initialize instrument\n");
+            exit (1);
+        }
+        cf_destroy (cf);
+    } else {
+        gd = inst_init (address, _interpret_status, 100000);
+        if (!gd) {
+            fprintf (stderr, "Failed to initialize instrument\n");
+            exit (1);
         }
     }
 
     optind = 0;
-    while ((c = GETOPT(argc, argv, OPTIONS, longopts)) != EOF) {
+    while ((c = getopt_long (argc, argv, options, longopts, NULL)) != EOF) {
         switch (c) {
-            case 'R':   /* -r handled above */
-            OPTIONS_COMMON_SWITCH
+            case 'R':
+            case 'n':
+            case 'a':   /* handled above */
                 break;
             case 'l' :  /* --local */
                 inst_loc(gd);
@@ -159,11 +189,13 @@ main(int argc, char *argv[])
             case 'L' :  /* --selftest */
                 _selftest(gd);
                 break;
+            default:
+                usage ();
         }
     }
 
-    inst_fini(gd);
-    exit(exit_val);
+    inst_fini (gd);
+    exit (exit_val);
 }
 
 
@@ -201,11 +233,11 @@ _clear(struct instrument *gd)
     /* Reset to power-up state.
      * Allow 100ms after *RST per 8064 instruction manual.
      */
-    inst_wrtf(gd, "*RST\n"); 
-    usleep(1000*100); 
+    inst_wrtf(gd, "*RST\n");
+    usleep(1000*100);
 
     /* configure ESR bits that will reach STB reg */
-    inst_wrtf(gd, "*ESE %d\n", 
+    inst_wrtf(gd, "*ESE %d\n",
             (ICS8064_ESR_QUERY_ERR | ICS8064_ESR_FLASH_CORRUPT
            | ICS8064_ESR_EXEC_ERR  | ICS8064_ESR_CMD_ERR));
 }

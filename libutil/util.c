@@ -14,7 +14,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with gpib-utils; if not, write to the Free Software Foundation, 
+   along with gpib-utils; if not, write to the Free Software Foundation,
    Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
 
 #if HAVE_CONFIG_H
@@ -101,6 +101,18 @@ xmalloc(size_t size)
 }
 
 void *
+xzmalloc(size_t size)
+{
+    void *new = calloc(1, size);
+
+    if (!new) {
+        fprintf(stderr, "%s: out of memory\n", prog);
+        exit(1);
+    }
+    return new;
+}
+
+void *
 xrealloc(void *ptr, int size)
 {
     void *new = realloc(ptr, size);
@@ -113,7 +125,7 @@ xrealloc(void *ptr, int size)
 }
 
 char *
-xstrdup(char *str)
+xstrdup(const char *str)
 {
     char *new = strdup(str);
 
@@ -214,10 +226,10 @@ rfindstr(strtab_t *tab, char *str)
  * lsd_* functions are needed by list.[ch].
  */
 
-void 
+void
 lsd_fatal_error(char *file, int line, char *mesg)
 {
-    fprintf(stderr, "%s: fatal error: %s: %s::%d: %s", 
+    fprintf(stderr, "%s: fatal error: %s: %s::%d: %s",
                     prog, mesg, file, line, strerror(errno));
     exit(1);
 }
@@ -225,13 +237,13 @@ lsd_fatal_error(char *file, int line, char *mesg)
 void *
 lsd_nomem_error(char *file, int line, char *mesg)
 {
-    fprintf(stderr, "%s: out of memory: %s: %s::%d", 
+    fprintf(stderr, "%s: out of memory: %s: %s::%d",
                     prog, mesg, file, line);
     exit(1);
 }
 
 
-double 
+double
 dbmtov(double a)
 {
     return pow(10, (a-13.0)/20);
@@ -295,7 +307,7 @@ amplstr(char *str, double *ampl)
         result = _vtodb(&a, -53.0);
     else if (!strcasecmp(end, "emfmuv"))
         result = _vtodb(&a, -113.0);
-    else  
+    else
         result = -1;
     if (result == 0 && ampl != NULL)
         *ampl = a;
@@ -332,7 +344,7 @@ freqstr(char *str, double *freq)
         f = 1E9/f;
     else if (!strcasecmp(end, "psec") || !strcasecmp(end, "ps"))
         f = 1E12/f;
-    else  
+    else
         result = -1;
 
     if (result == 0 && freq != NULL)

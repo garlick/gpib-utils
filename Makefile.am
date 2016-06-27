@@ -1,1 +1,1 @@
-SUBDIRS = libvxi11 libics liblsd libutil libinst src man etc test
+SUBDIRS = libvxi11 libics liblsd libutil libinst libini src man etc test

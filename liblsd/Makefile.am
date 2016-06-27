@@ -8,4 +8,8 @@ liblsd_la_SOURCES = \
 	list.c \
 	list.h \
 	cbuf.c \
-	cbuf.h
+	cbuf.h \
+	hash.c \
+	hash.h \
+	thread.c \
+	thread.h

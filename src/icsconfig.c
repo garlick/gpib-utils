@@ -14,7 +14,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with gpib-utils; if not, write to the Free Software Foundation, 
+   along with gpib-utils; if not, write to the Free Software Foundation,
    Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
 
 #if HAVE_CONFIG_H
@@ -47,15 +47,18 @@ int
 main(int argc, char *argv[])
 {
     ics_t ics = NULL;
-    char *name, *cmd;
+    char *name = NULL, *cmd = "list";
     int rc, optind = 0;
 
-    prog = basename(argv[optind++]);
+    if (optind < argc)
+        prog = basename(argv[optind++]);
+    if (optind < argc)
+        name = argv[optind++];
+    if (optind < argc)
+        cmd = argv[optind++];
 
-    if (argc - optind < 2)
+    if (!name)
         _usage ();
-    name = argv[optind++];
-    cmd = argv[optind++];
 
     if ((rc = ics_init(name, &ics)) != 0) {
         fprintf (stderr, "%s: %s: %s\n", prog, name, ics_strerror (ics, rc));
@@ -89,8 +92,8 @@ main(int argc, char *argv[])
 static void
 _usage(void)
 {
-    fprintf(stderr, 
-  "Usage: icsconfig DEVICE CMD [OPTIONS]\n"
+    fprintf(stderr,
+  "Usage: icsconfig DEVICE [CMD] [OPTIONS]\n"
   "  where CMD is:\n"
   "  list             - display config\n"
   "  get NAME         - display value of config attribute NAME\n"

@@ -1,20 +1,20 @@
 /* This file is part of gpib-utils.
    For details, see http://sourceforge.net/projects/gpib-utils.
-  
+
    Copyright (C) 2001-2009 Jim Garlick <garlick.jim@gmail.com>
-  
+
    gpib-utils is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
    (at your option) any later version.
-  
+
    gpib-utils is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-  
+
    You should have received a copy of the GNU General Public License
-   along with gpib-utils; if not, write to the Free Software Foundation, 
+   along with gpib-utils; if not, write to the Free Software Foundation,
    Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
 
 #if HAVE_CONFIG_H
@@ -86,12 +86,12 @@ typedef struct {
 } baudmap_t;
 
 static baudmap_t baudmap[] = {
-    {300,   B300},   
-    {1200,  B1200},   
-    {2400,  B2400},   
-    {4800,  B4800}, 
-    {9600,  B9600}, 
-    {19200, B19200}, 
+    {300,   B300},
+    {1200,  B1200},
+    {2400,  B2400},
+    {4800,  B4800},
+    {9600,  B9600},
+    {19200, B19200},
     {38400, B38400},
 #ifdef B57600
     {57600, B57600},
@@ -218,7 +218,7 @@ _generic_read(struct instrument *gd, char *buf, int len)
 int
 inst_rd(struct instrument *gd, void *buf, int len)
 {
-    int count = 0; 
+    int count = 0;
 
     assert(gd->magic == INSTRUMENT_MAGIC);
     count = _generic_read(gd, buf, len);
@@ -233,7 +233,7 @@ static void
 _zap_trailing_terminators(char *buf)
 {
     char *p = buf + strlen(buf) - 1;
-   
+
     while (p >= buf && (*p == '\r' || *p == '\n'))
         *p-- = '\0';
 }
@@ -290,7 +290,7 @@ inst_rdf(struct instrument *gd, char *fmt, ...)
     return n;
 }
 
-static void 
+static void
 _generic_write(struct instrument *gd, void *buf, int len)
 {
     int err;
@@ -341,7 +341,7 @@ inst_wrt(struct instrument *gd, void *buf, int len)
     _serial_poll(gd, "gpib_wrt");
 }
 
-void 
+void
 inst_wrtstr(struct instrument *gd, char *str)
 {
     assert(gd->magic == INSTRUMENT_MAGIC);
@@ -376,10 +376,10 @@ inst_wrtf(struct instrument *gd, char *fmt, ...)
     _serial_poll(gd, "gpib_wrtf");
 }
 
-int 
+int
 inst_qry(struct instrument *gd, char *str, void *buf, int len)
 {
-    int count; 
+    int count;
 
     assert(gd->magic == INSTRUMENT_MAGIC);
     _generic_write(gd, str, strlen(str));
@@ -392,7 +392,7 @@ inst_qry(struct instrument *gd, char *str, void *buf, int len)
     count = _generic_read(gd, buf, len);
     if (count < len && ((char *)buf)[count - 1] != '\0')
         ((char *)buf)[count++] = '\0';
-    if (gd->verbose) { 
+    if (gd->verbose) {
         if (((char *)buf)[count - 1] == '\0' && strlen((char *)buf) < 60) {
             char *cpy = xstrcpyprint(buf);
 
@@ -407,7 +407,7 @@ inst_qry(struct instrument *gd, char *str, void *buf, int len)
     return count;
 }
 
-int 
+int
 inst_qrystr(struct instrument *gd, char *str, char *buf, int len)
 {
     int count;
@@ -418,7 +418,7 @@ inst_qrystr(struct instrument *gd, char *str, char *buf, int len)
     return count;
 }
 
-int 
+int
 inst_qryint(struct instrument *gd, char *str)
 {
     char buf[16];
@@ -460,7 +460,7 @@ inst_loc(struct instrument *gd)
     _serial_poll(gd, "gpib_loc");
 }
 
-void 
+void
 inst_clr(struct instrument *gd, unsigned long usec)
 {
     int err;
@@ -530,7 +530,7 @@ inst_trg(struct instrument *gd)
     _serial_poll(gd, "gpib_trg");
 }
 
-/* A nonzero return value means call gpib_rsp() again to obtain more 
+/* A nonzero return value means call gpib_rsp() again to obtain more
  * status info.
  */
 int
@@ -548,7 +548,7 @@ inst_rsp(struct instrument *gd, unsigned char *status)
                 inst_fini(gd);
                 exit(1);
             }
-            res = (ibsta & RQS); 
+            res = (ibsta & RQS);
 #endif
             break;
         case VXI11:
@@ -607,7 +607,7 @@ inst_set_eot(struct instrument *gd, int flag)
 #if HAVE_LINUX_GPIB
             ibconfig(gd->d, IbcEOT, flag);
             if ((ibsta & ERR)) {
-                fprintf(stderr, "%s: ibconfig IbcEOT failed: %d\n", 
+                fprintf(stderr, "%s: ibconfig IbcEOT failed: %d\n",
                     prog, iberr);
             }
 #endif
@@ -631,7 +631,7 @@ inst_set_eos(struct instrument *gd, int c)
 #if HAVE_LINUX_GPIB
             ibconfig(gd->d, IbcEOSchar, c);
             if ((ibsta & ERR)) {
-                fprintf(stderr, "%s: ibconfig IbcEOSchar failed: %d\n", 
+                fprintf(stderr, "%s: ibconfig IbcEOSchar failed: %d\n",
                         prog, iberr);
             }
 #endif
@@ -661,7 +661,7 @@ _ibtmo(struct instrument *gd, double sec)
         fprintf(stderr, "%s: gpib_set_timeout: timeout out of range\n", prog);
         inst_fini(gd);
         exit(1);
-    } 
+    }
     if (sec == 0) {
         val =  TNONE;   str = "TNONE";
     } else if (sec <= 0.00001) {
@@ -813,7 +813,7 @@ _new_inst(contype_t t)
     return new;
 }
 
-static struct instrument * 
+static struct instrument *
 _init_gpib(int board, int pad, int sad, spollfun_t sf, unsigned long retry)
 {
     struct instrument *new = NULL;
@@ -836,7 +836,7 @@ _init_gpib(int board, int pad, int sad, spollfun_t sf, unsigned long retry)
 }
 
 static struct instrument *
-_init_vxi(char *name, spollfun_t sf, unsigned long retry)
+_init_vxi(const char *name, spollfun_t sf, unsigned long retry)
 {
     struct instrument *gd = _new_inst(VXI11);
     int err;
@@ -846,7 +846,7 @@ _init_vxi(char *name, spollfun_t sf, unsigned long retry)
     gd->vxi11_handle = vxi11_create();
 
     //vxi11_set_device_debug(true);
-    err = vxi11_open(gd->vxi11_handle, name, false);
+    err = vxi11_open(gd->vxi11_handle, (char *)name, false);
     if (err) {
         vxi11_perror(gd->vxi11_handle, err, prog);
         vxi11_destroy(gd->vxi11_handle);
@@ -893,7 +893,7 @@ _raw_serial(struct instrument *gd)
 
     tio.c_cc[VMIN] = 1;
     tio.c_cc[VTIME] = 0;
- 
+
     if (tcsetattr(gd->fd, TCSANOW, &tio) < 0) {
         fprintf(stderr, "%s: error setting serial attributes\n", prog);
         return -1;
@@ -902,10 +902,10 @@ _raw_serial(struct instrument *gd)
 }
 
 static struct instrument *
-_init_serial(char *device , char *flags, spollfun_t sf, unsigned long retry)
+_init_serial(const char *device , char *flags, spollfun_t sf, unsigned long retry)
 {
     struct instrument *gd = _new_inst(SERIAL);
-    int baud = 9600, databits = 8, stopbits = 1; 
+    int baud = 9600, databits = 8, stopbits = 1;
     char parity = 'N', flowctl = 'N';
     struct termios tio;
     int i, res;
@@ -952,7 +952,7 @@ _init_serial(char *device , char *flags, spollfun_t sf, unsigned long retry)
             tio.c_cflag |= CS8;
             break;
         default:
-            fprintf(stderr, "%s: error setting data bits to %d\n", 
+            fprintf(stderr, "%s: error setting data bits to %d\n",
                     prog, databits);
             goto err;
     }
@@ -965,7 +965,7 @@ _init_serial(char *device , char *flags, spollfun_t sf, unsigned long retry)
             tio.c_cflag |= CSTOPB;
             break;
         default:
-            fprintf(stderr, "%s: error setting stop bits to %d\n", 
+            fprintf(stderr, "%s: error setting stop bits to %d\n",
                     prog, stopbits);
             goto err;
     }
@@ -1028,14 +1028,14 @@ _init_serial(char *device , char *flags, spollfun_t sf, unsigned long retry)
     tio.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
     tio.c_cc[VMIN] = 1;
     tio.c_cc[VTIME] = 0;
- 
+
     if (tcsetattr(gd->fd, TCSANOW, &tio) < 0) {
         fprintf(stderr, "%s: error setting serial attributes\n", prog);
         goto err;
     }
 
     /* success! */
-    return gd; 
+    return gd;
 
 err:
     if (gd->fd >= 0)
@@ -1053,7 +1053,7 @@ _init_socket(char *host, char *port, spollfun_t sf, unsigned long retry)
 }
 
 struct instrument *
-inst_init(char *addr, spollfun_t sf, unsigned long retry)
+inst_init(const char *addr, spollfun_t sf, unsigned long retry)
 {
     struct instrument *gd = NULL;
     char *endptr, *sfx, *cpy;

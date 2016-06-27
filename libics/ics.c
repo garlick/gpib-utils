@@ -174,6 +174,8 @@ ics_get_hostname(ics_t ics, char **namep)
 
     assert(ics->ics_magic == ICS_MAGIC);
     p.action = ICS_READ;
+    p.name.name_val = NULL;
+    p.name.name_len = 0;
     r = hostname_1(&p, ics->ics_clnt);
     if (r == NULL)
         return ICS_ERROR_CLNT;
