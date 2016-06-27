@@ -3,53 +3,61 @@
 ibquery \- query instrument
 .SH SYNOPSIS
 .nf
-.B ibquery [\fIOPTIONS\fR]
+.B ibquery [DEVICE] [\fIOPTIONS\fR] command ...
 
 .fi
 .SH DESCRIPTION
 \fBibquery\fR is a generic instrument query utility that communicates
 with test instruments over GPIB or VXI-11 interfaces.
-\fBibquery\fR performs actions in the order they appear on the command line.
-Any number of actions may be specified.
+\fBibquery\fR performs actions in the order they appear on the command line
+or as entered into a command prompt.
+.LP
+If no DEVICE is specified, the configured devices are listed.
+If no commands are specified in the command line, interactive mode is
+entered.
 .SH OPTIONS
-\fBibquery\fR accepts the following command line options:
-.TP
-\fB\-n\fR, \fB\-\-name\fR name
-Set the name used to look up the instrument address in
-the config file.  There is no default.
-.TP
-\fB\-a\fR, \fB\-\-address\fR address
-Set the instrument address.
-See gpib-utils.conf(5) for a description of address formats.
-.TP
 \fB\-v\fR, \fB\-\-verbose\fR
 Show protocol on stderr.
+.SH COMMANDS
+The following commands are accepted:
 .TP
-\fB\-l\fR, \fB\-\-local\fR
+\fBlocal\fR
 Enable the front panel.
 .TP
-\fB\-c\fR, \fB\-\-clear\fR
+\fBclear\fR
 Send device clear command.
 .TP
-\fB\-w\fR, \fB\-\-write\fR  \fIstring\fR
+\fBwrite\fR \fIstring\fR
 Send \fIstring\fR to instrument.
+In addition, an argument that is not part of one of the documented comands,
+and does not end in a question mark, is interpeted as a write command.
 .TP
-\fB\-r\fR, \fB\-\-read\fR
+\fBread\fR or \fB?\fR
 Read string from instrument and display it on stdout.
 .TP
-\fB\-q\fR, \fB\-\-query\fR \fIstring\fR
+\fBquery\fR
 Send \fIstring\fR to instrument, then read response
 and display it on stdout.  Equivalent to
-\fB\-\-write string \-\-read\fR.
+\fBwrite string\fR followed by \fBread\fR.
+In addition, an argument that is not part of one of the documented comands,
+and ends in a question mark, is interpeted as a query command.
 .TP
-\fB\-s\fR, \fB\-\-status\fR \fImask\fR
+\fBstatus\fR \fImask\fR
 Read instrument status byte and print it on stdout in decimal format.
 If any of the bits that are set in \fImask\fR are set in the status byte,
 terminate the program immediately and return an exit code of 1.
 .TP
-\fB\-d\fR, \fB\-\-delay\fR \fIseconds\fR
+\fBdelay\fR \fIseconds\fR
 Delay for \fIseconds\fR, a floating point number with microsecond
 resolution, before processing the next command.
+.TP
+\fBquit\fR or \fBexit\fR
+(interactive mode only)
+Exit interactive mode.
+.TP
+\fBhelp\fR
+(interactive mode only)
+Display a terse summary of commands.
 .SH ERRORS
 If communication errors occur, \fBibquery\fR prints an error message
 on stderr and returns an exit code of 1.
